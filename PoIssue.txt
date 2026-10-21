@@ -1,0 +1,284 @@
+Option Explicit
+Const cstrModuleName As String = "frmPOIssue"
+Public mlngPOID As Long
+Public mstrPOName As String
+Public objParent As Object
+'Public mlngBT As Double
+'Public mlngOA As Double
+'Public mlngBH As Double
+Public mstrComputerID As String
+Private mblnInFocus As Boolean
+
+''''''''''Change in .NET''''''''''''''''
+'txtDate, label4 and label5 added. captions for frames 1 and 2.
+
+''''''''''END Change in .NET
+
+Private Sub cmdPkgQty_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdPkgQty_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    'Screen.MousePointer = vbHourglass
+    frmPkgQty.mlngPOID = mlngPOID
+    mblnInFocus = False
+    frmPkgQty.Show vbModal
+    mblnInFocus = True
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        ShowHideAgent Me, "Hello!"
+    End If
+    LoadHelpText Me
+    MousePos1.Init Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False And mblnInFocus = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    'Unload Me
+    'frmPO.mlngPOID = mlngPOID
+    'frmPO.mstrPONum = mstrPOName
+    'frmPO.Show
+    
+    Dim lstrData As String
+    
+    lstrData = " " & Trim(mstrPOName) & "~"
+    lstrData = lstrData & "True~"
+    objParent.mstrData = lstrData
+    Unload Me
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdEmail_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdEmail_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Call ChangePOStatus(mlngPOID, "Issued")
+    Unload Me
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdPrint_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdPrint_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim lblnChkIssue As Boolean
+    
+''''''''''Change in .NET''''''''''''''''
+    If Not IsDate(Trim(txtDate.Text)) Then
+     
+        MsgBox "Invalid Date.", vbApplicationModal + vbCritical, "Invalid Date"
+        If txtDate.Enabled = True Then txtDate.SetFocus
+        Exit Sub
+    Else
+        If DateValue(Now()) > DateValue(Me.txtDate.Text) Then
+            MsgBox "Invalid Date.", vbApplicationModal + vbCritical, "Invalid Date"
+            If txtDate.Enabled = True Then txtDate.SetFocus
+            Exit Sub
+        End If
+    End If
+''''''''''END Change in .NET
+    
+    MsgBox "This action will issue this Purchase Order." & vbCrLf & _
+        "Please print the document and send to Richards-Wilcox", vbApplicationModal, "Issue PO"
+    CnnBTMS.BeginTrans
+    Call ChangePOStatus(mlngPOID, "Issued", Me.txtDate.Text)
+    If IsInvMaint = 1 And CheckPORunInventory(mlngPOID) = True Then
+        Call UpdateOnOrder(mlngPOID)
+    End If
+    Call UpdateOnPOsForPO(mlngPOID, True)
+    If IsInvMaint = 1 And CheckPORunInventory(mlngPOID) = True Then
+        If chkStock.Value = 1 Then
+            If MsgBox("This will permanently change your minimum quantities and restocking levels in your inventory for all items included in this PO." & vbCrLf & _
+                "Are sure you want to set restocking levels for these items?", vbExclamation + vbYesNo + vbApplicationModal, "Set Restocking Levels.") = vbNo Then
+                    Me.chkStock.Value = 0
+                    MsgBox "The PO was issued without setting restocking levels.", vbInformation + vbApplicationModal, "PO Issue"
+            Else
+                Call SetRestockingLevels(mlngPOID)
+            End If
+        End If
+    End If
+    CnnBTMS.CommitTrans
+    lblnChkIssue = True
+    frmPrint.mstrReportName = "PO.rpt"
+    frmPrint.mstrTitle = "Purchase Order"
+    frmPrint.mlngIDValue = mlngPOID
+
+    frmPrint.mstrComputerID = mstrComputerID
+
+    frmPrint.Show vbModal
+    Unload Me
+    
+    Exit Sub
+Error_Handler:
+    
+    If lblnChkIssue = True Then
+        MsgBox "The PO was Issued but a printer error ocurred." & vbCrLf & _
+        "Make sure Richards Wilcox receives a copy of this Issued PO.", vbExclamation + vbApplicationModal, "Printer Error"
+    Else
+        CnnBTMS.RollbackTrans
+        MsgBox "The PO was NOT Issued." & vbCrLf & _
+        "Unexpected error ocurred.", vbExclamation + vbApplicationModal, "Error"
+    End If
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Initialize() 'first the form is initialized and then the objParent is set to a form that this one is being called from.
+Set objParent = Nothing
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    LoadHelpText Me
+    MousePos1.Init Me
+
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+'    aReg.OpenKey LocalMachine, "\software\Richards-Wilcox Canada", True
+'
+'    mlngBT = DBLValue(aReg.ReadValue("BulkThermatiteSections"))
+'    mlngOA = DBLValue(aReg.ReadValue("OptionsandAccessories"))
+'    mlngBH = DBLValue(aReg.ReadValue("BulkHardware"))
+'    aReg.CloseKey
+    
+    aReg.OpenKey LocalMachine, "\software\Computer-ID", True
+    mstrComputerID = aReg.ReadValue("ComputerID")
+    aReg.CloseKey
+    
+    If IsInvMaint = 0 Or CheckPORunInventory(mlngPOID) = False Then
+        chkStock.Value = 0
+        chkStock.Enabled = False
+    End If
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    txtPONum.Text = mstrPOName
+
+''''''''''Change in .NET''''''''''''''''
+    txtDate.Text = Format(Now() + 14, cstrDateMask)
+    Dim LCID As Long
+    
+    LCID = GetUserDefaultLCID()
+    Label5.Caption = " (" & GetUserLocaleInfo(LCID, LOCALE_SSHORTDATE) & ")"
+
+''''''''''END Change in .NET
+    mblnInFocus = True
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+

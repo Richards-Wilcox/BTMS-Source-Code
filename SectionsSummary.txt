@@ -1,0 +1,220 @@
+Option Explicit
+Const cstrModuleName As String = "frmSectionsSummary"
+Public mlngBOMID As Long
+Public mstrBOMNum As String
+
+Private Sub DtGrid1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".DtGrid1_MouseMove()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+'    If grdData1.MouseRow > 0 And grdData1.MouseCol > 0 And grdData1.MouseRow <= grdData1.Rows - 1 And grdData1.MouseCol <= grdData1.Cols - 1 Then
+        DtGrid1.ToolTipText = DtGrid1.Cell(flexcpTextDisplay, DtGrid1.MouseRow, DtGrid1.MouseCol)
+'    End If
+    
+    Exit Sub
+
+Error_Handler:
+Exit Sub 'sometimes this routine produced unexpected errors if
+'mouse is over the boundaries of the grid. Generating an error
+'screen is not necessary
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdHide_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdHide_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Unload Me
+    frmBOM.mlngBOMID = mlngBOMID
+    frmBOM.Show
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    
+    Call LoadGrid
+    LoadHelpText Me
+    MousePos1.Init Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Public Sub LoadGrid()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadGrid()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim lobjSectRS As ADODB.Recordset
+    DtGrid1.Clear
+    
+    lstrSQLQuery = "select * from BOMSection BoM where BOMID=" & mlngBOMID
+    lstrSQLQuery = lstrSQLQuery & " order by BoMSectionNum"
+    Set lobjSectRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjSectRS Is Nothing Then
+        lobjSectRS.ActiveConnection = Nothing
+        If Not (lobjSectRS.BOF And lobjSectRS.EOF) Then
+            DtGrid1.VirtualData = False
+            DtGrid1.DataMode = flexDMFree
+            Set DtGrid1.DataSource = lobjSectRS
+        End If
+    End If
+    Call SetGridTitles
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub SetGridTitles()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetGridTitles()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    DtGrid1.Cols = 11
+    DtGrid1.TextMatrix(0, 1) = "Part Number"
+    DtGrid1.TextMatrix(0, 3) = "Location"
+    DtGrid1.TextMatrix(0, 4) = "Height"
+    DtGrid1.TextMatrix(0, 6) = "Lites"
+    DtGrid1.TextMatrix(0, 8) = "Truss"
+    DtGrid1.TextMatrix(0, 9) = "Instructions"
+    
+    'DtGrid1.Width = Me.Width * 0.9
+    'DtGrid1.Left = Me.Width / 2 - DtGrid1.Width / 2
+    
+    DtGrid1.ColWidth(0) = 0
+    DtGrid1.ColWidth(1) = DtGrid1.Width * 0.19
+    DtGrid1.ColWidth(2) = 0
+    DtGrid1.ColWidth(3) = DtGrid1.Width * 0.19
+    DtGrid1.ColWidth(4) = DtGrid1.Width * 0.1
+    DtGrid1.ColWidth(5) = 0
+    DtGrid1.ColWidth(6) = DtGrid1.Width * 0.1
+    DtGrid1.ColWidth(7) = 0
+    DtGrid1.ColWidth(8) = DtGrid1.Width * 0.1
+    DtGrid1.ColWidth(9) = DtGrid1.Width * 0.3
+    DtGrid1.ColWidth(10) = 0
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub

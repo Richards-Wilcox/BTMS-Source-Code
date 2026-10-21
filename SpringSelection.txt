@@ -1,0 +1,2172 @@
+Option Explicit
+'AW, KN
+Const cstrModuleName As String = "frmSprSelection"
+Private mintInd As Integer 'solution index
+Private mblnInFocus As Boolean
+Private mblnSelectionCommit As Boolean
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdAccept_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAccept_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    
+    Call SaveDrum
+    
+    Call AcceptSpringSolution
+    
+    Call ModTracks.checkExtraChainReq
+    Screen.MousePointer = vbHourglass
+    
+    If varDoorData.arrSelectedSolution(SpringIndex).arrSpring(0).PVC > 0 Or varDoorData.arrSelectedSolution(SpringIndex).arrSpring(UBound(varDoorData.arrSelectedSolution(SpringIndex).arrSpring())).PVC > 0 Then Call SelectPVC
+    Call Select_Plug_And_Winders
+    Call SelectCenterPlatesAndSupports
+    
+''''''''''Change in .NET''''''''''''''''
+'moved from AcceptSpringSolution
+    If varDoorData.gblnSpringFailure = False Then Call SelectSpringFastenerPkg
+''''''''''END Change in .NET
+    
+    If varDoorData.AuxillaryShaft = True Then
+        Call ModTracks.calShaftLength_AuxillaryShaft
+    Else
+        Call ModTracks.calShaftLength
+    End If
+    
+    
+    
+    If LiftType = "Vertical Lift" Or LiftType = "Low Headroom Vertical Lift" Then cValue = ModTracks.GetBracketMountC_VL_VLLHR    're-calculates the 'C' value for D1350-336 drum
+    
+    If varDoorData.Track.strLowerSplice = "w/ Upper Wall Angle" Then
+    
+        If Not varDoorData.Track.strMountType = "EU ADCA" Then
+            
+            Call ModTracks.selectUpperWallAngle_VL_LHRVL
+            Call ModTracks.selectUWATrackCips_VL_LHRVL
+         Else
+         
+            Call selectEU_UpperWallAngle_VL_LHRVL
+            Call selectEU_UWATrackClips_VL_VLLHR
+         End If
+               
+    ElseIf varDoorData.Track.strLowerSplice = "w/ Upper Bracket Mount" Then
+        Call selectUpperBrackets_VL_VLHRVL
+    End If
+        
+    If Not varDoorData.aDrum.strStamping = "D1350-336" And (LiftType = "Vertical Lift" Or LiftType = "Low Headroom Vertical Lift") Then 'execute this routine except D1350-336 drum case
+        ModTracks.VLTrackSupport
+    End If
+     
+     
+   
+    Screen.MousePointer = vbHourglass
+    If varDoorData.Track.strJambType = "Wood" Then Call ModTracks.SelectLagBolts
+    
+    If LiftType = "Vertical Lift" Or LiftType = "Low Headroom Vertical Lift" Then Call ModTracks.SelectTrackPkgs
+
+    Call SelectHeadPlates
+     'only select bearing if drum type is not D6375-164
+    If varDoorData.aDrum.strStamping <> "D6375-164" Then
+        If frmTrackEntry.chkFlangeBearing.Value = 1 Or DrWgt >= 1000 Then varDoorData.FlangeBearing = True
+        Call ModTracks.SelectBearings
+    End If
+
+    Call SelectHeadPlateFastenerPkgs
+    
+    If varDoorData.OperatorType = 6 Then
+        mblnInFocus = False
+        frmDynaHoist.Show
+        mblnInFocus = True
+    Else
+        frmShipInstructions.Show
+    End If
+    
+    Me.Hide
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdAddNotes_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAddNotes_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Dim frmN As frmNotes
+    Set frmN = New frmNotes
+    Set frmN.objParent = Me
+    frmN.Caption = "Springing Notes"
+    
+    frmN.BackTag = Me.Name
+    mblnInFocus = False
+    Screen.MousePointer = vbDefault
+    frmN.Show vbModal
+    mblnInFocus = True
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdBack_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdBack_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim lblnRoll As Boolean
+    
+    If mblnSelectionCommit = True Then 'they have a selection picked.
+        
+        Dim lstrMsg As String, lintBut As Integer, lintRep As Integer
+        
+        lstrMsg = "Are you sure you want to return to the previous screen?" & vbCrLf & _
+            "Your spring selection will be lost."
+        lintBut = 4 '(yes,no)
+        
+        If frmGrid.txtSprNotes.Text <> "" Then
+            lstrMsg = "By returning to the previous screen you will loose the spring selection." & vbCrLf & _
+                "Do you wish to clear the Springing Notes?"
+            lintBut = 3 '(yes,no,cancel)
+        End If
+        
+        lintRep = MsgBox(lstrMsg, vbApplicationModal + vbInformation + lintBut, "Return to the Previous Screen.")
+        
+        If lintRep = vbCancel Or (lintBut = 4 And lintRep = vbNo) Then Exit Sub
+            
+        If lintRep = vbYes Then frmGrid.txtSprNotes.Text = ""
+    
+    Else
+        If frmGrid.txtSprNotes.Text <> "" Then
+            lstrMsg = "Do you wish to clear the Springing Notes?"
+            lintBut = 4 '(yes,no)
+        
+            lintRep = MsgBox(lstrMsg, vbApplicationModal + vbInformation + lintBut, "Return to the Previous Screen.")
+            
+            If lintRep = vbYes Then frmGrid.txtSprNotes.Text = ""
+                
+        End If
+    End If
+    
+    Screen.MousePointer = vbHourglass
+    lblnRoll = RollBack("Track", True)
+
+''''''''''Change in .NET''''''''''''''''
+    If varDoorData.Track.strWeatherStrip = "Complete Aluminum black vinyl" Then
+        Call frmTrackEntry.addItem_WeatherStrip(2)
+    ElseIf varDoorData.Track.strWeatherStrip = "Vertical Aluminum black vinyl" Then
+        Call frmTrackEntry.addItem_WeatherStrip(3)
+    ElseIf varDoorData.Track.strWeatherStrip = "Complete steel white vinyl" Then
+        Call frmTrackEntry.addItem_WeatherStrip(4)
+    ElseIf varDoorData.Track.strWeatherStrip = "Vertical steel white vinyl" Then
+        Call frmTrackEntry.addItem_WeatherStrip(5)
+    End If
+''''''''''END Change in .NET
+    
+    lblnRoll = RollBack("Drums", False, "411-227")
+    lblnRoll = RollBack("Drums", False, "411-189")
+    lblnRoll = RollBack("Drums", False, "411-226")
+    mblnSelectionCommit = False
+
+    Unload Me
+    frmSprSolutions.Show
+    
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdNext_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdNext_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    'previous idea
+'        Dim i As Integer, a As Integer, c As Integer
+'
+'        For i = mintInd + 1 To UBound(varDoorData.arrSpringSolution())
+'            If varDoorData.arrSpringSolution(i).Selected = True Then Exit For
+'        Next
+'        mintInd = i
+'        If varDoorData.arrSpringSolution(mintInd).Mismatched = True Then
+'            If IsModeComplex Then
+'                Call LoadMMSpringComplex
+'            Else
+'                Call LoadMMSpring
+'            End If
+'        Else
+'            If IsModeComplex Then
+'                Call LoadSpringComplex
+'            Else
+'                Call LoadSpring
+'            End If
+'        End If
+'
+'        For i = mintInd To 0 Step -1
+'            If varDoorData.arrSpringSolution(i).Selected = True Then a = a + 1
+'        Next
+'
+'        For i = 0 To UBound(varDoorData.arrSpringSolution())
+'            If varDoorData.arrSpringSolution(i).Selected = True Then c = c + 1
+'        Next
+'        Me.lblSolutionNo2.Caption = a & " of " & c
+'
+'        If a <= c Then cmdPrevious.Enabled = True
+'
+'        If a = c Then
+'            cmdNext.Enabled = False
+'        Else
+'            cmdNext.Enabled = True
+'        End If
+    'new idea
+    mintInd = mintInd + 1
+    If varDoorData.arrSelectedSolution(mintInd).blnMismatched = True Then
+        If IsModeComplex Then
+            Call Fill_GridsComplex
+            Call LoadMMSpringComplex
+        Else
+            Call Fill_Grids
+            Call LoadMMSpring
+        End If
+    Else
+        If IsModeComplex Then
+            Call Fill_GridsComplex
+            Call LoadSpringComplex
+        Else
+            Call Fill_Grids
+            Call LoadSpring
+        End If
+    End If
+    
+    Me.lblSolutionNo2.Caption = mintInd + 1 & " of " & UBound(varDoorData.arrSelectedSolution()) + 1
+    
+    If mintInd > 0 Then cmdPrevious.Enabled = True
+
+    If mintInd = UBound(varDoorData.arrSelectedSolution()) Then
+        cmdNext.Enabled = False
+    Else
+        cmdNext.Enabled = True
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+
+Private Sub cmdPrevious_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdPrevious_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    'previous idea
+'        Dim i As Integer, a As Integer, c As Integer
+'
+'        For i = mintInd - 1 To 0 Step -1
+'            If varDoorData.arrSpringSolution(i).Selected = True Then Exit For
+'        Next
+'        mintInd = i
+'        If varDoorData.arrSpringSolution(mintInd).Mismatched = True Then
+'            If IsModeComplex Then
+'                Call LoadMMSpringComplex
+'            Else
+'                Call LoadMMSpring
+'            End If
+'        Else
+'            If IsModeComplex Then
+'                Call LoadSpringComplex
+'            Else
+'                Call LoadSpring
+'            End If
+'        End If
+'        For i = mintInd To 0 Step -1
+'            If varDoorData.arrSpringSolution(i).Selected = True Then a = a + 1
+'        Next
+'        For i = 0 To UBound(varDoorData.arrSpringSolution())
+'            If varDoorData.arrSpringSolution(i).Selected = True Then c = c + 1
+'        Next
+'        Me.lblSolutionNo2.Caption = a & " of " & c
+'
+'        If a <= c Then cmdNext.Enabled = True
+'        If a = 1 Then
+'            cmdPrevious.Enabled = False
+'        Else
+'            cmdPrevious.Enabled = True
+'        End If
+    
+    'new idea
+    mintInd = mintInd - 1
+    If varDoorData.arrSelectedSolution(mintInd).blnMismatched = True Then
+        If IsModeComplex Then
+            Call Fill_GridsComplex
+            Call LoadMMSpringComplex
+        Else
+            Call Fill_Grids
+            Call LoadMMSpring
+        End If
+    Else
+        If IsModeComplex Then
+            Call Fill_GridsComplex
+            Call LoadSpringComplex
+        Else
+            Call Fill_Grids
+            Call LoadSpring
+        End If
+    End If
+    Me.lblSolutionNo2.Caption = mintInd + 1 & " of " & UBound(varDoorData.arrSelectedSolution()) + 1
+    
+    If mintInd < UBound(varDoorData.arrSelectedSolution()) Then cmdNext.Enabled = True
+    If mintInd = 0 Then
+        cmdPrevious.Enabled = False
+    Else
+        cmdPrevious.Enabled = True
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdPrint_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdPrint_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+'    CommonDialog1.CancelError = True
+'    CommonDialog1.ShowPrinter
+    Call ShowTaskbar(False) 'will hide the widows taskbar for the time of printing
+    
+    Set Picture1.Picture = CaptureScreen()
+    PrintPictureToFitPage Printer, Picture1.Picture
+    Printer.EndDoc
+    
+    Call ShowTaskbar(True)
+    
+    Exit Sub
+
+Error_Handler:
+    If Err.Number = 32755 Then
+        Call ShowTaskbar(True)
+        Exit Sub
+    End If
+        
+    If Err.Number = 482 Or Err.Number = 484 Then 'Make sure all connections between computer and printer are solid. Most printers provide a display for error information such as "Out of paper," "Offline," and so on.
+        MsgBox Err.Number & ":" & " Printer error!", vbCritical + vbApplicationModal, "Printer Error."
+        Exit Sub
+    End If
+    
+    If Err.Number = 9 Then  'no printer installed
+        MsgBox Err.Number & ":" & " Printer error!", vbCritical + vbApplicationModal, "Printer Error."
+        Exit Sub
+    End If
+    
+    Call ShowTaskbar(True)
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer, a As Integer
+    Me.Height = Screen.Height * 0.87
+    Me.Width = Screen.Width * 0.97
+    Me.Move MDIForm1.Width / 2 - Me.Width / 2, 0
+    lblPrices.FontSize = 5
+    
+    mintInd = 0
+
+    If IsModeComplex = True Then
+    
+        Grid1.Cols = 8
+        Grid2.Cols = 8
+        Grid3.Cols = 8
+        Grid1.Rows = 3
+        Grid2.Rows = 5
+        Grid3.Rows = 5
+        
+        'set the grid height and width
+        Grid2.Height = Me.Height * 0.27
+        Grid1.Height = Me.Height * 0.12
+        Grid3.Height = Me.Height * 0.27
+        Grid1.Width = Me.Width - 400
+        Grid2.Width = Grid1.Width
+        Grid3.Width = Grid1.Width
+        
+        'position the grids
+        Grid1.Move (Me.Width - Grid1.Width) / 2, Me.Height * 0.02
+        Grid2.Move Grid1.Left, Grid1.Top + Grid1.Height + Me.Height * 0.02
+        Grid3.Move Grid1.Left, Grid2.Top + Grid2.Height + Me.Height * 0.02
+        cmdPrint.Height = cmdPrint.Height * 0.95
+        cmdPrevious.Height = cmdPrint.Height
+        cmdNext.Height = cmdPrint.Height
+        cmdBack.Height = cmdPrint.Height
+        cmdAccept.Height = cmdPrint.Height
+        cmdAddNotes.Height = cmdPrint.Height
+    
+        lblSolutionNo1.Move Grid1.Left, Grid3.Top + Grid3.Height + 200
+        lblSolutionNo2.Move Grid1.Left + lblSolutionNo1.Width + 100, lblSolutionNo1.Top
+        lblPrices.Move Grid3.Left + Grid3.Width - lblPrices.Width - 50, lblSolutionNo1.Top
+        
+        'set colour of the labels
+        lblPrices.BackColor = Me.BackColor
+        lblSolutionNo1.BackColor = Me.BackColor
+        lblSolutionNo2.BackColor = Me.BackColor
+        
+        Grid1.ForeColorFixed = &H80000012
+        Grid2.ForeColorFixed = &H80000012
+        Grid3.ForeColorFixed = &H80000012
+        Grid2.BackColorFixed = &HE4B7A9
+        Grid3.BackColorFixed = &HE4B7A9
+        
+        'set the column width
+        For i = 0 To 7
+            Grid1.ColWidth(i) = Grid1.Width * 0.125
+        Next
+        
+        For i = 0 To 7
+            Grid2.ColWidth(i) = Grid1.Width * 0.125
+        Next
+        
+        For i = 0 To 7
+            Grid3.ColWidth(i) = Grid1.Width * 0.125
+        Next
+        
+        'set the row height
+        Grid1.RowHeight(1) = 300
+        Grid1.RowHeight(2) = Grid1.Height - Grid1.RowHeight(0) - Grid1.RowHeight(1)
+        
+        Grid2.RowHeight(1) = 300
+        Grid2.RowHeight(2) = ((Grid2.Height - Grid2.RowHeight(0) - (Grid2.RowHeight(1)) * 2)) / 2
+        Grid2.RowHeight(3) = 300
+        Grid2.RowHeight(4) = Grid2.RowHeight(2) '0
+        
+        Grid3.RowHeight(1) = 300
+        Grid3.RowHeight(2) = (Grid3.Height - Grid3.RowHeight(0) - (Grid3.RowHeight(1)) * 2) / 2
+        Grid3.RowHeight(3) = 300
+        Grid3.RowHeight(4) = ((Grid3.Height - Grid3.RowHeight(0) - (Grid3.RowHeight(1)) * 2)) / 2
+        
+        'merge the rows
+        Grid1.Row = 0
+        Grid1.Col = 0
+        Grid1.CellFontSize = 10
+        For i = 0 To 7
+            Grid1.Col = i
+            Grid1.CellFontSize = 10
+            Grid1.Text = "Door - " & LiftType
+        Next i
+        Grid1.MergeRow(0) = True
+        Grid2.Row = 0
+        Grid2.Col = 0
+        Grid2.CellFontSize = 10
+        
+        For i = 0 To 7
+            Grid2.Col = i
+            Grid2.CellFontSize = 10
+            Grid2.Text = "Drum"
+        Next i
+        Grid2.MergeRow(0) = True
+        Grid3.Row = 0
+        Grid3.Col = 0
+        Grid3.CellFontSize = 10
+        
+        For i = 0 To 7
+            Grid3.Col = i
+            Grid3.CellFontSize = 10
+            Grid3.Text = "Spring"
+        Next i
+        Grid3.MergeRow(0) = True
+        
+        Grid1.TextMatrix(1, 0) = "Width"
+        Grid1.TextMatrix(1, 1) = "Height"
+        Grid1.TextMatrix(1, 2) = "Shaft Dia"
+        Grid1.TextMatrix(1, 3) = "Available Shaft"
+        Grid1.TextMatrix(1, 4) = "Coupler"
+        Grid1.TextMatrix(1, 5) = "Max High Lift"
+        Grid1.TextMatrix(1, 6) = "Radius"
+        Grid1.TextMatrix(1, 7) = "Total Weight"
+    
+        Grid2.TextMatrix(1, 0) = "Part No."
+        Grid2.TextMatrix(1, 1) = "Stamping"
+        Grid2.TextMatrix(1, 2) = "Description"
+        Grid2.TextMatrix(1, 3) = "Max Weight"
+        Grid2.TextMatrix(1, 4) = "Max Height"
+        Grid2.TextMatrix(1, 5) = "FMA/HMA"
+        Grid2.TextMatrix(1, 6) = "Circumference"
+        Grid2.TextMatrix(1, 7) = "Rate of Rise"
+        
+        Grid2.TextMatrix(3, 0) = "Total Torque" 'TTDD
+        Grid2.TextMatrix(3, 1) = "Open Torque" 'TTDU
+        Grid2.TextMatrix(3, 2) = "REVS of Drum"
+        Grid2.TextMatrix(3, 3) = "IPPT"
+        Grid2.TextMatrix(3, 4) = "Diameter"
+        Grid2.TextMatrix(3, 5) = "Cable Length"
+        Grid2.TextMatrix(3, 6) = "Price"
+        Grid2.TextMatrix(3, 7) = "Line Price"
+    
+        Grid3.TextMatrix(1, 0) = "Part No."
+        Grid3.TextMatrix(1, 1) = "Qty"
+        Grid3.TextMatrix(1, 2) = "Wire Size"
+        Grid3.TextMatrix(1, 3) = "Coil ID"
+        Grid3.TextMatrix(1, 4) = "Length"
+        Grid3.TextMatrix(1, 5) = "Turns"
+        Grid3.TextMatrix(1, 6) = "IPPT"
+        Grid3.TextMatrix(1, 7) = "Active Coil"
+    
+        Grid3.TextMatrix(3, 0) = "Dead Coil"
+        Grid3.TextMatrix(3, 1) = "Cycle Life"
+        Grid3.TextMatrix(3, 2) = "PVC Bushing"
+        Grid3.TextMatrix(3, 3) = "Wire Type"
+        Grid3.TextMatrix(3, 4) = "Shaft Space"
+        Grid3.TextMatrix(3, 5) = "Wound Length"
+        Grid3.TextMatrix(3, 6) = "Price"
+        Grid3.TextMatrix(3, 7) = "Line Price"
+        
+        For i = 1 To Grid1.Rows - 1
+            Grid1.Row = i
+            For a = 0 To Grid1.Cols - 1
+                Grid1.Col = a
+                Grid1.CellAlignment = flexAlignCenterCenter
+            Next a
+        Next i
+        
+        For i = 1 To Grid2.Rows - 1
+            Grid2.Row = i
+            For a = 0 To Grid2.Cols - 1
+                Grid2.Col = a
+                Grid2.CellAlignment = flexAlignCenterCenter
+            Next a
+        Next i
+    
+        For i = 1 To Grid3.Rows - 1
+            Grid3.Row = i
+            For a = 0 To Grid3.Cols - 1
+                Grid3.Col = a
+                Grid3.CellAlignment = flexAlignCenterCenter
+            Next a
+        Next i
+            
+        fraAction.Width = Grid3.Width
+        fraAction.Move Grid3.Left, Grid1.Height + Grid2.Height + Grid3.Height + Me.lblSolutionNo1.Height + 1000
+        cmdBack.Left = fraAction.Width - cmdAccept.Width - 100
+        Call Fill_GridsComplex
+
+    Else
+        Grid1.Cols = 8
+        Grid2.Cols = 8
+        Grid3.Cols = 8
+        Grid1.Rows = 3
+        Grid2.Rows = 3
+        Grid3.Rows = 5
+        
+        'set the grid height and width
+        Grid2.Height = Me.Height * 0.18
+        Grid1.Height = Me.Height * 0.18
+        Grid3.Height = Me.Height * 0.35
+        Grid1.Width = Me.Width - 400
+        Grid2.Width = Grid1.Width
+        Grid3.Width = Grid1.Width
+        
+        'position the grids
+        Grid1.Move (Me.Width - Grid1.Width) / 2, Me.Height * 0.02
+        Grid2.Move Grid1.Left, Grid1.Top + Grid1.Height + Me.Height * 0.02
+        Grid3.Move Grid1.Left, Grid2.Top + Grid2.Height + Me.Height * 0.02
+        cmdPrint.Height = cmdPrint.Height * 0.95
+        cmdPrevious.Height = cmdPrint.Height
+        cmdNext.Height = cmdPrint.Height
+        cmdBack.Height = cmdPrint.Height
+        cmdAccept.Height = cmdPrint.Height
+        cmdAddNotes.Height = cmdPrint.Height
+    
+        lblSolutionNo1.Move Grid1.Left, Grid3.Top + Grid3.Height + 200
+        lblSolutionNo2.Move Grid1.Left + lblSolutionNo1.Width + 100, lblSolutionNo1.Top
+        lblPrices.Move Grid3.Left + Grid3.Width - lblPrices.Width - 50, lblSolutionNo1.Top
+        
+        'set colour of the labels
+        lblPrices.BackColor = Me.BackColor
+        lblSolutionNo1.BackColor = Me.BackColor
+        lblSolutionNo2.BackColor = Me.BackColor
+        
+        Grid1.ForeColorFixed = &H80000012
+        Grid2.ForeColorFixed = &H80000012
+        Grid3.ForeColorFixed = &H80000012
+        Grid2.BackColorFixed = &HE4B7A9
+        Grid3.BackColorFixed = &HE4B7A9
+        
+        'set the column width
+        For i = 0 To 7
+            Grid1.ColWidth(i) = Grid1.Width * 0.125
+        Next
+        
+        For i = 0 To 7
+            Grid2.ColWidth(i) = Grid1.Width * 0.125
+        Next
+        
+        For i = 0 To 7
+            Grid3.ColWidth(i) = Grid1.Width * 0.125
+        Next
+        
+        'set the row height
+        Grid1.RowHeight(1) = 200
+        Grid1.RowHeight(2) = Grid1.Height - Grid1.RowHeight(0) - Grid1.RowHeight(1)
+        
+        Grid2.RowHeight(1) = 200
+        Grid2.RowHeight(2) = Grid2.Height - Grid2.RowHeight(0) - Grid2.RowHeight(1)
+    '    Grid2.RowHeight(3) = 200
+    '    Grid2.RowHeight(4) = Grid2.RowHeight(2) '0
+        
+        Grid3.RowHeight(1) = 200
+        Grid3.RowHeight(2) = (Grid3.Height - Grid3.RowHeight(0) - (Grid3.RowHeight(1)) * 2) / 2
+        Grid3.RowHeight(3) = 200
+        Grid3.RowHeight(4) = ((Grid3.Height - Grid3.RowHeight(0) - (Grid3.RowHeight(1)) * 2)) / 2
+        
+        'merge the rows
+        Grid1.Row = 0
+        Grid1.Col = 0
+        Grid1.CellFontSize = 10
+        For i = 0 To 7
+            Grid1.Col = i
+            Grid1.CellFontSize = 10
+            Grid1.Text = "Door - " & LiftType
+        Next i
+        Grid1.MergeRow(0) = True
+        Grid2.Row = 0
+        Grid2.Col = 0
+        Grid2.CellFontSize = 10
+        
+        For i = 0 To 7
+            Grid2.Col = i
+            Grid2.CellFontSize = 10
+            Grid2.Text = "Drum"
+        Next i
+        Grid2.MergeRow(0) = True
+        Grid3.Row = 0
+        Grid3.Col = 0
+        Grid3.CellFontSize = 10
+        
+        For i = 0 To 7
+            Grid3.Col = i
+            Grid3.CellFontSize = 10
+            Grid3.Text = "Spring"
+        Next i
+        Grid3.MergeRow(0) = True
+        
+        Grid1.TextMatrix(1, 0) = "Width"
+        Grid1.TextMatrix(1, 1) = "Height"
+        Grid1.TextMatrix(1, 2) = "Shaft Dia"
+        Grid1.TextMatrix(1, 3) = "Available Shaft"
+        Grid1.TextMatrix(1, 4) = "Coupler"
+        Grid1.TextMatrix(1, 5) = "Max High Lift"
+        Grid1.TextMatrix(1, 6) = "Radius"
+        Grid1.TextMatrix(1, 7) = "Total Weight"
+    
+        Grid2.TextMatrix(1, 0) = "Part No."
+        Grid2.TextMatrix(1, 1) = "Stamping"
+        Grid2.TextMatrix(1, 2) = "Description"
+        Grid2.TextMatrix(1, 3) = "Max Weight"
+        Grid2.TextMatrix(1, 4) = "Max Height"
+        Grid2.TextMatrix(1, 5) = "Maximum O. Dia"
+        Grid2.TextMatrix(1, 6) = "Cable Length"
+        Grid2.TextMatrix(1, 7) = "Line Price"
+        
+    '    Grid2.TextMatrix(3, 0) = "TTDD"
+    '    Grid2.TextMatrix(3, 1) = "TTDU"
+    '    Grid2.TextMatrix(3, 2) = "REVS of Drum"
+    '    Grid2.TextMatrix(3, 3) = "IPPT"
+    '    Grid2.TextMatrix(3, 4) = "Diameter"
+    '    Grid2.TextMatrix(3, 5) = "Cable Length"
+    '    Grid2.TextMatrix(3, 6) = "Price"
+    '    Grid2.TextMatrix(3, 7) = "Line Price"
+    
+        Grid3.TextMatrix(1, 0) = "Part No."
+        Grid3.TextMatrix(1, 1) = "Qty"
+        Grid3.TextMatrix(1, 2) = "Wire Size"
+        Grid3.TextMatrix(1, 3) = "Coil ID"
+        Grid3.TextMatrix(1, 4) = "Length"
+        Grid3.TextMatrix(1, 5) = "Turns"
+        Grid3.TextMatrix(1, 6) = "IPPT"
+        Grid3.TextMatrix(1, 7) = "Cycle Life"
+    
+        Grid3.TextMatrix(3, 0) = "PVC Bushing"
+        Grid3.TextMatrix(3, 1) = "Wire Type"
+        Grid3.TextMatrix(3, 2) = "Shaft Space"
+    '    Grid3.TextMatrix(3, 3) = "Wire Type"
+    '    Grid3.TextMatrix(3, 4) = "Shaft Space"
+        Grid3.TextMatrix(3, 5) = "Wound Length"
+    '    Grid3.TextMatrix(3, 6) = "Price"
+        Grid3.TextMatrix(3, 7) = "Line Price"
+        
+        For i = 1 To Grid1.Rows - 1
+            Grid1.Row = i
+            For a = 0 To Grid1.Cols - 1
+                Grid1.Col = a
+                Grid1.CellAlignment = flexAlignCenterCenter
+            Next a
+        Next i
+        
+        For i = 1 To Grid2.Rows - 1
+            Grid2.Row = i
+            For a = 0 To Grid2.Cols - 1
+                Grid2.Col = a
+                Grid2.CellAlignment = flexAlignCenterCenter
+            Next a
+        Next i
+    
+        For i = 1 To Grid3.Rows - 1
+            Grid3.Row = i
+            For a = 0 To Grid3.Cols - 1
+                Grid3.Col = a
+                Grid3.CellAlignment = flexAlignCenterCenter
+            Next a
+        Next i
+            
+        fraAction.Width = Grid3.Width
+        fraAction.Move Grid3.Left, Grid1.Height + Grid2.Height + Grid3.Height + Me.lblSolutionNo1.Height + 850
+        cmdBack.Left = fraAction.Width - cmdAccept.Width - 100
+        Call Fill_Grids
+    
+    End If
+        
+        'previous idea
+'        Dim c As Integer
+'        For i = 0 To UBound(varDoorData.arrSpringSolution())
+'            If varDoorData.arrSpringSolution(i).Selected = True Then Exit For
+'        Next
+'        a = 0
+'        mintInd = i
+'        If varDoorData.arrSpringSolution(mintInd).Mismatched = True Then
+'            If IsModeComplex Then
+'                Call LoadMMSpringComplex
+'            Else
+'                Call LoadMMSpring
+'            End If
+'        Else
+'            If IsModeComplex Then
+'                Call LoadSpringComplex
+'            Else
+'                Call LoadSpring
+'            End If
+'        End If
+'        For i = mintInd To 0 Step -1
+'            If varDoorData.arrSpringSolution(i).Selected = True Then a = a + 1
+'        Next
+'        For i = 0 To UBound(varDoorData.arrSpringSolution())
+'            If varDoorData.arrSpringSolution(i).Selected = True Then c = c + 1
+'        Next
+'        Me.lblSolutionNo2.Caption = a & " of " & c
+'        cmdPrevious.Enabled = False
+'        cmdNext.Enabled = IIf(c > 1, True, False)
+    'new idea
+    
+    If varDoorData.arrSelectedSolution(mintInd).blnMismatched = True Then
+        If IsModeComplex Then
+            Call LoadMMSpringComplex
+        Else
+            Call LoadMMSpring
+        End If
+    Else
+        If IsModeComplex Then
+            Call LoadSpringComplex
+        Else
+            Call LoadSpring
+        End If
+    End If
+    Me.lblSolutionNo2.Caption = "1 of " & UBound(varDoorData.arrSelectedSolution) + 1
+
+    cmdPrevious.Enabled = False
+    cmdNext.Enabled = IIf(UBound(varDoorData.arrSelectedSolution) + 1 > 1, True, False)
+    '''''''''''''''''''''
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+    LoadHelpText Me
+    MousePos1.Init Me
+    mblnInFocus = True
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+Public Sub Fill_GridsComplex()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".FillGrids()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    ''grid1''
+    
+    'DrWidth
+    If MeasU = 1 Then
+        Grid1.TextMatrix(2, 0) = GetImpString(DrWidth)
+    Else
+        aCon.Inch = DrWidth
+        aCon.mmcalc
+        Grid1.TextMatrix(2, 0) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'DrHgt
+    If MeasU = 1 Then
+        Grid1.TextMatrix(2, 1) = GetImpString(DrHgt)
+    Else
+        aCon.Inch = DrHgt
+        aCon.mmcalc
+        Grid1.TextMatrix(2, 1) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'Shaft diameter
+    If MeasU = 1 Then
+        Grid1.TextMatrix(2, 2) = varDoorData.ShaftDia & Chr(34)
+    Else
+        aCon.Inch = varDoorData.ShaftDia
+        aCon.mmcalc
+        Grid1.TextMatrix(2, 2) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'Available shaft space
+    If MeasU = 1 Then
+        Grid1.TextMatrix(2, 3) = GetAvailableShaft(GetDrumWidth(varDoorData.arrSelectedSolution(mintInd).strDrumStamping)) & Chr(34)
+    Else
+        aCon.Inch = GetAvailableShaft(GetDrumWidth(varDoorData.arrSelectedSolution(mintInd).strDrumStamping))
+        aCon.mmcalc
+        Grid1.TextMatrix(2, 3) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'Coupler
+    
+    Grid1.TextMatrix(2, 4) = IIf(CouplNum > 0, "Yes", "No")
+    
+    'MaxHiLift
+    If varDoorData.arrSelectedSolution(mintInd).sngMaxHiLift > 0 Then
+        If MeasU = 1 Then
+            Grid1.TextMatrix(2, 5) = Format(varDoorData.arrSelectedSolution(mintInd).sngMaxHiLift, "Fixed")
+        Else
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).sngMaxHiLift
+            aCon.mmcalc
+            Grid1.TextMatrix(2, 5) = Round(aCon.mm, 0)
+        End If
+    Else
+        Grid1.TextMatrix(2, 5) = "N/A"
+    End If
+
+    'HRadius
+    If HRadius > 0 Then
+        If MeasU = 1 Then
+            Grid1.TextMatrix(2, 6) = Format(HRadius, "Fixed")
+        Else
+            aCon.Inch = HRadius
+            aCon.mmcalc
+            Grid1.TextMatrix(2, 6) = Round(aCon.mm, 0)
+        End If
+    Else
+        Grid1.TextMatrix(2, 6) = "N/A"
+    End If
+    
+    'DrWeight
+    If MeasU = 1 Then
+        Grid1.TextMatrix(2, 7) = Format(DrWgt, "Fixed") & " lb"
+    Else
+        aCon.LB = DrWgt
+        aCon.KGcalc
+        Grid1.TextMatrix(2, 7) = Format(aCon.KG, "Fixed") & " kg"
+    End If
+    
+   ''grid2''
+    'PN
+    Grid2.TextMatrix(2, 0) = varDoorData.arrSelectedSolution(mintInd).strDrumPN & " LH" & Chr(13) & _
+        Swap(varDoorData.arrSelectedSolution(mintInd).strDrumPN, True) & " RH"
+    
+    'stamping
+    Grid2.TextMatrix(2, 1) = varDoorData.arrSelectedSolution(mintInd).strDrumStamping
+    
+    'description
+    Grid2.TextMatrix(2, 2) = varDoorData.arrSelectedSolution(mintInd).strDrumDescr
+    
+    'max weight
+    If MeasU = 1 Then
+        Grid2.TextMatrix(2, 3) = Format(varDoorData.arrSelectedSolution(mintInd).sngMaxWeight, "Fixed") & " lb"
+    Else
+        aCon.LB = varDoorData.arrSelectedSolution(mintInd).sngMaxWeight
+        aCon.KGcalc
+        Grid2.TextMatrix(2, 3) = Format(aCon.KG, "Fixed") & " kg"
+    End If
+    
+    'max height
+    If MeasU = 1 Then
+        Grid2.TextMatrix(2, 4) = varDoorData.arrSelectedSolution(mintInd).sngMaxHgt & Chr(34)
+    Else
+        aCon.Inch = varDoorData.arrSelectedSolution(mintInd).sngMaxHgt
+        aCon.mmcalc
+        Grid2.TextMatrix(2, 4) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'HMA/FMA
+    Grid2.TextMatrix(2, 5) = CStr(Format(varDoorData.arrSelectedSolution(mintInd).sngFMA, "Fixed")) & " / " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).sngHMA, "Fixed"))
+    
+    'Circ
+    Dim Circf As Single
+    Circf = varDoorData.arrSelectedSolution(mintInd).sngCirc + (GetCableDia(varDoorData.arrSelectedSolution(mintInd).strDrumStamping) * 3.14159265358979)
+    Grid2.TextMatrix(2, 6) = Format(Circf, "Fixed")
+    
+    'RoR
+    Grid2.TextMatrix(2, 7) = varDoorData.arrSelectedSolution(mintInd).sngRoR
+    
+    'ttdd
+    Grid2.TextMatrix(4, 0) = Format(varDoorData.arrSelectedSolution(mintInd).sngTTDD, "Fixed")
+    
+    'ttdu
+    Grid2.TextMatrix(4, 1) = Format(varDoorData.arrSelectedSolution(mintInd).sngTTDU, "Fixed")
+    
+    'revs
+    Grid2.TextMatrix(4, 2) = Format(varDoorData.arrSelectedSolution(mintInd).sngREVS, "Fixed")
+    
+    'ippt
+    Grid2.TextMatrix(4, 3) = Format(varDoorData.arrSelectedSolution(mintInd).sngIPPT, "Fixed")
+    
+    'dia
+    If MeasU = 1 Then
+        Grid2.TextMatrix(4, 4) = varDoorData.arrSelectedSolution(mintInd).sngDrumDia & Chr(34)
+    Else
+        aCon.Inch = varDoorData.arrSelectedSolution(mintInd).sngDrumDia
+        aCon.mmcalc
+        Grid2.TextMatrix(4, 4) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'cable length
+    If MeasU = 1 Then
+        Grid2.TextMatrix(4, 5) = "2 x " & GetImpString(Get_Cable_Length(varDoorData.arrSelectedSolution(mintInd).strDrumPN, 1))
+    Else
+        aCon.Inch = Get_Cable_Length(varDoorData.arrSelectedSolution(mintInd).strDrumPN, 1)
+        aCon.mmcalc
+        Grid2.TextMatrix(4, 5) = "2 x " & Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'Price
+    Grid2.TextMatrix(4, 6) = Format(varDoorData.arrSelectedSolution(mintInd).sngDrumPrice, "Fixed")
+    
+    'ext price
+    Grid2.TextMatrix(4, 7) = Format(varDoorData.arrSelectedSolution(mintInd).sngDrumPrice * 2, "Fixed")
+    
+    
+Exit Sub
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub Fill_Grids()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".FillGrids()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    ''grid1''
+    
+    'DrWidth
+    If MeasU = 1 Then
+        Grid1.TextMatrix(2, 0) = GetImpString(DrWidth)
+    Else
+        aCon.Inch = DrWidth
+        aCon.mmcalc
+        Grid1.TextMatrix(2, 0) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'DrHgt
+    If MeasU = 1 Then
+        Grid1.TextMatrix(2, 1) = GetImpString(DrHgt)
+    Else
+        aCon.Inch = DrHgt
+        aCon.mmcalc
+        Grid1.TextMatrix(2, 1) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'Shaft diameter
+    If MeasU = 1 Then
+        Grid1.TextMatrix(2, 2) = varDoorData.ShaftDia & Chr(34)
+    Else
+        aCon.Inch = varDoorData.ShaftDia
+        aCon.mmcalc
+        Grid1.TextMatrix(2, 2) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'Available shaft space
+    If MeasU = 1 Then
+        Grid1.TextMatrix(2, 3) = GetAvailableShaft(GetDrumWidth(varDoorData.arrSelectedSolution(mintInd).strDrumStamping)) & Chr(34)
+    Else
+        aCon.Inch = GetAvailableShaft(GetDrumWidth(varDoorData.arrSelectedSolution(mintInd).strDrumStamping))
+        aCon.mmcalc
+        Grid1.TextMatrix(2, 3) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'Coupler
+    
+    Grid1.TextMatrix(2, 4) = IIf(CouplNum > 0, "Yes", "No")
+    
+    'MaxHiLift
+    If varDoorData.arrSelectedSolution(mintInd).sngMaxHiLift > 0 Then
+        If MeasU = 1 Then
+            Grid1.TextMatrix(2, 5) = Format(varDoorData.arrSelectedSolution(mintInd).sngMaxHiLift, "Fixed")
+        Else
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).sngMaxHiLift
+            aCon.mmcalc
+            Grid1.TextMatrix(2, 5) = Round(aCon.mm, 0)
+        End If
+    Else
+        Grid1.TextMatrix(2, 5) = "N/A"
+    End If
+
+    'HRadius
+    If HRadius > 0 Then
+        If MeasU = 1 Then
+            Grid1.TextMatrix(2, 6) = Format(HRadius, "Fixed")
+        Else
+            aCon.Inch = HRadius
+            aCon.mmcalc
+            Grid1.TextMatrix(2, 6) = Round(aCon.mm, 0)
+        End If
+    Else
+        Grid1.TextMatrix(2, 6) = "N/A"
+    End If
+    
+    'DrWeight
+    If MeasU = 1 Then
+        Grid1.TextMatrix(2, 7) = Format(DrWgt, "Fixed") & " lb"
+    Else
+        aCon.LB = DrWgt
+        aCon.KGcalc
+        Grid1.TextMatrix(2, 7) = Format(aCon.KG, "Fixed") & " kg"
+    End If
+    
+   ''grid2''
+    'PN
+    Grid2.TextMatrix(2, 0) = varDoorData.arrSelectedSolution(mintInd).strDrumPN & " LH" & Chr(13) & _
+        Swap(varDoorData.arrSelectedSolution(mintInd).strDrumPN, True) & " RH"
+    
+    'stamping
+    Grid2.TextMatrix(2, 1) = varDoorData.arrSelectedSolution(mintInd).strDrumStamping
+    
+    'description
+    Grid2.TextMatrix(2, 2) = varDoorData.arrSelectedSolution(mintInd).strDrumDescr
+    
+    'max weight
+    If MeasU = 1 Then
+        Grid2.TextMatrix(2, 3) = Format(varDoorData.arrSelectedSolution(mintInd).sngMaxWeight, "Fixed") & " lb"
+    Else
+        aCon.LB = varDoorData.arrSelectedSolution(mintInd).sngMaxWeight
+        aCon.KGcalc
+        Grid2.TextMatrix(2, 3) = Format(aCon.KG, "Fixed") & " kg"
+    End If
+    
+    'max height
+    If MeasU = 1 Then
+        Grid2.TextMatrix(2, 4) = varDoorData.arrSelectedSolution(mintInd).sngMaxHgt & Chr(34)
+    Else
+        aCon.Inch = varDoorData.arrSelectedSolution(mintInd).sngMaxHgt
+        aCon.mmcalc
+        Grid2.TextMatrix(2, 4) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+'    'HMA/FMA
+'    Grid2.TextMatrix(2, 5) = CStr(Format(varDoorData.aDrum.FMA, "Fixed")) & " / " & CStr(Format(varDoorData.aDrum.HMA, "Fixed"))
+'
+'    'Circ
+'    Grid2.TextMatrix(2, 6) = Format(varDoorData.aDrum.Circ, "Fixed")
+'
+'    'RoR
+'    Grid2.TextMatrix(2, 7) = varDoorData.aDrum.RoR
+'
+'    'ttdd
+'    Grid2.TextMatrix(4, 0) = Format(varDoorData.aDrum.TTDD, "Fixed")
+'
+'    'ttdu
+'    Grid2.TextMatrix(4, 1) = Format(varDoorData.aDrum.TTDU, "Fixed")
+'
+'    'revs
+'    Grid2.TextMatrix(4, 2) = Format(varDoorData.aDrum.REVS, "Fixed")
+'
+'    'ippt
+'    Grid2.TextMatrix(4, 3) = Format(varDoorData.aDrum.IPPT, "Fixed")
+    
+    'dia
+    If MeasU = 1 Then
+        Grid2.TextMatrix(2, 5) = varDoorData.arrSelectedSolution(mintInd).sngDrumDia & Chr(34)
+    Else
+        aCon.Inch = varDoorData.arrSelectedSolution(mintInd).sngDrumDia
+        aCon.mmcalc
+        Grid2.TextMatrix(2, 5) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'cable length
+    If MeasU = 1 Then
+        Grid2.TextMatrix(2, 6) = "2 x " & GetImpString(Get_Cable_Length(varDoorData.arrSelectedSolution(mintInd).strDrumPN, 1))
+    Else
+        aCon.Inch = Get_Cable_Length(varDoorData.arrSelectedSolution(mintInd).strDrumPN, 1)
+        aCon.mmcalc
+        Grid2.TextMatrix(2, 6) = "2 x " & Round(aCon.mm, 0) & " mm"
+    End If
+    
+'    'Price
+'    Grid2.TextMatrix(4, 6) = Format(varDoorData.aDrum.Price, "Fixed")
+'
+    'ext price
+    Grid2.TextMatrix(2, 7) = Format(varDoorData.arrSelectedSolution(mintInd).sngDrumPrice * 2, "Fixed")
+    
+    
+Exit Sub
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub AcceptSpringSolution()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".AcceptSpringSolution()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim Q As Integer, Qb As Integer, i As Integer
+    Dim MetSprLen1 As Single
+    Dim MetSprLen2 As Single
+    aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length
+    aCon.mmcalc
+    MetSprLen1 = Round(aCon.mm, 0)
+    aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length
+    aCon.mmcalc
+    MetSprLen2 = Round(aCon.mm, 0)
+    
+    Call FillSummaryGrid(varDoorData.aDrum.strPN, 1, "Torsion", GetSubCategory(varDoorData.aDrum.strPN), 0)
+    Call FillSummaryGrid(Swap(varDoorData.aDrum.strPN, True), 1, "Torsion", GetSubCategory(Swap(varDoorData.aDrum.strPN, True)), 0)
+    
+    If varDoorData.arrSelectedSolution(mintInd).blnMismatched = False Then
+        Q = GetSprQtyPerSide(mintInd, True) 'left wound springs
+        
+        'auxillary shaft
+        If varDoorData.AuxillaryShaft = True Then Q = Q * 2
+        
+        If Q > 0 Then
+            If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square" Then
+                Call FillSummaryGrid(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, Q * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Torsion", GetSubCategory(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN), Q * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & Q & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "##0.0")) & " coils")
+            Else
+                If MeasU = 1 Then
+                    Call FillSummaryGrid(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, Q * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Torsion", GetSubCategory(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN), Q * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & Q & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "##0.0")) & Chr(34))
+                Else
+                    Call FillSummaryGrid(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, Q * MetSprLen1, "Torsion", GetSubCategory(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN), Q * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & Q & ") to " & CStr(Round(MetSprLen1, 0)) & " mm")
+                End If
+            End If
+        End If
+        Q = GetSprQtyPerSide(mintInd, False) 'right wound springs
+        
+        'auxillary shaft
+        If varDoorData.AuxillaryShaft = True Then Q = Q * 2
+        
+        If Q > 0 Then
+            If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square" Then
+                Call FillSummaryGrid(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True), Q * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Torsion", GetSubCategory(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True)), Q * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & Q & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "##0.0")) & " coils")
+            Else
+                If MeasU = 1 Then
+                    Call FillSummaryGrid(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True), Q * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Torsion", GetSubCategory(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True)), Q * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & Q & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "##0.0")) & Chr(34))
+                Else
+                    Call FillSummaryGrid(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True), Q * MetSprLen1, "Torsion", GetSubCategory(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True)), Q * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & Q & ") to " & CStr(Round(MetSprLen1, 0)) & " mm")
+                End If
+            End If
+        End If
+    Else
+        Dim SL As Integer, SR As Integer, BL As Integer, br As Integer
+        Q = GetSelectedSprQtyPerGauge(mintInd, varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize) 'small springs
+                       
+        For i = 0 To Q - 1
+            If varDoorData.arrSelectedSolution(mintInd).arrSpring(i).Left = True Then
+                SL = SL + 1
+            Else
+                SR = SR + 1
+            End If
+        Next
+        
+         'auxillary shaft - small wiresize
+         If varDoorData.AuxillaryShaft = True Then
+            SL = SL * 2
+            SR = SR * 2
+         End If
+        
+        If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square" Then
+            If SL > 0 Then Call FillSummaryGrid(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, SL * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Torsion", "Spring", SL * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & SL & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "##0.0")) & " coils")
+            If SR > 0 Then Call FillSummaryGrid(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True), SR * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Torsion", "Spring", SR * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & SR & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "##0.0")) & " coils")
+        Else
+            If MeasU = 1 Then
+                If SL > 0 Then Call FillSummaryGrid(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, SL * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Torsion", "Spring", SL * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & SL & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "##0.0")) & Chr(34))
+                If SR > 0 Then Call FillSummaryGrid(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True), SR * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Torsion", "Spring", SR * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & SR & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "##0.0")) & Chr(34))
+            Else
+                If SL > 0 Then Call FillSummaryGrid(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, SL * MetSprLen1, "Torsion", "Spring", SL * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & SL & ") to " & CStr(Round(MetSprLen1, 0)) & " mm")
+                If SR > 0 Then Call FillSummaryGrid(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True), SR * MetSprLen1, "Torsion", "Spring", SR * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Cut (" & SR & ") to " & CStr(Round(MetSprLen1, 0)) & " mm")
+            End If
+        End If
+        
+        Qb = GetSelectedSprQtyPerGauge(mintInd, varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).WireSize)
+        
+        For i = Q To UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())
+            If varDoorData.arrSelectedSolution(mintInd).arrSpring(i).Left = True Then
+                BL = BL + 1
+            Else
+                br = br + 1
+            End If
+        Next
+        
+         'auxillary shaft - big wiresize
+         If varDoorData.AuxillaryShaft = True Then
+            BL = BL * 2
+            br = br * 2
+         End If
+         
+        If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square" Then
+            If BL > 0 Then Call FillSummaryGrid(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).strPN, BL * varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Torsion", "Spring", BL * varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Cut (" & BL & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "##0.0")) & " coils")
+            If br > 0 Then Call FillSummaryGrid(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).strPN, True), br * varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Torsion", "Spring", br * varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Cut (" & br & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "##0.0")) & " coils")
+        Else
+            If MeasU = 1 Then
+                If BL > 0 Then Call FillSummaryGrid(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).strPN, BL * varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Torsion", "Spring", BL * varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Cut (" & BL & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "##0.0")) & Chr(34))
+                If br > 0 Then Call FillSummaryGrid(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).strPN, True), br * varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Torsion", "Spring", br * varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Cut (" & br & ") to " & CStr(Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "##0.0")) & Chr(34))
+            Else
+                If BL > 0 Then Call FillSummaryGrid(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).strPN, BL * MetSprLen2, "Torsion", "Spring", SL * varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Cut (" & BL & ") to " & CStr(Round(MetSprLen2, 0)) & " mm")
+                If br > 0 Then Call FillSummaryGrid(Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).strPN, True), br * MetSprLen2, "Torsion", "Spring", SR * varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Cut (" & br & ") to " & CStr(Round(MetSprLen2, 0)) & " mm")
+            End If
+        End If
+    End If
+    
+    SpringIndex = mintInd
+    Dim CablePN As String, CableLen As Single, CableLenH As Single, CableQty As Integer, ltempFMA_DB As Single, ltempRoR_DB As Single, sqfactor As Single
+    Dim MetLen As Single
+    
+    CablePN = Get_Cable_Length(varDoorData.aDrum.strPN, 0)
+    
+    Dim ReCalCableDia As Single
+    Dim ltempHMA_DB As Single
+    Dim lobjDrumsRS As ADODB.Recordset
+    Set lobjDrumsRS = New ADODB.Recordset
+    lobjDrumsRS.Open "Drums", CnnBTMS, adOpenKeyset, adLockOptimistic
+    
+    lobjDrumsRS.MoveFirst
+    Do Until lobjDrumsRS.EOF = True
+        If varDoorData.aDrum.strPN = lobjDrumsRS.Fields("Part N").Value Then   'drum part number
+            ltempHMA_DB = lobjDrumsRS.Fields("HMArm").Value
+            ltempFMA_DB = lobjDrumsRS.Fields("FMArm").Value
+            ltempRoR_DB = lobjDrumsRS.Fields("RoRise").Value
+            Exit Do
+        End If
+        lobjDrumsRS.MoveNext
+    Loop
+    lobjDrumsRS.Close
+    Set lobjDrumsRS = Nothing
+    
+
+    If LiftType = "Standard Lift" Then
+        ReCalCableDia = (varDoorData.aDrum.HMA - ltempHMA_DB) * 2
+    ElseIf LiftType = "High Lift" Then
+        ReCalCableDia = (Sqr(varDoorData.aDrum.HMA ^ 2 - (ltempRoR_DB * HILIFT) / 3.14159265358979) - ltempFMA_DB) * 2
+    ElseIf LiftType = "Vertical Lift" Or LiftType = "Low Headroom Vertical Lift" Then
+         ReCalCableDia = (Sqr(varDoorData.aDrum.HMA ^ 2 - (ltempRoR_DB * DrHgt) / 3.14159265358979) - ltempFMA_DB) * 2
+    End If
+    If ReCalCableDia = 0.125 Or Round(ReCalCableDia, 5) = 0.125 Then
+        CablePN = "133-021"
+    ElseIf ReCalCableDia = 0.1875 Or Round(ReCalCableDia, 5) = 0.1875 Then
+        CablePN = "133-061"
+    ElseIf ReCalCableDia = 0.25 Or Round(ReCalCableDia, 5) = 0.25 Then
+        CablePN = "133-081"
+    End If
+    
+    CableLenH = Get_Cable_Length(varDoorData.aDrum.strPN, 1) 'length per side
+    CableLen = (CableLenH + 6) * 2 'total length required for the door
+    ClearConObj
+    aCon.Inch = CableLen
+    aCon.mmcalc
+    MetLen = aCon.mm
+    If CablePN <> "" Then
+        If MeasU = 1 Then
+            If varDoorData.CenterPickup = True Then
+                Call FillSummaryGrid(CablePN, CableLen, "Torsion", GetSubCategory(CablePN), CableLen, "Make (4) " & GetImpString(CableLenH)) ' & ", Cut (2) " & GetImpString(CableLen / 2))
+            Else
+                Call FillSummaryGrid(CablePN, CableLen, "Torsion", GetSubCategory(CablePN), CableLen, "Make (2) " & GetImpString(CableLenH)) ' & ", Cut (2) " & GetImpString(CableLen / 2))
+            End If
+
+        Else
+            ClearConObj
+            aCon.Inch = CableLenH
+            aCon.mmcalc
+            
+            If varDoorData.CenterPickup = True Then
+                Call FillSummaryGrid(CablePN, MetLen, "Torsion", GetSubCategory(CablePN), CableLen, "Make (4) " & Round(aCon.mm, 0) & " mm") ', Cut (2) " & Format(MetLen / 2, "Fixed"))
+            Else
+                Call FillSummaryGrid(CablePN, MetLen, "Torsion", GetSubCategory(CablePN), CableLen, "Make (2) " & Round(aCon.mm, 0) & " mm") ', Cut (2) " & Format(MetLen / 2, "Fixed"))
+            End If
+        End If
+    End If
+    
+    Dim P1 As String, P2 As String
+    If CablePN = "133-021" Then 'pick sleeves
+        If varDoorData.Track.strMountType = "EU ADCA" And varDoorData.gblnCableFailure = True Then
+        'do not pick oval sleeves but do pick stop sleeves
+            P1 = "441-802"
+        Else
+            P1 = "441-807"
+            P2 = "441-802"
+        End If
+    ElseIf CablePN = "133-061" Then
+        If varDoorData.Track.strMountType = "EU ADCA" And varDoorData.gblnCableFailure = True Then
+        'do not pick oval sleeves but do pick stop sleeves
+            P1 = "441-801"
+        Else
+            P1 = "441-806"
+            P2 = "441-801"
+        End If
+    Else
+        If varDoorData.Track.strMountType = "EU ADCA" And varDoorData.gblnCableFailure = True Then
+        'do not pick oval sleeves but do pick stop sleeves
+            P1 = "441-804"
+        Else
+            P1 = "441-805"
+            P2 = "441-804"
+        End If
+    End If
+    
+   'If P1 <> "" Then Call FillSummaryGrid(P1, 2, "Torsion", GetSubCategory(P1), 0) commented after the auxiliary shaft & center pickup added into the program
+    
+    If P1 <> "" Then
+        If (P1 = "441-801" Or P1 = "441-802" Or P1 = "441-804") And varDoorData.CenterPickup = True And CablePN = "133-081" Then
+            Call FillSummaryGrid(P1, 4, "Torsion", GetSubCategory(P1), 0)
+        Else
+            Call FillSummaryGrid(P1, 2, "Torsion", GetSubCategory(P1), 0)
+        End If
+        
+    End If
+    
+    If P2 <> "" Then
+        If LiftType = "Standard Lift" Or LiftType = "Low Headroom Front Mount" Or _
+            LiftType = "Low Headroom Rear Mount" Then
+            Call FillSummaryGrid(P2, 2, "Torsion", GetSubCategory(P2), 0)
+        Else
+            Call FillSummaryGrid(P2, 4, "Torsion", GetSubCategory(P2), 0)
+        End If
+    End If
+    
+    
+    'auxiliary shaft and center pickup true - center pickup parts & cable Clamp parts
+    If varDoorData.CenterPickup = True Then
+    
+        If Left(DrType, 4) = "A175" Or DrType = "T175A" Or DrType = "T175-20" Or DrType = "T175 Multi-Rib" Or DrType = "T45" Or DrType = "T175" Then
+           Call FillSummaryGrid("7-3313", 2, "Torsion", GetSubCategory("7-3313"), 0)
+        
+        ElseIf Left(DrType, 3) = "ADV" Or DrType = "T200A" Or DrType = "T200A Multi-Rib" Or DrType = "T200" Then
+            Call FillSummaryGrid("7-3314", 2, "Torsion", GetSubCategory("7-3313"), 0)
+        End If
+        
+    End If
+    
+    'auxiliary shaft and center pickup true - cable Clamp parts
+     If varDoorData.CenterPickup = True Then
+        If CablePN = "133-081" Then Call FillSummaryGrid("441-103", 4, "Torsion", GetSubCategory("441-103"), 0)
+     End If
+    
+
+''''''''''Change in .NET''''''''''''''''
+'    If varDoorData.gblnSpringFailure = False Then Call SelectSpringFastenerPkg
+
+''''''''''END Change in .NET
+    mblnSelectionCommit = True
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Function GetSprQtyBySideAndGauge(ByVal Ind As Integer, ByVal Left As Boolean, Small As Boolean) As Integer
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetSmLeft()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim Ws As Single
+    Dim i As Integer, cnt As Integer
+    Ws = IIf(Small = True, varDoorData.arrSpringSolution(Ind).arrSpring(0).WireSize, varDoorData.arrSpringSolution(Ind).arrSpring(UBound(varDoorData.arrSpringSolution(Ind).arrSpring())).WireSize)
+    
+    For i = 0 To UBound(varDoorData.arrSpringSolution(Ind).arrSpring())
+        If varDoorData.arrSpringSolution(Ind).arrSpring(i).WireSize = Ws And varDoorData.arrSpringSolution(Ind).arrSpring(i).Left = Left Then
+            cnt = cnt + 1
+        End If
+    Next
+    GetSprQtyBySideAndGauge = cnt
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+Public Function GetSprQtyBySideAndGaugeTemp(ByVal Ind As Integer, ByVal Left As Boolean, Small As Boolean) As Integer
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetSmLeft()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim Ws As Single
+    Dim i As Integer, cnt As Integer
+    Ws = IIf(Small = True, varDoorData.arrSelectedSolution(Ind).arrSpring(0).WireSize, varDoorData.arrSelectedSolution(Ind).arrSpring(UBound(varDoorData.arrSelectedSolution(Ind).arrSpring())).WireSize)
+    
+    For i = 0 To UBound(varDoorData.arrSelectedSolution(Ind).arrSpring())
+        If varDoorData.arrSelectedSolution(Ind).arrSpring(i).WireSize = Ws And varDoorData.arrSelectedSolution(Ind).arrSpring(i).Left = Left Then
+            cnt = cnt + 1
+        End If
+    Next
+    GetSprQtyBySideAndGaugeTemp = cnt
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Sub LoadSpring()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadSpring()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim strTemp As String
+    Dim qtyL As Integer
+    Dim qtyR As Integer
+    
+    Dim i As Integer
+    Dim Q As Integer
+    For i = 0 To UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())
+        If varDoorData.arrSelectedSolution(mintInd).arrSpring(i).Left = True Then
+            Q = Q + 1
+        End If
+    Next
+
+    qtyL = Q
+    Q = 0
+    For i = 0 To UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())
+        If varDoorData.arrSelectedSolution(mintInd).arrSpring(i).Left = False Then
+            Q = Q + 1
+        End If
+    Next
+    qtyR = Q
+    
+    'PN
+    strTemp = IIf(qtyL = 0, "", varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN & " LH")
+    strTemp = strTemp & IIf(qtyR = 0, "", Chr(13) & Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True) & " RH")
+    Grid3.TextMatrix(2, 0) = strTemp
+    
+    'Qty
+    strTemp = IIf(qtyL = 0, "", qtyL)
+    strTemp = strTemp & IIf(qtyR = 0, "", Chr(13) & qtyR)
+    Grid3.TextMatrix(2, 1) = strTemp
+    
+    'Wire Size
+    Grid3.TextMatrix(2, 2) = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize
+    
+    'CoilID
+    Grid3.TextMatrix(2, 3) = varDoorData.arrSelectedSolution(mintInd).sngSpringCoilID & Chr(34)
+    
+    'Length
+    If MeasU = 1 Then
+        Grid3.TextMatrix(2, 4) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Fixed") & IIf(varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square", " c", Chr(34))
+    Else
+        If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square" Then
+            Grid3.TextMatrix(2, 4) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Fixed") & " c"
+        Else
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length
+            aCon.mmcalc
+            Grid3.TextMatrix(2, 4) = Round(aCon.mm, 0) & " mm"
+        End If
+    End If
+    
+    'Winds
+    Grid3.TextMatrix(2, 5) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Turns, "Fixed") 'Grid3.TextMatrix(2, 5) = Format(Winds, "Fixed")
+    
+    'IPPT
+    Grid3.TextMatrix(2, 6) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).IPPT, "Fixed")
+    
+'    'Active Coil
+'    Grid3.TextMatrix(2, 7) = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC
+'
+'    'Dead Coil
+'    Grid3.TextMatrix(4, 0) = varDoorData.arrSelectedSolution(mintInd).sngspringDC
+    
+    'Cycle Life
+    Grid3.TextMatrix(2, 7) = Format(varDoorData.arrSelectedSolution(mintInd).sngSpringCL, "Fixed") & " M"
+    
+    'PVC
+    If varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC > 0 Then
+        If MeasU = 1 Then
+            Grid3.TextMatrix(4, 0) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC, "Fixed") & Chr(34)
+        Else
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC
+            aCon.mmcalc
+            Grid3.TextMatrix(4, 0) = Round(aCon.mm, 0) & " mm"
+        End If
+    Else
+        Grid3.TextMatrix(4, 0) = "N/A"
+    End If
+    
+    'Wire Type
+    Grid3.TextMatrix(4, 1) = varDoorData.arrSelectedSolution(mintInd).strSpringWireType
+    
+    'Shaft Space
+    Dim ShaftSpc As Single
+    If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Round" Then
+         ShaftSpc = ((((varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC + varDoorData.arrSelectedSolution(mintInd).sngSpringDC + Winds) * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize) + 6)) * (UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring()) + 1)
+    Else
+        ShaftSpc = ((((varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC + varDoorData.arrSelectedSolution(mintInd).sngSpringDC + Winds) * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize * (GetSquareFactor(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize, varDoorData.arrSelectedSolution(mintInd).sngSpringCoilID))) + 6)) * (UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring()) + 1)
+    End If
+    If MeasU = 1 Then
+        Grid3.TextMatrix(4, 2) = Format(IIf(varDoorData.ShaftTube = False, ShaftSpc + 3, ShaftSpc), "Fixed") & Chr(34)
+    Else
+        aCon.Inch = IIf(varDoorData.ShaftTube = False, ShaftSpc + 3, ShaftSpc)
+        aCon.mmcalc
+        Grid3.TextMatrix(4, 2) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'Wound Length
+    If MeasU = 1 Then
+        Grid3.TextMatrix(4, 5) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WoundSpringLength, "Fixed") & Chr(34)
+    Else
+        Call ClearConObj
+        aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WoundSpringLength
+        aCon.mmcalc
+        Grid3.TextMatrix(4, 5) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+'    'price
+'    Grid3.TextMatrix(4, 6) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Price, "Fixed")
+    
+    'line price
+    Grid3.TextMatrix(4, 7) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Price * (UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring()) + 1), "Fixed")
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub LoadSpringComplex()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadSpringComplex()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim strTemp As String
+    Dim qtyL As Integer
+    Dim qtyR As Integer
+    Dim i As Integer
+    Dim Q As Integer
+    For i = 0 To UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())
+        If varDoorData.arrSelectedSolution(mintInd).arrSpring(i).Left = True Then
+            Q = Q + 1
+        End If
+    Next
+
+    qtyL = Q
+    Q = 0
+    For i = 0 To UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())
+        If varDoorData.arrSelectedSolution(mintInd).arrSpring(i).Left = False Then
+            Q = Q + 1
+        End If
+    Next
+    qtyR = Q
+    
+    'PN
+    strTemp = IIf(qtyL = 0, "", varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN & " LH")
+    strTemp = strTemp & IIf(qtyR = 0, "", Chr(13) & Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True) & " RH")
+    Grid3.TextMatrix(2, 0) = strTemp
+    
+    'Qty
+    strTemp = IIf(qtyL = 0, "", qtyL)
+    strTemp = strTemp & IIf(qtyR = 0, "", Chr(13) & qtyR)
+    Grid3.TextMatrix(2, 1) = strTemp
+    
+    'Wire Size
+    Grid3.TextMatrix(2, 2) = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize
+    
+    'CoilID
+    Grid3.TextMatrix(2, 3) = varDoorData.arrSelectedSolution(mintInd).sngSpringCoilID & Chr(34)
+    
+    'Length
+    If MeasU = 1 Then
+        Grid3.TextMatrix(2, 4) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Fixed") & IIf(varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square", " c", Chr(34))
+    Else
+        If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square" Then
+            Grid3.TextMatrix(2, 4) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Fixed") & " c"
+        Else
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length
+            aCon.mmcalc
+            Grid3.TextMatrix(2, 4) = Round(aCon.mm, 0) & " mm"
+        End If
+    End If
+    
+    'Winds
+
+    Grid3.TextMatrix(2, 5) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Turns, "Fixed") '    Grid3.TextMatrix(2, 5) = Format(Winds, "Fixed")
+    
+    'IPPT
+    Grid3.TextMatrix(2, 6) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).IPPT, "Fixed")
+    
+    'Active Coil
+    Grid3.TextMatrix(2, 7) = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC
+    
+    'Dead Coil
+    Grid3.TextMatrix(4, 0) = varDoorData.arrSelectedSolution(mintInd).sngSpringDC
+    
+    'Cycle Life
+    Grid3.TextMatrix(4, 1) = Format(varDoorData.arrSelectedSolution(mintInd).sngSpringCL, "Fixed") & " M"
+    
+    'PVC
+    If varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC > 0 Then
+        If MeasU = 1 Then
+            Grid3.TextMatrix(4, 2) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC, "Fixed") & Chr(34)
+        Else
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC
+            aCon.mmcalc
+            Grid3.TextMatrix(4, 2) = Round(aCon.mm, 0) & " mm"
+        End If
+    Else
+        Grid3.TextMatrix(4, 2) = "N/A"
+    End If
+    
+    'Wire Type
+    Grid3.TextMatrix(4, 3) = varDoorData.arrSelectedSolution(mintInd).strSpringWireType
+    
+    'Shaft Space
+    Dim ShaftSpc As Single
+    If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Round" Then
+         ShaftSpc = ((((varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC + varDoorData.arrSelectedSolution(mintInd).sngSpringDC + Winds) * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize) + 6)) * (UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring()) + 1)
+    Else
+        ShaftSpc = ((((varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC + varDoorData.arrSelectedSolution(mintInd).sngSpringDC + Winds) * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize * (GetSquareFactor(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize, varDoorData.arrSelectedSolution(mintInd).sngSpringCoilID))) + 6)) * (UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring()) + 1)
+    End If
+    If MeasU = 1 Then
+        Grid3.TextMatrix(4, 4) = Format(IIf(varDoorData.ShaftTube = False, ShaftSpc + 3, ShaftSpc), "Fixed") & Chr(34)
+    Else
+        aCon.Inch = IIf(varDoorData.ShaftTube = False, ShaftSpc + 3, ShaftSpc)
+        aCon.mmcalc
+        Grid3.TextMatrix(4, 4) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'wound length
+    If MeasU = 1 Then
+        Grid3.TextMatrix(4, 5) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WoundSpringLength, "Fixed") & Chr(34)
+    Else
+        Call ClearConObj
+        aCon.Inch = (varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WoundSpringLength)
+        aCon.mmcalc
+        Grid3.TextMatrix(4, 5) = Round(aCon.mm) & " mm"
+    End If
+        
+    'price
+    Grid3.TextMatrix(4, 6) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Price, "Fixed")
+    
+    'line price
+    Grid3.TextMatrix(4, 7) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Price * (UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring()) + 1), "Fixed")
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+Public Sub LoadMMSpring()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadMMSpring()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim T As Single
+    Dim strTemp As String
+    Dim qtyLs As Integer, qtyLb As Integer
+    Dim qtyRs As Integer, qtyRb As Integer
+    Dim lsngWL1 As Single
+    Dim lsngWL2 As Single
+    
+    qtyLs = GetSprQtyBySideAndGaugeTemp(mintInd, True, True)
+    qtyRs = GetSprQtyBySideAndGaugeTemp(mintInd, False, True)
+    qtyLb = Me.GetSprQtyBySideAndGaugeTemp(mintInd, True, False)
+    qtyRb = GetSprQtyBySideAndGaugeTemp(mintInd, False, False)
+    
+    'PN
+    strTemp = IIf(qtyLs = 0, "", varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN & " LH")
+    strTemp = strTemp & IIf(qtyRs = 0, "", Chr(13) & Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True) & " RH")
+    strTemp = strTemp & IIf(qtyLb = 0, "", Chr(13) & varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).strPN & " LH")
+    strTemp = strTemp & IIf(qtyRb = 0, "", Chr(13) & Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).strPN, True) & " RH")
+    Grid3.TextMatrix(2, 0) = strTemp
+    
+    'Qty
+    strTemp = IIf(qtyLs = 0, "", qtyLs)
+    strTemp = strTemp & IIf(qtyRs = 0, "", Chr(13) & qtyRs)
+    strTemp = strTemp & IIf(qtyLb = 0, "", Chr(13) & qtyLb)
+    strTemp = strTemp & IIf(qtyRb = 0, "", Chr(13) & qtyRb)
+    Grid3.TextMatrix(2, 1) = strTemp
+    
+    'Wire Size
+    Grid3.TextMatrix(2, 2) = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize & Chr(13) & varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).WireSize
+    
+    'CoilID
+    Grid3.TextMatrix(2, 3) = varDoorData.arrSelectedSolution(mintInd).sngSpringCoilID & Chr(34)
+    
+    'Length
+    If MeasU = 1 Then
+        Grid3.TextMatrix(2, 4) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Fixed") & IIf(varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square", " c", Chr(34)) & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Fixed") & IIf(varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square", " c", Chr(34))
+    Else
+        If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square" Then
+            Grid3.TextMatrix(2, 4) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Fixed") & " c" & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Fixed") & " c"
+        Else
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length
+            aCon.mmcalc
+            T = aCon.mm
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length
+            aCon.mmcalc
+            Grid3.TextMatrix(2, 4) = Round(T, 0) & " mm" & Chr(13) & Round(aCon.mm, 0) & " mm"
+        End If
+    End If
+    
+    'Winds
+    Grid3.TextMatrix(2, 5) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Turns, "Fixed")
+    
+    'IPPT
+    Grid3.TextMatrix(2, 6) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).IPPT, "Fixed") & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).IPPT, "Fixed")
+    
+    'Active Coil
+'    Grid3.TextMatrix(2, 7) = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC & Chr(13) & varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).AC
+'
+'    'Dead Coil
+'    Grid3.TextMatrix(4, 0) = varDoorData.arrSelectedSolution(mintInd).sngSpringDC
+    
+    'Cycle Life
+    Grid3.TextMatrix(2, 7) = Format(varDoorData.arrSelectedSolution(mintInd).sngSpringCL, "Fixed") & " M"
+    
+    'PVC
+    If varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC > 0 Then
+        If MeasU = 1 Then
+            Grid3.TextMatrix(4, 0) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC, "Fixed") & Chr(34) & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).PVC, "Fixed") & Chr(34)
+        Else
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC
+            aCon.mmcalc
+            T = aCon.mm
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).PVC
+            aCon.mmcalc
+            Grid3.TextMatrix(4, 0) = Round(T, 0) & " mm" & Chr(13) & Round(aCon.mm, 0) & " mm"
+        End If
+    Else
+        Grid3.TextMatrix(4, 0) = "N/A"
+    End If
+    
+    'Wire Type
+    Grid3.TextMatrix(4, 1) = varDoorData.arrSelectedSolution(mintInd).strSpringWireType
+    
+    'Shaft Space
+    Dim ShaftSpc As Single
+    If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Round" Then
+         ShaftSpc = ((((varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC + varDoorData.arrSelectedSolution(mintInd).sngSpringDC + Winds) * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize) + 6)) * (UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring()) + 1)
+    Else
+        ShaftSpc = ((((varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC + varDoorData.arrSelectedSolution(mintInd).sngSpringDC + Winds) * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize * (GetSquareFactor(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize, varDoorData.arrSelectedSolution(mintInd).sngSpringCoilID))) + 6)) * (UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring()) + 1)
+    End If
+    If MeasU = 1 Then
+        Grid3.TextMatrix(4, 2) = Format(IIf(varDoorData.ShaftTube = False, ShaftSpc + 3, ShaftSpc), "Fixed") & Chr(34)
+    Else
+        aCon.Inch = IIf(varDoorData.ShaftTube = False, ShaftSpc + 3, ShaftSpc)
+        aCon.mmcalc
+        Grid3.TextMatrix(4, 2) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'wound length
+    If MeasU = 1 Then
+        Grid3.TextMatrix(4, 5) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WoundSpringLength, "Fixed") & Chr(34) & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).WoundSpringLength, "Fixed") & Chr(34)
+    Else
+        Call ClearConObj
+        aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WoundSpringLength
+        aCon.mmcalc
+        lsngWL1 = aCon.mm
+        
+        Call ClearConObj
+        aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).WoundSpringLength
+        aCon.mmcalc
+        lsngWL2 = aCon.mm
+        
+        Grid3.TextMatrix(4, 5) = Round(lsngWL1, 0) & " mm" & Chr(13) & Round(lsngWL2, 0) & " mm"
+    End If
+    
+    'price
+'    Grid3.TextMatrix(4, 6) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Price, "Fixed") & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Price, "Fixed")
+    
+    'line price
+    Grid3.TextMatrix(4, 7) = Format((varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Price * (qtyLs + qtyRs)) + (varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Price * (qtyLb + qtyRb)), "Fixed")
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub LoadMMSpringComplex()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadMMSpringComplex()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim T As Single
+    Dim strTemp As String
+    Dim qtyLs As Integer, qtyLb As Integer
+    Dim qtyRs As Integer, qtyRb As Integer
+    Dim lsngWL1 As Single
+    Dim lsngWL2 As Single
+    
+    qtyLs = GetSprQtyBySideAndGaugeTemp(mintInd, True, True)
+    qtyRs = GetSprQtyBySideAndGaugeTemp(mintInd, False, True)
+    qtyLb = Me.GetSprQtyBySideAndGaugeTemp(mintInd, True, False)
+    qtyRb = GetSprQtyBySideAndGaugeTemp(mintInd, False, False)
+    
+    'PN
+    strTemp = IIf(qtyLs = 0, "", varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN & " LH")
+    strTemp = strTemp & IIf(qtyRs = 0, "", Chr(13) & Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).strPN, True) & " RH")
+    strTemp = strTemp & IIf(qtyLb = 0, "", Chr(13) & varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).strPN & " LH")
+    strTemp = strTemp & IIf(qtyRb = 0, "", Chr(13) & Swap(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).strPN, True) & " RH")
+    Grid3.TextMatrix(2, 0) = strTemp
+    
+    'Qty
+    strTemp = IIf(qtyLs = 0, "", qtyLs)
+    strTemp = strTemp & IIf(qtyRs = 0, "", Chr(13) & qtyRs)
+    strTemp = strTemp & IIf(qtyLb = 0, "", Chr(13) & qtyLb)
+    strTemp = strTemp & IIf(qtyRb = 0, "", Chr(13) & qtyRb)
+    Grid3.TextMatrix(2, 1) = strTemp
+    
+    'Wire Size
+    Grid3.TextMatrix(2, 2) = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize & Chr(13) & varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).WireSize
+    
+    'CoilID
+    Grid3.TextMatrix(2, 3) = varDoorData.arrSelectedSolution(mintInd).sngSpringCoilID & Chr(34)
+    
+    'Length
+    If MeasU = 1 Then
+        Grid3.TextMatrix(2, 4) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Fixed") & IIf(varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square", " c", Chr(34)) & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Fixed") & IIf(varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square", " c", Chr(34))
+    Else
+        If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Square" Then
+            Grid3.TextMatrix(2, 4) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length, "Fixed") & " c" & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length, "Fixed") & " c"
+        Else
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Length
+            aCon.mmcalc
+            T = aCon.mm
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Length
+            aCon.mmcalc
+            Grid3.TextMatrix(2, 4) = Round(T, 0) & " mm" & Chr(13) & Round(aCon.mm, 0) & " mm"
+        End If
+    End If
+    
+    'Winds
+    Grid3.TextMatrix(2, 5) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Turns, "Fixed")              'Grid3.TextMatrix(2, 5) = Format(Winds, "Fixed")
+    
+    'IPPT
+    Grid3.TextMatrix(2, 6) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).IPPT, "Fixed") & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).IPPT, "Fixed")
+    
+    'Active Coil
+    Grid3.TextMatrix(2, 7) = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC & Chr(13) & varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).AC
+    
+    'Dead Coil
+    Grid3.TextMatrix(4, 0) = varDoorData.arrSelectedSolution(mintInd).sngSpringDC
+    
+    'Cycle Life
+    Grid3.TextMatrix(4, 1) = Format(varDoorData.arrSelectedSolution(mintInd).sngSpringCL, "Fixed") & " M"
+    
+    'PVC
+    If varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC > 0 Then
+        If MeasU = 1 Then
+            Grid3.TextMatrix(4, 2) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC, "Fixed") & Chr(34) & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).PVC, "Fixed") & Chr(34)
+        Else
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).PVC
+            aCon.mmcalc
+            T = aCon.mm
+            aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).PVC
+            aCon.mmcalc
+            Grid3.TextMatrix(4, 2) = Round(T, 0) & " mm" & Chr(13) & Round(aCon.mm, 0) & " mm"
+        End If
+    Else
+        Grid3.TextMatrix(4, 2) = "N/A"
+    End If
+    
+    'Wire Type
+    Grid3.TextMatrix(4, 3) = varDoorData.arrSelectedSolution(mintInd).strSpringWireType
+    
+    'Shaft Space
+    Dim ShaftSpc As Single
+    If varDoorData.arrSelectedSolution(mintInd).strSpringWireType = "Round" Then
+         ShaftSpc = ((((varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC + varDoorData.arrSelectedSolution(mintInd).sngSpringDC + Winds) * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize) + 6)) * (UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring()) + 1)
+    Else
+        ShaftSpc = ((((varDoorData.arrSelectedSolution(mintInd).arrSpring(0).AC + varDoorData.arrSelectedSolution(mintInd).sngSpringDC + Winds) * varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize * (GetSquareFactor(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WireSize, varDoorData.arrSelectedSolution(mintInd).sngSpringCoilID))) + 6)) * (UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring()) + 1)
+    End If
+    If MeasU = 1 Then
+        Grid3.TextMatrix(4, 4) = Format(IIf(varDoorData.ShaftTube = False, ShaftSpc + 3, ShaftSpc), "Fixed") & Chr(34)
+    Else
+        aCon.Inch = IIf(varDoorData.ShaftTube = False, ShaftSpc + 3, ShaftSpc)
+        aCon.mmcalc
+        Grid3.TextMatrix(4, 4) = Round(aCon.mm, 0) & " mm"
+    End If
+    
+    'wound length
+    If MeasU = 1 Then
+        Grid3.TextMatrix(4, 5) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WoundSpringLength, "Fixed") & Chr(34) & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).WoundSpringLength, "Fixed") & Chr(34)
+    Else
+        Call ClearConObj
+        aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(0).WoundSpringLength
+        aCon.mmcalc
+        lsngWL1 = aCon.mm
+        
+        Call ClearConObj
+        aCon.Inch = varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).WoundSpringLength
+        aCon.mmcalc
+        lsngWL2 = aCon.mm
+        
+        Grid3.TextMatrix(4, 5) = Round(lsngWL1, 0) & " mm" & Chr(13) & Round(lsngWL2, 0) & " mm"
+    End If
+    
+    'price
+    Grid3.TextMatrix(4, 6) = Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Price, "Fixed") & Chr(13) & Format(varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Price, "Fixed")
+    
+    'line price
+    Grid3.TextMatrix(4, 7) = Format((varDoorData.arrSelectedSolution(mintInd).arrSpring(0).Price * (qtyLs + qtyRs)) + (varDoorData.arrSelectedSolution(mintInd).arrSpring(UBound(varDoorData.arrSelectedSolution(mintInd).arrSpring())).Price * (qtyLb + qtyRb)), "Fixed")
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+
+Private Sub SaveDrum()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SaveDrum()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    varDoorData.aDrum.CableLen = varDoorData.arrSelectedSolution(mintInd).sngCableLen
+    varDoorData.aDrum.Circ = varDoorData.arrSelectedSolution(mintInd).sngCirc
+    varDoorData.aDrum.DrumDia = varDoorData.arrSelectedSolution(mintInd).sngDrumDia
+    varDoorData.aDrum.FMA = varDoorData.arrSelectedSolution(mintInd).sngFMA
+    varDoorData.aDrum.HMA = varDoorData.arrSelectedSolution(mintInd).sngHMA
+    varDoorData.aDrum.IPPT = varDoorData.arrSelectedSolution(mintInd).sngIPPT
+    varDoorData.aDrum.Price = varDoorData.arrSelectedSolution(mintInd).sngDrumPrice
+    varDoorData.aDrum.REVS = varDoorData.arrSelectedSolution(mintInd).sngREVS
+    varDoorData.aDrum.RoR = varDoorData.arrSelectedSolution(mintInd).sngRoR
+    varDoorData.aDrum.sngMaxHgt = varDoorData.arrSelectedSolution(mintInd).sngMaxHgt
+    varDoorData.aDrum.sngMaxWeight = varDoorData.arrSelectedSolution(mintInd).sngMaxWeight
+    varDoorData.aDrum.strDescr = varDoorData.arrSelectedSolution(mintInd).strDrumDescr
+    varDoorData.aDrum.strStamping = varDoorData.arrSelectedSolution(mintInd).strDrumStamping
+    varDoorData.aDrum.strPN = varDoorData.arrSelectedSolution(mintInd).strDrumPN
+    varDoorData.aDrum.TTDD = varDoorData.arrSelectedSolution(mintInd).sngTTDD
+    varDoorData.aDrum.TTDU = varDoorData.arrSelectedSolution(mintInd).sngTTDU
+    varDoorData.sngMaxHiLift = varDoorData.arrSelectedSolution(mintInd).sngMaxHiLift
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub

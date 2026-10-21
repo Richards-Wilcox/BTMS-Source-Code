@@ -1,0 +1,656 @@
+Option Explicit
+'AW, KN
+Const cstrModuleName As String = "frmGrid"
+
+Private Sub cmdPrint_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdPrint_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Call ShowTaskbar(False) 'will hide the widows taskbar for the time of printing
+    
+    Set Picture1.Picture = CaptureScreen()
+    PrintPictureToFitPage Printer, Picture1.Picture
+    
+    Printer.EndDoc
+    
+    Call ShowTaskbar(True)
+
+    Exit Sub
+
+Error_Handler:
+    Call ShowTaskbar(True)
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    If KeyCode = 112 Then
+         ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+
+Private Sub Grid1_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Grid1_MouseDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Integer
+    
+    If Button = vbRightButton Then PopupMenu mnuAction
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+
+End Sub
+
+Private Sub lblLites_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+lblLites.ToolTipText = lblLites.Caption
+End Sub
+
+
+
+Private Sub mnuDelete_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".mnuDelete_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Grid1.RemoveItem (Grid1.Row)
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdNext_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdNext_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim SQL As String
+    Dim lobjBOMRS As ADODB.Recordset
+    Dim llngAffected As Long
+    
+'    SQl = "SELECT BOMNum FROM BoM"
+'    Set lobjBOMRS = CnnBTMS.Execute(SQl, llngAffected, adCmdText)
+'    If Not lobjBOMRS Is Nothing Then
+'        lobjBOMRS.ActiveConnection = Nothing
+'        If Not (lobjBOMRS.BOF And lobjBOMRS.EOF) Then
+'            lobjBOMRS.MoveFirst
+'            lobjBOMRS.Find "BOMNum='" & Me.txtBomName.Text & "'"
+'            If lobjBOMRS.BOF = False And lobjBOMRS.EOF = False Then
+'                MsgBox "The BoM name already exists, please chose another."
+'                txtBomName.SetFocus
+'                txtBomName.SelStart = 0
+'                txtBomName.SelLength = Len(txtBomName.Text)
+'                Exit Sub
+'            End If
+'        End If
+'    End If
+'
+'    Dim llngBOMID As Long
+'    llngBOMID = GenerateBOM
+'
+'    ' Close all Open Forms
+'    Dim linti As Integer
+'    For linti = Forms.Count To 0 Step -1
+'        If Not Forms(linti).Name = "MDIForm1" Then Unload Forms(linti)
+'    Next
+'
+'    If llngBOMID > 0 Then
+'        Dim frmQ As frmBOM
+'        Set frmQ = New frmBOM
+'        frmQ.mlngBOMID = llngBOMID
+'        frmQ.mstrDocNum = ""
+'        frmQ.mintMode = MODE_VIEW
+'        frmQ.Show
+'        Set frmQ = Nothing
+'    Else
+'        frmBOMList.Show
+'    End If
+'Me.Grid1.PrintGrid
+    Me.WindowState = vbMinimized
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Grid1.Clear
+    Grid1.ColWidth(0) = 2000
+    Grid1.ColWidth(1) = 900
+    Grid1.ColWidth(2) = 1100
+    
+    Grid1.Row = 0
+    Grid1.Text = "Part Number"
+    Grid1.Col = 1
+    Grid1.Text = "Quantity"
+    Grid1.Col = 2
+    Grid1.Text = "SubGroup"
+    Grid1.Col = 3
+    Grid1.Text = "Group"
+    
+    LoadHelpText Me
+    MousePos1.Init Me
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Paint()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Paint()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Me.Move (Screen.Width - Me.Width) / 2, (Screen.Height - Me.Height) / 2
+    Call LoadData
+    'Me.Grid1.Refresh
+    'Me.WindowState = vbMaximized
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub LoadData()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    '''''''''''fraGeneral '''''''''''
+    
+    lblDrType.Caption = ProdType & " " & DrType
+    If ProdType = "Rolltite" Then
+        lblDrType.Caption = lblDrType.Caption & " " & GetBSheetDescription & " " & GetInsulatorDescription
+    End If
+    
+    ''
+    lblLiftType.Caption = LiftType
+    ''
+    If MeasU = 1 Then
+        lblDrWidth.Caption = GetImpString(DrWidth)
+    Else
+        ClearConObj
+        aCon.Inch = DrWidth
+        aCon.mmcalc
+        lblDrWidth.Caption = Round(aCon.mm, 0) & " mm"
+    End If
+    ''
+    If MeasU = 1 Then
+        lblDrHgt.Caption = GetImpString(DrHgt)
+    Else
+        ClearConObj
+        aCon.Inch = DrHgt
+        aCon.mmcalc
+        lblDrHgt.Caption = Round(aCon.mm, 0) & " mm"
+    End If
+    ''
+    lblDrQty.Caption = varDoorData.DrQty
+    ''
+    If LiftType = "High Lift" Then
+        If HILIFT > 0 Then
+            If MeasU = 1 Then
+                lblHiLift.Caption = GetImpString(HILIFT)
+            Else
+                ClearConObj
+                aCon.Inch = HILIFT
+                aCon.mmcalc
+                lblHiLift.Caption = Round(aCon.mm, 0) & " mm"
+            End If
+        Else
+            lblHiLift.Caption = "N/A"
+        End If
+        ''
+        If varDoorData.sngHeadroom > 0 Then
+            If MeasU = 1 Then
+                lblHeadroom.Caption = GetImpString(varDoorData.sngHeadroom)
+            Else
+                ClearConObj
+                aCon.Inch = varDoorData.sngHeadroom
+                aCon.mmcalc
+                lblHeadroom.Caption = Round(aCon.mm, 0) & " mm"
+            End If
+        Else
+            lblHeadroom.Caption = "N/A"
+        End If
+    Else
+        lblHeadroom.Caption = "N/A"
+        lblHiLift.Caption = "N/A"
+    End If
+    ''
+    ''''''''''fraSections'''''''''''''''
+    
+    lblNbrSections.Caption = N21 + N24 & " sections, " & varDoorData.NPanels & " panels"
+    ''
+    lblLites.Caption = varDoorData.NLiteSec
+    
+    Select Case varDoorData.LiteType
+    Case 1: lblLites.Caption = lblLites.Caption & " E type " & IIf(varDoorData.NLiteSec > 1, "lites", "lite")
+    Case 2: lblLites.Caption = lblLites.Caption & " CPL type " & IIf(varDoorData.NLiteSec > 1, "lites", "lite")
+    Case 3: lblLites.Caption = lblLites.Caption & " D type " & IIf(varDoorData.NLiteSec > 1, "lites", "lite")
+    Case 4: lblLites.Caption = lblLites.Caption & " A type " & IIf(varDoorData.NLiteSec > 1, "lites", "lite")
+    Case 5: lblLites.Caption = lblLites.Caption & " AA type " & IIf(varDoorData.NLiteSec > 1, "lites", "lite")
+    Case 6: lblLites.Caption = lblLites.Caption & " B type " & IIf(varDoorData.NLiteSec > 1, "lites", "lite")
+    Case Is > 7: lblLites.Caption = lblLites.Caption & " " & GetFullViewDescription(varDoorData.LiteType)
+    Case Else: lblLites.Caption = "N/A"
+    End Select
+    ''
+    lblNewLinHW.Caption = IIf(NewLinearHW = True, "Linear Face Hardware", "Standard Face Hardware")
+    ''
+    lblWindLoad.Caption = varDoorData.WindLoad
+    ''
+    If (UCase(txtTruss.Text) <> UCase("No truss")) Then
+        lblTruss.Caption = txtTruss.Text
+    Else
+        lblTruss.Caption = "N/A"
+    End If
+    ''
+    'lblMRSB.Caption =
+    ''
+    'lbllock.Caption =
+    ''
+    If varDoorData.intTopTreatment > 0 Then
+        lblTopSeal.Caption = GetTopSealDescr(varDoorData.intTopTreatment)
+    Else
+        lblTopSeal.Caption = "N/A"
+    End If
+    ''
+    If varDoorData.intBottomTreatment > 0 Then
+        lblBtmSeal.Caption = GetBtmSealDescr(varDoorData.intBottomTreatment)
+    Else
+       lblBtmSeal.Caption = "N/A"
+    End If
+    ''
+    If varDoorData.ECapType > 0 Then
+        lblEndCaps.Caption = GetEndCapsDescr(varDoorData.ECapType)
+    Else
+        lblEndCaps.Caption = "N/A"
+    End If
+    ''
+    If DrWgt > 0 Then
+        If MeasU = 1 Then
+            lblWgt.Caption = Format(DrWgt, "Fixed") & " lb"
+        Else
+            ClearConObj
+            aCon.LB = DrWgt
+            aCon.KGcalc
+            lblWgt.Caption = Format(aCon.KG, "Fixed") & " kg"
+        End If
+    End If
+    
+    If (varDoorData.gintQuickClose > 0) Then
+        lblQuickClose.Caption = varDoorData.gintQuickClose & " Fixtures"
+    Else
+        lblQuickClose.Caption = "N/A"
+    End If
+    
+    If HWType = 3 Then Label57.Caption = "UHMW Rollers"
+    If (varDoorData.gblnNylonRollers) Then
+        lblNylonRollers.Caption = "Yes"
+    Else
+        lblNylonRollers.Caption = "N/A"
+    End If
+
+    If (varDoorData.DblEndHinges) Then
+        lblDblEndHinges.Caption = "Yes"
+    Else
+        lblDblEndHinges.Caption = "N/A"
+    End If
+    
+    If (varDoorData.gblnClinchNuts) Then
+        lblClinchNuts.Caption = "Yes"
+    Else
+        lblClinchNuts.Caption = "N/A"
+    End If
+    
+    If varDoorData.arrSections(0).intNTruss > 0 And varDoorData.arrSections(0).intNTruss < 6 Then
+        If varDoorData.arrSections(0).intTrussStyle <> varDoorData.arrSections(UBound(varDoorData.arrSections())).intTrussStyle Then
+            lblUpTopTruss.Caption = "Yes"
+        Else
+            lblUpTopTruss.Caption = "No"
+        End If
+    Else
+        lblUpTopTruss.Caption = "N/A"
+    End If
+    
+   
+    lblHingeGa.Caption = IIf(varDoorData.gblnHingeUpgrade = True, "Yes", "No")
+    
+    '*******************
+   
+    ''''''''''fraTrack'''''''''''''''
+    
+    lblOperator.Caption = GetOperatorType(varDoorData.OperatorType)
+    ''
+    If HRadius > 0 Then
+        If MeasU = 1 Then
+            lblRadius.Caption = HRadius & Chr(34)
+        Else
+            ClearConObj
+            aCon.Inch = HRadius
+            aCon.mmcalc
+            lblRadius.Caption = Round(aCon.mm, 0) & " mm"
+        End If
+    End If
+    ''
+    If MeasU = 1 Then
+        Select Case HWType
+        Case 2: lblHWSize.Caption = "2" & Chr(34)
+        Case 3: lblHWSize.Caption = "3" & Chr(34)
+        Case 3.25: lblHWSize.Caption = "Super 3" & Chr(34)
+        End Select
+    Else
+        Select Case HWType
+        Case 2: lblHWSize.Caption = "51 mm"
+        Case 3: lblHWSize.Caption = "76 mm"
+        Case 3.25: lblHWSize.Caption = "Super 3"
+        End Select
+    End If
+    ''
+    If varDoorData.Track.strLowerSplice <> "" Then
+        lblLowerSplice.Caption = "Lower Splice " & varDoorData.Track.strLowerSplice
+    Else
+        lblLowerSplice.Caption = "N/A"
+    End If
+    ''
+    If varDoorData.Track.strJambType <> "" Then
+        lblJambType.Caption = varDoorData.Track.strJambType & " Jamb"
+    Else
+        lblJambType.Caption = "N/A"
+    End If
+    ''
+    If varDoorData.Track.strMountType <> "" Then
+        lblMountType.Caption = varDoorData.Track.strMountType
+    Else
+        lblMountType.Caption = "N/A"
+    End If
+    
+    If SlopHAng <> vbNull Then
+        lblSlope.Caption = FormatNumber(SlopHAng, 2, vbTrue, vbTrue) & Chr(176)
+    End If
+    
+    If varDoorData.Track.strLowerSplice <> "" Then
+        lblLowerSplice.Caption = varDoorData.Track.strLowerSplice
+    Else
+        lblLowerSplice.Caption = "N/A"
+    End If
+    
+    If (varDoorData.gblnCableFailure) Then
+        lblCableFailure.Caption = "Yes"
+    Else
+        lblCableFailure.Caption = "N/A"
+    End If
+    
+    If (varDoorData.gblnSpringFailure) Then
+        lblSpringFailure.Caption = "Yes"
+    Else
+        lblSpringFailure.Caption = "N/A"
+    End If
+    
+    If (varDoorData.Track.strPusherSpring <> "") Then
+        lblPusherSpring.Caption = varDoorData.Track.strPusherSpring
+    Else
+        lblPusherSpring.Caption = "N/A"
+    End If
+    
+    If (varDoorData.Track.strBumperSpring <> "") Then
+        lblBumperSpring.Caption = varDoorData.Track.strBumperSpring
+    Else
+        lblBumperSpring.Caption = "N/A"
+    End If
+    
+    If (varDoorData.Track.strInterlockSwitches <> "") Then
+        lblInterlock.Caption = varDoorData.Track.strInterlockSwitches
+    Else
+        lblInterlock.Caption = "N/A"
+    End If
+    
+    If (varDoorData.Track.strPullChainPkg <> "") Then
+        lblPullChain.Caption = varDoorData.Track.strPullChainPkg
+    Else
+        lblPullChain.Caption = "N/A"
+    End If
+    
+    If (varDoorData.Track.strFenderGuard <> "") Then
+        lblFenderGuard.Caption = varDoorData.Track.strFenderGuard
+    Else
+        lblFenderGuard.Caption = "N/A"
+    End If
+    
+    If (varDoorData.Track.strHaningAngle <> "") Then
+        lblHangingAngle.Caption = varDoorData.Track.strHaningAngle
+    Else
+        lblHangingAngle.Caption = "N/A"
+    End If
+    
+    If varDoorData.Track.FullHorzAngle > 0 Then
+        lblFullLengthHA.Caption = "Yes"
+    Else
+        lblFullLengthHA.Caption = "N/A"
+    End If
+
+    '*******************
+    
+    ''''''''''fraTorsion'''''''''''''''
+    If LiftType = "High Lift" Then
+        If MeasU = 1 Then
+            lblMaxHiLift.Caption = varDoorData.sngMaxHiLift & Chr(34)
+        Else
+            ClearConObj
+            aCon.Inch = varDoorData.sngMaxHiLift
+            aCon.mmcalc
+            lblMaxHiLift.Caption = Round(aCon.mm, 0) & " mm"
+        End If
+    Else
+        lblMaxHiLift.Caption = "N/A"
+    End If
+
+    If Not isEmptySpringSolutionArray Then
+        If UBound(varDoorData.arrSpringSolution) > 0 Then
+            ''
+        ''''''''''Change in .NET''''''''''''''''
+'            lblShaftType.Caption = IIf(varDoorData.ShaftTube, "Tube", "Solid") // before keyed tube shaft 2.0.12
+'            lblShaftType.Caption = IIf(varDoorData.ShaftTube, IIf(varDoorData.GlavanizedTubeShaft, "14 Ga Galvanized Tube Shaft", "Tube"), "Solid") // before keyed tube shaft 2.0.13
+            lblShaftType.Caption = IIf(varDoorData.ShaftTube, IIf(varDoorData.GlavanizedTubeShaft, "14 Ga Galvanized Tube Shaft", "Tube"), IIf(varDoorData.KeyedTubeShaft, "Keyed Tube Shaft", "Solid")) 'need w/keyed tube shaft
+            
+
+        ''''''''''END Change in .NET
+        
+            ''
+            If MeasU = 1 Then
+                lblShaftDia.Caption = IIf(varDoorData.ShaftDia = 1, "1", "1 " & Chr(188)) & Chr(34)
+            Else
+                lblShaftDia.Caption = IIf(varDoorData.ShaftDia = 1, "25 mm", "32 mm")
+            End If
+            ''
+            lblCoupler.Caption = IIf(CouplNum > 0, CouplNum, "N/A")
+            ''
+            lblStamping.Caption = varDoorData.aDrum.strStamping
+            ''
+            If MeasU = 1 Then
+                lblMaxWgt.Caption = varDoorData.aDrum.sngMaxWeight & " lb"
+            Else
+                ClearConObj
+                aCon.LB = varDoorData.aDrum.sngMaxWeight
+                aCon.KGcalc
+                lblMaxWgt.Caption = Format(aCon.KG, "Fixed") & " kg"
+            End If
+            ''
+            If MeasU = 1 Then
+                lblMaxHgt.Caption = varDoorData.aDrum.sngMaxHgt & Chr(34)
+            Else
+                ClearConObj
+                aCon.Inch = varDoorData.aDrum.sngMaxHgt
+                aCon.mmcalc
+                lblMaxHgt.Caption = Round(aCon.mm, 0) & " mm"
+            End If
+            ''
+            lblTurns.Caption = Format(varDoorData.aDrum.REVS, "Fixed")
+            ''
+            lblIPPT.Caption = Format(varDoorData.aDrum.IPPT, "Fixed")
+            ''
+            lblDia.Caption = Format(varDoorData.aDrum.DrumDia, "Fixed")
+        Else
+            lblShaftType.Caption = "N/A"
+            ''
+            lblShaftDia.Caption = "N/A"
+            ''
+            lblCoupler.Caption = "N/A"
+            ''
+            lblStamping.Caption = "N/A"
+            ''
+            lblMaxWgt.Caption = "N/A"
+            ''
+            lblMaxHgt.Caption = "N/A"
+            ''
+            lblTurns.Caption = "N/A"
+            ''
+            lblIPPT.Caption = "N/A"
+            ''
+            lblDia.Caption = "N/A"
+        End If
+    Else
+        lblShaftType.Caption = "N/A"
+        ''
+        lblShaftDia.Caption = "N/A"
+        ''
+        lblCoupler.Caption = "N/A"
+        ''
+        lblStamping.Caption = "N/A"
+        ''
+        lblMaxWgt.Caption = "N/A"
+        ''
+        lblMaxHgt.Caption = "N/A"
+        ''
+        lblTurns.Caption = "N/A"
+        ''
+        lblIPPT.Caption = "N/A"
+        ''
+        lblDia.Caption = "N/A"
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub

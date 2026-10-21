@@ -1,0 +1,354 @@
+Option Explicit
+Public objParent As Object
+Const cstrModuleName As String = "frmSearchMasterListing"
+'Public mstrBackTag As String
+'Public mlngDOCID As Long
+'Public mstrDocNum As String
+'Public mlngQuoteID As Long
+'Public mlngPOID As Long
+'Public mblnAlloc As Boolean
+'Public mstrUM As String
+Public mfrmB As Form
+Private mlngColPN As Long
+Private mlngColDesc As Long
+Private mlngColDescLoc As Long
+
+'Private Sub chkFindWholeWord_Click()
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".optMatchWholeWord_Click()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    If txtFindWhat.Enabled = True Then txtFindWhat.SetFocus
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+'End Sub
+
+Private Sub chkMatchCase_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkMatchCase_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If txtFindWhat.Enabled = True Then txtFindWhat.SetFocus
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Unload Me
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdFindFirst_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdFindFirst_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Screen.MousePointer = vbHourglass
+    Dim llngRet As Long
+    If optPartialMatch.Value = False Then
+        llngRet = FindFirst(mfrmB.grdData, optSearchDesc.Value, IIf(Me.chkMatchCase.Value = 1, True, False), optMatchWholeWord.Value, txtFindWhat.Text)
+    Else
+        llngRet = SearchPartial(mfrmB.grdData, optSearchDesc.Value, IIf(Me.chkMatchCase.Value = 1, True, False), True, txtFindWhat.Text)
+    End If
+    If llngRet = -1 Then
+        Screen.MousePointer = vbDefault
+        MsgBox "No Matches Found.", vbApplicationModal + vbInformation, "Search Item Not Found."
+        Exit Sub
+    Else
+        mfrmB.grdData.Row = llngRet
+    End If
+    If mfrmB.grdData.RowIsVisible(mfrmB.grdData.Row) = False Then
+        mfrmB.grdData.TopRow = mfrmB.grdData.Row
+    End If
+    glngRow = mfrmB.grdData.Row
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdFindNext_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdFindNext_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Dim llngRet As Long
+    If optPartialMatch.Value = False Then
+        llngRet = FindNext(mfrmB.grdData, optSearchDesc.Value, IIf(Me.chkMatchCase.Value = 1, True, False), optMatchWholeWord.Value, txtFindWhat.Text)
+    Else
+        llngRet = SearchPartial(mfrmB.grdData, optSearchDesc.Value, IIf(Me.chkMatchCase.Value = 1, True, False), False, txtFindWhat.Text)
+    End If
+    If llngRet = -1 Then
+        Screen.MousePointer = vbDefault
+        MsgBox "No Matches Found.", vbApplicationModal + vbInformation, "Search Item Not Found."
+        Exit Sub
+    Else
+        mfrmB.grdData.Row = llngRet
+    End If
+    If mfrmB.grdData.RowIsVisible(mfrmB.grdData.Row) = False Then
+        mfrmB.grdData.TopRow = mfrmB.grdData.Row
+    End If
+    glngRow = mfrmB.grdData.Row
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    cmdFindFirst.Enabled = False
+    cmdFindNext.Enabled = False
+    
+    If mfrmB.Name = "frmInvGenPO" Then
+        mlngColPN = 0
+        mlngColDesc = 1
+        mlngColDescLoc = 2
+    ElseIf mfrmB.Name = "frmBrowseMasterListing" Then
+        mlngColPN = 0
+        mlngColDesc = 2
+        mlngColDescLoc = 3
+    ElseIf mfrmB.Name = "frmInvList" Then
+        mlngColPN = 1
+        mlngColDesc = 3
+        mlngColDescLoc = 4
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub optSearchDesc_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".optSearchDesc_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If txtFindWhat.Enabled = True Then txtFindWhat.SetFocus
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub optSearchPN_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".optSearchPN_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If txtFindWhat.Enabled = True Then txtFindWhat.SetFocus
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Public Function SearchPartial(ByVal pgrdData As VSFlexGrid, ByVal pblnDesc As Boolean, ByVal pblnMatchCase As Boolean, ByVal pblnFirst As Boolean, ByVal pstrFindWhat As String) As Long
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SearchPartial()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lintStartRow As Integer
+    Dim i As Integer
+    Dim lintPos As Integer
+    Dim lintCol As Integer
+    
+    lintCol = IIf(pblnDesc = True, IIf(mfrmB.chkDescLocal.Value = 1, mlngColDescLoc, mlngColDesc), mlngColPN)
+    
+    If pblnFirst = True Then
+        lintStartRow = 1
+    Else
+        pgrdData.Row = glngRow
+        lintStartRow = glngRow + 1
+    End If
+    
+    For i = lintStartRow To pgrdData.Rows - 1
+        lintPos = InStr(1, pgrdData.TextMatrix(i, lintCol), pstrFindWhat, IIf(pblnMatchCase, vbBinaryCompare, vbTextCompare))
+        If lintPos > 0 Then
+            Exit For
+        End If
+    Next
+    
+    If i = pgrdData.Rows Then i = -1 'no match
+    SearchPartial = i
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function FindNext(ByVal pgrdData As VSFlexGrid, ByVal pblnDesc As Boolean, ByVal pblnMatchCase As Boolean, ByVal pblnWholeWord As Boolean, ByVal lstrFindWhat As String) As Long
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".FindNext()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lintCol As Integer
+    Dim llngRet As Long
+    pgrdData.Row = glngRow
+    lintCol = IIf(pblnDesc = True, IIf(mfrmB.chkDescLocal.Value = 1, mlngColDescLoc, mlngColDesc), mlngColPN)
+    llngRet = pgrdData.FindRow(lstrFindWhat, pgrdData.Row + 1, lintCol, IIf(pblnMatchCase = True, True, False), IIf(pblnWholeWord = True, True, False))
+    FindNext = llngRet
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Public Function FindFirst(ByVal pgrdData As VSFlexGrid, ByVal pblnDesc As Boolean, ByVal pblnMatchCase As Boolean, ByVal pblnWholeWord As Boolean, ByVal lstrFindWhat As String) As Long
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".FindFirst()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lintCol As Integer
+    Dim llngRet As Long
+    pgrdData.Row = glngRow
+    lintCol = IIf(pblnDesc = True, IIf(mfrmB.chkDescLocal.Value = 1, mlngColDescLoc, mlngColDesc), mlngColPN)
+    llngRet = pgrdData.FindRow(lstrFindWhat, , lintCol, IIf(pblnMatchCase = True, True, False), IIf(pblnWholeWord = True, True, False))
+    FindFirst = llngRet
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Private Sub txtFindWhat_Change()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtFindWhat_Change()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If txtFindWhat.Text = "" Then
+        cmdFindFirst.Enabled = False
+        cmdFindNext.Enabled = False
+    Else
+        cmdFindFirst.Enabled = True
+        cmdFindNext.Enabled = True
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub

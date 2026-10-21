@@ -1,0 +1,728 @@
+Option Explicit
+
+Const cstrModuleName As String = "frmPOAdd"
+Private mlngPOID As Long
+Public mlngDOCID As Long
+Private mstrPONum As String
+Public mobjParent As Object
+Public mintBackTag As Integer
+
+Private Sub cmdBack_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdBack_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Unload Me
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Screen.MousePointer = vbDefault
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdSave_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSave_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Dim lstrData As String
+    lstrData = " " & Trim(cboPO.Text) & "~"
+    lstrData = lstrData & "False~"
+    lstrData = lstrData & " " & cboPO.ItemData(cboPO.ListIndex)
+    mobjParent.mstrData = lstrData
+    Unload Me
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Screen.MousePointer = vbDefault
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+Private Sub LoadPOs()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadPOs()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim lobjPORS As ADODB.Recordset
+    
+    cboPO.Clear
+    
+    lstrSQLQuery = "select POID,PONum,POPriceModel,POStatus from PO where POStatus='Active' and POPriceModel=" & intCheck
+    Set lobjPORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjPORS Is Nothing Then
+        lobjPORS.ActiveConnection = Nothing
+        If Not (lobjPORS.BOF And lobjPORS.EOF) Then
+            lobjPORS.MoveFirst
+            Dim lstrName As String
+            Do While lobjPORS.EOF = False
+                lstrName = IIf(IsNull(lobjPORS.Fields("PONum").Value), "", Trim(lobjPORS.Fields("PONum").Value))
+                If Not lstrName = "" Then
+                    Call cboPO.AddItem(lstrName)
+                    cboPO.ItemData(cboPO.NewIndex) = lobjPORS.Fields("POID").Value
+                End If
+                lobjPORS.MoveNext
+            Loop
+            lobjPORS.Close
+        End If
+    End If
+    Set lobjPORS = Nothing
+    If cboPO.ListCount < 1 Then
+        cboPO.AddItem ""
+    End If
+    cboPO.ListIndex = 0
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+'Private Sub SaveData()
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SaveData()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim llngAffected As Long
+'    Dim lstrSQLQuery As String
+'
+'    Screen.MousePointer = vbHourglass
+'    If cboPO.ItemData(cboPO.ListIndex) > 0 Then Call ProcessPO(cboPO.ItemData(cboPO.ListIndex), mlngDOCID)
+'
+'    Screen.MousePointer = vbDefault
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    CnnBTMS.RollbackTrans
+'    Screen.MousePointer = vbDefault
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'End Sub
+'Private Sub ProcessPO(ByVal lngCurrPOID As Long, _
+'                      ByVal lngDocID As Long)
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ProcessPO()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim llngAffected As Long
+'    Dim lstrSQLQuery As String
+'    Dim lblnInTrans As Boolean
+'    lblnInTrans = False
+'
+'    If lngDocID < 1 Then Exit Sub
+'    ' Create new PO
+'    CnnBTMS.BeginTrans
+'    lblnInTrans = True
+'
+'    mlngPOID = lngCurrPOID
+'
+'    Dim lobjPORS As ADODB.Recordset
+'    lstrSQLQuery = "Select PONum, POMeasSys from PO where POID=" & lngCurrPOID
+'    Set lobjPORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+'    If Not lobjPORS Is Nothing Then
+'        lobjPORS.ActiveConnection = Nothing
+'        If Not (lobjPORS.BOF And lobjPORS.EOF) Then
+'            lobjPORS.MoveFirst
+'            mstrPONum = lobjPORS.Fields("PONum").Value 'if deleting from existing PO
+'        End If
+'        Set lobjPORS = Nothing
+'    End If
+'
+'    Call AddToPO(lngCurrPOID, lngDocID)
+'
+'    'Update the PO number on the BoM
+'    mlngPOID = lngCurrPOID
+'
+'    If mintBackTag = 1 Then
+'        lstrSQLQuery = "Update BoM"
+'        lstrSQLQuery = lstrSQLQuery & " Set POID=" & mlngPOID
+'        lstrSQLQuery = lstrSQLQuery & ", PONum=" & SQLString(mstrPONum)
+'        lstrSQLQuery = lstrSQLQuery & " Where bomid=" & mlngDOCID
+'        Call CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText And adExecuteNoRecords)
+'    Else
+'        lstrSQLQuery = "Update Quote"
+'        lstrSQLQuery = lstrSQLQuery & " Set POID=" & mlngPOID
+'        lstrSQLQuery = lstrSQLQuery & ", PONum=" & SQLString(mstrPONum)
+'        lstrSQLQuery = lstrSQLQuery & " Where Quoteid=" & mlngDOCID
+'        Call CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText And adExecuteNoRecords)
+'    End If
+'
+'    ' Find the number of PODetails
+'    Dim llngCount As Long
+'    llngCount = -1
+'    lstrSQLQuery = "select Count(*) from PODetails where POID=" & lngCurrPOID
+'    Set lobjPORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+'    If Not lobjPORS Is Nothing Then
+'        lobjPORS.ActiveConnection = Nothing
+'        If Not (lobjPORS.BOF And lobjPORS.EOF) Then
+'            lobjPORS.MoveFirst
+'            llngCount = IIf(IsNull(lobjPORS.Fields(0).Value), 0, DBLValue(lobjPORS.Fields(0).Value))
+'        End If
+'        lobjPORS.Close
+'    End If
+'    Set lobjPORS = Nothing
+'
+'    ' Delete PO if no Children
+'    If llngCount <= 0 Then
+'        lstrSQLQuery = "Delete * from PO where POID=" & lngCurrPOID
+'        Call CnnBTMS.Execute(lstrSQLQuery, 0, adCmdText And adExecuteNoRecords)
+'    End If
+'
+'    CnnBTMS.CommitTrans
+'    lblnInTrans = False
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    If lblnInTrans = True Then CnnBTMS.RollbackTrans
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'End Sub
+'Private Function BuildPODetailRS(ByVal lngBOMID As Long) As ADODB.Recordset
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".BuildPODetailRS()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim lstrSQL As String
+'    Dim lstrSchema As String
+'    Dim llngAffected As Long
+'    Dim lobjADORS As ADODB.Recordset
+'    Dim lobjBOMDetRS As ADODB.Recordset
+'    Dim lobjMainRS As ADODB.Recordset
+'    Dim lobjBOMRS As ADODB.Recordset
+'    Dim MeasSys As Integer
+'    Dim lsngLen As Single
+'    Dim lsngCost As Single
+'    Dim TempSprLen As Single
+'    Dim lstrPriceField As String
+'    Dim i As Integer
+'
+'    Select Case intCheck
+'        Case 1:  lstrPriceField = "M"
+'        Case 2:  lstrPriceField = "O"
+'        Case 3:  lstrPriceField = "R"
+'        Case 4:  lstrPriceField = "S"
+'    End Select
+'
+'    lstrSQL = "Select bommeassys,bomdrqty from BoM where BOMID=" & lngBOMID
+'    Set lobjBOMRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+'    If Not lobjBOMRS Is Nothing Then
+'        If lobjBOMRS.EOF = False And lobjBOMRS.BOF = False Then
+'            MeasSys = lobjBOMRS.Fields("BomMeasSys").Value
+'        End If
+'        Set lobjBOMRS = Nothing
+'    End If
+'
+'    ' Get empty recordset
+'    lstrErrDescr = "Error getting empty ADO recordset."
+'    lstrSQL = "Select * from PODetails where 1=0"
+'    Set lobjADORS = New ADODB.Recordset
+'    lobjADORS.CursorType = adOpenForwardOnly
+'    lobjADORS.CursorLocation = adUseClient
+'    lobjADORS.Open lstrSQL, CnnBTMS, adOpenForwardOnly, adLockOptimistic
+'    Set lobjADORS.ActiveConnection = Nothing
+'    lstrErrDescr = ""
+'
+'    For i = 1 To frmBOMAlloc.grdData1.Rows - 1
+'        If frmBOMAlloc.grdData1.IsSelected(i) Then
+'            lstrSQL = "Select * from BOMDetails where BOMID=" & lngBOMID & " and BOMPtNum=" & SQLString(frmBOMAlloc.grdData1.TextMatrix(i, 0))
+'            Set lobjBOMDetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+'            If Not lobjBOMDetRS Is Nothing Then
+'                lobjBOMDetRS.ActiveConnection = Nothing
+'                If Not (lobjBOMDetRS.BOF And lobjBOMDetRS.EOF) Then
+'                    lobjBOMDetRS.MoveFirst
+'                    Do While lobjBOMDetRS.EOF = False
+'                        lobjADORS.AddNew
+'                        lobjADORS.Fields("POID").Value = mlngPOID
+'                        lobjADORS.Fields("PONum").Value = mstrPONum
+'                        lobjADORS.Fields("POPtNum").Value = IIf(IsNull(lobjBOMDetRS.Fields("BOMPtNum").Value), "", Trim(lobjBOMDetRS.Fields("BOMPtNum").Value))
+'                        lobjADORS.Fields("POPtDesc").Value = frmBOMAlloc.grdData1.TextMatrix(i, 1)
+'                        lobjADORS.Fields("POPtMtCost").Value = IIf(IsNull(lobjBOMDetRS.Fields("BOMPtMtCost").Value), 0, lobjBOMDetRS.Fields("BOMPtMtCost").Value)
+'                        lobjADORS.Fields("POPtQtyOrd").Value = DBLValue(frmBOMAlloc.grdData1.TextMatrix(i, 10))
+'                        lobjADORS.Fields("POPtNotes").Value = ""
+'                        lobjADORS.Fields("POPtQtyRcvd").Value = 0
+'                        lobjADORS.Fields("POCat").Value = GetPOCat(lobjADORS.Fields("POPtNum").Value)
+'                        lobjADORS.Fields("POSubCategory").Value = GetSubCategory(lobjADORS.Fields("POPtNum").Value)
+'                        lobjADORS.Fields("POPtStatus").Value = "Active"
+'                        lobjADORS.Fields("PODiscount").Value = IIf(IsNull(lobjBOMDetRS.Fields("BOMDiscount").Value), 0, lobjBOMDetRS.Fields("BOMDiscount").Value)
+'                        lobjADORS.Fields("POPtMultID").Value = IIf(IsNull(lobjBOMDetRS.Fields("BOMPtMultID").Value), 0, lobjBOMDetRS.Fields("BOMPtMultID").Value)
+'                        lobjADORS.Fields("POPtCallPrice").Value = IIf(IsNull(lobjBOMDetRS.Fields("BOMCallPrice").Value), 0, lobjBOMDetRS.Fields("BOMCallPrice").Value)
+'                        If lobjADORS.Fields("POPtCallPrice").Value = True Then lobjADORS.Fields("POCallPriceExpDate").Value = IIf(IsNull(lobjBOMDetRS.Fields("BOMCallPriceExpDate").Value), Format(Now() + 30, "Short Date"), lobjBOMDetRS.Fields("BOMCallPriceExpDate").Value)
+'                        lobjADORS.Fields("POPtUM").Value = frmBOMAlloc.grdData1.TextMatrix(i, 3)
+'                        lobjADORS.Fields("POPtWgt").Value = IIf(IsNull(lobjBOMDetRS.Fields("BOMPtShipWgt").Value), 0, lobjBOMDetRS.Fields("BOMPtShipWgt").Value)
+'                        lobjADORS.Fields("POPtPhantomPN").Value = False
+'
+'                        lstrSQL = "Select PartNum, descimp, Length, shipweight, UM, SpecialMult, MultID, " & lstrPriceField & " from Main where PartNum=" & SQLString(lobjADORS.Fields("POPtNum").Value)
+'                        Set lobjMainRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+'                        If Not lobjMainRS Is Nothing Then
+'                            lobjMainRS.ActiveConnection = Nothing
+'                            If Not (lobjMainRS.BOF And lobjMainRS.EOF) Then
+'
+'                                lsngCost = Decrypt(Left(Trim(lobjBOMDetRS.Fields("BOMPtNum").Value), 1), lobjMainRS.Fields(lstrPriceField).Value)
+'                                If lobjMainRS.Fields("SpecialMult").Value > 0 Then
+'                                    lsngCost = lobjMainRS.Fields("SpecialMult").Value * lsngCost
+'                                Else
+'                                    If Not Trim(lobjMainRS.Fields("MultID").Value) = "" Then
+'                                        lsngCost = lsngCost * (MultipliersCase(DBLValue(Trim(lobjMainRS.Fields("MultID").Value))))
+'                                    End If
+'                                End If
+'
+'                                lobjADORS.Fields("POPtMtCost").Value = lsngCost
+'                                lobjADORS.Fields("POPtUM").Value = lobjMainRS.Fields("UM").Value
+'                                lobjADORS.Fields("POPtWgt").Value = lobjMainRS.Fields("shipweight").Value
+'                                If MeasSys = 0 Then lobjADORS.Fields("POPtDesc").Value = IIf(IsNull(lobjMainRS.Fields("DescImp").Value), "N/A", Trim(lobjMainRS.Fields("DescImp").Value))
+'
+'                                If lobjADORS.Fields("POPtUM").Value = "LFT" Then
+'                                    lobjADORS.Fields("POPtQtyOrd").Value = DBLValue(lobjADORS.Fields("POPtQtyOrd").Value) / 12
+'                                End If
+'                                If lobjBOMDetRS.Fields("BOMPtUM").Value = "INCHES" And lobjMainRS.Fields("UM").Value = "EACH" Or _
+'                                Left(lobjADORS.Fields("POPtNum").Value, 4) = "433-" Then
+''                                If lobjADORS.Fields("POPtNum").Value = "328-227" Or _
+'                                        lobjADORS.Fields("POPtNum").Value = "426-0271" Then
+'        '                                lobjADORS.Fields("POPtNum").Value = "114-702" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "114-703" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "114-704" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "114-706" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-009" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-010" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-011" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-012" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-013" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-014" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-015" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "114-701" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "426-0272" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-016" Then
+'
+'                                    lsngLen = DBLValue(lobjMainRS.Fields("Length").Value)
+'                                    'pvc and shaft; weight and price go per each in the main, no need to modify.
+'
+'                                    lobjADORS.Fields("POPtQtyOrd").Value = RoundUp(DBLValue(frmBOMAlloc.grdData1.TextMatrix(i, 9) / lsngLen))
+'
+'                                End If
+'                            End If
+'                            Set lobjMainRS = Nothing
+'                        End If
+'                        lobjADORS.Fields("POPtQtyBO").Value = lobjADORS.Fields("POPtQtyOrd").Value
+'                        lobjBOMDetRS.MoveNext
+'                    Loop
+'                    lobjBOMDetRS.Close
+'                End If
+'            End If
+'            Set lobjBOMDetRS = Nothing
+'        Else
+'            Exit For
+'        End If
+'        Call ModInventory.UpdateOnPOsForPN(frmBOMAlloc.grdData1.TextMatrix(i, 0), DBLValue(frmBOMAlloc.grdData1.TextMatrix(i, 12)))
+'    Next
+'    Set BuildPODetailRS = lobjADORS
+'    Set lobjADORS = Nothing
+'    Exit Function
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'End Function
+'Private Function BuildPODetailRSQ(ByVal lngQuoteID As Long) As ADODB.Recordset
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".BuildPODetailRSQ()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim lstrSQL As String
+'    Dim lstrSchema As String
+'    Dim llngAffected As Long
+'    Dim lobjADORS As ADODB.Recordset
+'    Dim lobjQuoteDetRS As ADODB.Recordset
+'    Dim lobjMainRS As ADODB.Recordset
+'    Dim lobjQuoteRS As ADODB.Recordset
+'    Dim MeasSys As Integer
+'    Dim lsngLen As Single
+'    Dim lsngCost As Single
+'    Dim TempSprLen As Single
+'    Dim lstrPriceField As String
+'    Dim i As Integer
+'
+'    Select Case intCheck
+'        Case 1:  lstrPriceField = "M"
+'        Case 2:  lstrPriceField = "O"
+'        Case 3:  lstrPriceField = "R"
+'        Case 4:  lstrPriceField = "S"
+'    End Select
+'
+'    lstrSQL = "Select Quotemeassys from Quote where QuoteID=" & lngQuoteID
+'    Set lobjQuoteRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+'    If Not lobjQuoteRS Is Nothing Then
+'        If lobjQuoteRS.EOF = False And lobjQuoteRS.BOF = False Then
+'            MeasSys = lobjQuoteRS.Fields("Quotemeassys").Value
+'        End If
+'        Set lobjQuoteRS = Nothing
+'    End If
+'
+'    ' Get empty recordset
+'    lstrErrDescr = "Error getting empty ADO recordset."
+'    lstrSQL = "Select * from PODetails where 1=0"
+'    Set lobjADORS = New ADODB.Recordset
+'    lobjADORS.CursorType = adOpenForwardOnly
+'    lobjADORS.CursorLocation = adUseClient
+'    lobjADORS.Open lstrSQL, CnnBTMS, adOpenForwardOnly, adLockOptimistic
+'    Set lobjADORS.ActiveConnection = Nothing
+'    lstrErrDescr = ""
+'
+'    For i = 1 To frmBOMAlloc.grdData1.Rows - 1
+'        If frmBOMAlloc.grdData1.IsSelected(i) Then
+'            lstrSQL = "Select * from QuoteDetails where QuoteID=" & lngQuoteID & " and QuotePtNum=" & SQLString(frmBOMAlloc.grdData1.TextMatrix(i, 0))
+'            Set lobjQuoteDetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+'            If Not lobjQuoteDetRS Is Nothing Then
+'                lobjQuoteDetRS.ActiveConnection = Nothing
+'                If Not (lobjQuoteDetRS.BOF And lobjQuoteDetRS.EOF) Then
+'                    lobjQuoteDetRS.MoveFirst
+'                    Do While lobjQuoteDetRS.EOF = False
+'                        lobjADORS.AddNew
+'                        lobjADORS.Fields("POID").Value = mlngPOID
+'                        lobjADORS.Fields("PONum").Value = mstrPONum
+'                        lobjADORS.Fields("POPtNum").Value = IIf(IsNull(lobjQuoteDetRS.Fields("QuotePtNum").Value), "", Trim(lobjQuoteDetRS.Fields("QuotePtNum").Value))
+'                        lobjADORS.Fields("POPtDesc").Value = frmBOMAlloc.grdData1.TextMatrix(i, 1)
+'                        lobjADORS.Fields("POPtMtCost").Value = IIf(IsNull(lobjQuoteDetRS.Fields("QuotePtCost").Value), 0, lobjQuoteDetRS.Fields("QuotePtCost").Value)
+'                        lobjADORS.Fields("POPtQtyOrd").Value = DBLValue(frmBOMAlloc.grdData1.TextMatrix(i, 9))
+'                        lobjADORS.Fields("POPtNotes").Value = ""
+'                        lobjADORS.Fields("POCat").Value = GetPOCat(lobjADORS.Fields("POPtNum").Value)
+'                        lobjADORS.Fields("POSubCategory").Value = GetSubCategory(lobjADORS.Fields("POPtNum").Value)
+'                        lobjADORS.Fields("POPtQtyRcvd").Value = 0
+'                        lobjADORS.Fields("POPtStatus").Value = "Active"
+'                        lobjADORS.Fields("PODiscount").Value = IIf(IsNull(lobjQuoteDetRS.Fields("QuoteDiscount").Value), 0, lobjQuoteDetRS.Fields("QuoteDiscount").Value)
+'                        lobjADORS.Fields("POPtMultID").Value = IIf(IsNull(lobjQuoteDetRS.Fields("QuotePtMultID").Value), 0, lobjQuoteDetRS.Fields("QuotePtMultID").Value)
+'                        lobjADORS.Fields("POPtCallPrice").Value = IIf(IsNull(lobjQuoteDetRS.Fields("QuotePtCallPrice").Value), 0, lobjQuoteDetRS.Fields("QuotePtCallPrice").Value)
+'                        If lobjADORS.Fields("POPtCallPrice").Value = True Then lobjADORS.Fields("POCallPriceExpDate").Value = IIf(IsNull(lobjQuoteDetRS.Fields("QuoteCallPriceExpDate").Value), Format(Now() + 30, "Short Date"), lobjQuoteDetRS.Fields("QuoteCallPriceExpDate").Value)
+'                        lobjADORS.Fields("POPtUM").Value = frmBOMAlloc.grdData1.TextMatrix(i, 3)
+'                        lobjADORS.Fields("POPtWgt").Value = IIf(IsNull(lobjQuoteDetRS.Fields("QuotePtWgt").Value), 0, lobjQuoteDetRS.Fields("QuotePtWgt").Value)
+'                        lobjADORS.Fields("POPtPhantomPN").Value = False
+'
+'                        lstrSQL = "Select PartNum, descimp, Length, shipweight, UM, SpecialMult, MultID, " & lstrPriceField & " from Main where PartNum=" & SQLString(lobjADORS.Fields("POPtNum").Value)
+'                        Set lobjMainRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+'                        If Not lobjMainRS Is Nothing Then
+'                            lobjMainRS.ActiveConnection = Nothing
+'                            If Not (lobjMainRS.BOF And lobjMainRS.EOF) Then
+'
+'                                lsngCost = Decrypt(Left(Trim(lobjQuoteDetRS.Fields("QuotePtNum").Value), 1), lobjMainRS.Fields(lstrPriceField).Value)
+'                                If lobjMainRS.Fields("SpecialMult").Value > 0 Then
+'                                    lsngCost = DBLValue(lobjMainRS.Fields("SpecialMult").Value) * lsngCost
+'                                Else
+'                                    If Not Trim(lobjMainRS.Fields("MultID").Value) = "" Then
+'                                        lsngCost = lsngCost * (MultipliersCase(DBLValue(Trim(lobjMainRS.Fields("MultID").Value))))
+'                                    End If
+'                                End If
+'
+'                                lobjADORS.Fields("POPtMtCost").Value = lsngCost
+'                                lobjADORS.Fields("POPtUM").Value = lobjMainRS.Fields("UM").Value
+'                                lobjADORS.Fields("POPtWgt").Value = DBLValue(lobjMainRS.Fields("shipweight").Value)
+'                                If MeasSys = 0 Then lobjADORS.Fields("POPtDesc").Value = IIf(IsNull(lobjMainRS.Fields("DescImp").Value), "N/A", Trim(lobjMainRS.Fields("DescImp").Value))
+'
+'                                If lobjADORS.Fields("POPtUM").Value = "LFT" Then
+'                                    lobjADORS.Fields("POPtQtyOrd").Value = DBLValue(lobjADORS.Fields("POPtQtyOrd").Value) / 12
+'                                End If
+'                                If (frmBOMAlloc.grdData1.TextMatrix(i, 3) = "INCHES" Or frmBOMAlloc.grdData1.TextMatrix(i, 3) = "MM") And lobjMainRS.Fields("UM").Value = "EACH" Or _
+'                                        Left(lobjADORS.Fields("POPtNum").Value, 4) = "433-" Then
+''                                If lobjADORS.Fields("POPtNum").Value = "328-227" Or _
+'                                        lobjADORS.Fields("POPtNum").Value = "426-0271" Then
+'        '                                lobjADORS.Fields("POPtNum").Value = "114-702" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "114-703" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "114-704" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "114-706" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-009" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-010" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-011" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-012" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-013" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-014" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-015" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "114-701" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "426-0272" Or _
+'        '                                lobjADORS.Fields("POPtNum").Value = "950-016" Then
+'
+'                                    lsngLen = DBLValue(lobjMainRS.Fields("Length").Value)
+'                                    'pvc and shaft; weight and price go per each in the main, no need to modify.
+'
+'                                    lobjADORS.Fields("POPtQtyOrd").Value = RoundUp(DBLValue(frmBOMAlloc.grdData1.TextMatrix(i, 9) / lsngLen))
+'
+'                                End If
+'                            End If
+'                            Set lobjMainRS = Nothing
+'                        End If
+'                        lobjADORS.Fields("POPtQtyBO").Value = lobjADORS.Fields("POPtQtyOrd").Value
+'                        lobjQuoteDetRS.MoveNext
+'                    Loop
+'                    lobjQuoteDetRS.Close
+'                End If
+'            End If
+'            Set lobjQuoteDetRS = Nothing
+'        Else
+'            Exit For
+'        End If
+'        Call ModInventory.UpdateOnPOsForPN(frmBOMAlloc.grdData1.TextMatrix(i, 0), DBLValue(frmBOMAlloc.grdData1.TextMatrix(i, 12)))
+'    Next
+'    Set BuildPODetailRSQ = lobjADORS
+'    Set lobjADORS = Nothing
+'    Exit Function
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'End Function
+
+'Private Sub AddToPO(ByVal lngPOID As Long, ByVal lngDocID As Long)
+'     On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".AddToPO()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim lstrSQL As String
+'    Dim lintMode As Integer
+'    Dim lstrWhereClause As String
+'    Dim lstrExcludeFieldList As String
+'    Dim llngAffected As Long
+'    Dim lobjADORS As ADODB.Recordset
+'    Dim lobjParentRS As ADODB.Recordset
+'    Dim lobjMainRS As ADODB.Recordset
+'    Dim lblnCheck As Boolean
+'    Dim lobjRS As ADODB.Recordset
+'    Dim lobjTempRS As ADODB.Recordset
+'    Dim TempQty As Integer, TempLen As Single, TempBOM() As Long
+'    Dim TempSprLen As Single, i As Integer, j As Integer, TempQuote() As Long
+'    'this routine is being called when new po was just created and bom details are transfered
+'    ' or when adding to existing details
+'
+'    ' Copy the fields from the screen(BoM) to an ADO Recordset
+'    If mintBackTag = 1 Then
+'        Set lobjADORS = BuildPODetailRS(lngDocID)
+'    Else
+'        Set lobjADORS = BuildPODetailRSQ(lngDocID)
+'    End If
+'
+'    lintMode = MODE_ADD
+'    ' Process through the recordset and insert or update rows
+'    If Not lobjADORS Is Nothing Then
+'        If Not (lobjADORS.BOF And lobjADORS.EOF) Then
+'            lobjADORS.MoveFirst
+'            lstrExcludeFieldList = ""
+'
+'            Do While lobjADORS.EOF = False
+'                ' Check to see if the record exists in the
+'                ' BOMDetails table already
+'                lstrSQL = "select * from PODetails" 'POPtNum, POPtQtyOrd, POPtMtCost
+'                lstrSQL = lstrSQL & " where POID=" & lngPOID
+'                lstrSQL = lstrSQL & " and POPtNum=" & SQLString(lobjADORS.Fields("POPtNum").Value)
+'                Set lobjParentRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText) 'existing PO details
+'                If Not lobjParentRS Is Nothing Then
+'                    If Not (lobjParentRS.BOF And lobjParentRS.EOF) Then
+'                        lobjParentRS.MoveFirst 'found record, add to existing detail
+'                        ' Reset the Mode so that we do an update of the existing part
+'                        lintMode = MODE_EDIT
+'                        ' Average the cost and sum the qty's
+'                        If lobjADORS.Fields("POPtMultID").Value <> lobjParentRS.Fields("POPtMultID").Value Then
+'                            lobjADORS.Fields("POPtCallPrice").Value = True
+'                            lobjADORS.Fields("POCallPriceExpDate").Value = Format(Now() + 30, "Short Date")
+'                        End If
+'                        If DBLValue(lobjADORS.Fields("PODiscount").Value) + DBLValue(lobjParentRS.Fields("PODiscount").Value) > 0 Then
+'                            If DBLValue(lobjParentRS.Fields("PODiscount").Value) > 0 Then
+'                                If DBLValue(lobjADORS.Fields("PODiscount").Value) > DBLValue(lobjParentRS.Fields("PODiscount").Value) Or _
+'                                DBLValue(lobjADORS.Fields("PODiscount").Value) = 0 Then
+'                                    lobjADORS.Fields("PODiscount").Value = DBLValue(lobjParentRS.Fields("PODiscount").Value)
+'                                End If
+'                            End If
+'                            lobjADORS.Fields("POPtCallPrice").Value = True
+'                            lobjADORS.Fields("POCallPriceExpDate").Value = Format(Now() + 30, "Short Date")
+'                        End If
+'
+'                        'lobjADORS.Fields("POPtMtCost").Value = lobjADORS.Fields("POPtQtyOrd").Value * lobjADORS.Fields("POPtMtCost").Value
+'                        'lobjADORS.Fields("POPtMtCost").Value = (lobjADORS.Fields("POPtMtCost").Value + (lobjParentRS.Fields("POPtQtyOrd").Value * lobjParentRS.Fields("POPtMtCost").Value)) / lobjParentRS.Fields("POPtQtyOrd").Value * lobjADORS.Fields("POPtQtyOrd").Value
+'                        lobjADORS.Fields("POPtMtCost").Value = lobjParentRS.Fields("POPtMtCost").Value 'lobjADORS.Fields("POPtMtCost").Value / lobjADORS.Fields("POPtQtyOrd").Value
+'                        'for PVC or shaft:
+'                        If GetUMfromMain(lobjADORS.Fields("POPtNum").Value) = "EACH" And GetUMfromInventory(lobjADORS.Fields("POPtNum").Value) = "INCHES" Or _
+'                            Left(lobjADORS.Fields("POPtNum").Value, 4) = "433-" Then
+'                        'If lobjADORS.Fields("POPtNum").Value = "328-227" Or _
+'                                lobjADORS.Fields("POPtNum").Value = "426-0271" Or _
+'                                Left(lobjADORS.Fields("POPtNum").Value, 4) = "433-" Then
+''                                lobjADORS.Fields("POPtNum").Value = "114-702" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "114-703" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "114-704" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "114-706" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "950-009" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "950-010" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "950-011" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "950-012" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "950-013" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "950-014" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "950-015" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "114-701" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "426-0272" Or _
+''                                lobjADORS.Fields("POPtNum").Value = "950-016" Then
+'                            If Left(lobjADORS.Fields("POPtNum").Value, 4) = "433-" Then
+'                                TempSprLen = getlengthfrommain(lobjADORS.Fields("POPtNum").Value)
+'                            Else
+'                                lstrSQL = "SELECT PartNum, Length FROM Main where PartNum=" & SQLString(lobjADORS.Fields("POPtNum").Value)
+'                                Set lobjMainRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+'                                If Not lobjMainRS Is Nothing Then
+'                                    If lobjMainRS.EOF = False And lobjMainRS.BOF = False Then
+'                                        TempSprLen = DBLValue(lobjMainRS.Fields("Length").Value)
+'                                    End If
+'                                End If
+'                            End If
+'                            lstrSQL = "select POid, BOMid as DOCID" & ", 'BoM'" & " from BoM where POid=" & lngPOID
+'                            lstrSQL = lstrSQL & " union select POid, Quoteid as DOCID" & ", 'Quote'" & " from Quote where POid=" & lngPOID
+'                            lstrSQL = lstrSQL & " union select POid, BOMID as DOCID" & ", 'BoM'" & " from BoM where BOMID=" & lngDocID
+'                            Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+'                            If Not lobjRS Is Nothing Then
+'                                If lobjRS.EOF = False And lobjRS.BOF = False Then
+'                                    lobjRS.MoveFirst
+'                                    TempLen = 0
+'                                    ReDim TempQuote(0)
+'                                    ReDim TempBOM(0)
+'                                     i = 0
+'                                     j = 0
+'                                    Do While lobjRS.EOF = False
+'                                        If lobjRS.Fields(2).Value = "Quote" Then
+'                                            ReDim Preserve TempQuote(i)
+'                                            TempQuote(i) = lobjRS.Fields("docID").Value
+'                                            i = i + 1
+'                                        Else
+'                                            ReDim Preserve TempBOM(j)
+'                                            TempBOM(j) = lobjRS.Fields("docID").Value
+'                                            j = j + 1
+'                                        End If
+'                                        lobjRS.MoveNext
+'                                    Loop
+'                                    lobjADORS.Fields("POPtQtyOrd").Value = GetNumberOfPartsRequired(lobjADORS.Fields("POPtNum").Value, TempSprLen, TempBOM(), TempQuote()) + lobjParentRS.Fields("POPtQtyOrd").Value
+'                                End If
+'                            End If
+'                        Else
+'                            lobjADORS.Fields("POPtQtyOrd").Value = DBLValue(lobjADORS.Fields("POPtQtyOrd").Value) + DBLValue(lobjParentRS.Fields("POPtQtyOrd").Value)
+'                        End If
+'                    Else 'if not already on PO, need to insert
+'                        lstrErrDescr = "Error building insert statement for PODetails"
+'                        lstrSQL = Build_Insert(lobjADORS, "PODetails", "")
+'                        lstrErrDescr = "Error inserting data into PODetails"
+'                        lobjParentRS.Close
+'                        Set lobjParentRS = Nothing
+'                        GoTo Label
+'                    End If
+'                    lobjParentRS.Close
+'                End If
+'                Set lobjParentRS = Nothing
+'
+'                'Build the SQL Insert or Update statement
+'                If lintMode = MODE_ADD Then
+'                    lstrErrDescr = "Error building insert statement for PODetails"
+'                    lstrSQL = Build_Insert(lobjADORS, "PODetails", "")
+'                    lstrErrDescr = "Error inserting data into PODetails"
+'                Else
+'                    lstrErrDescr = "Error building update statement for PODetails"
+'                    lstrWhereClause = "POID=" & lngPOID
+'                    lstrWhereClause = lstrWhereClause & " and POPtNum=" & SQLString(lobjADORS.Fields("POPtNum").Value)
+'                    lstrSQL = Build_Update(lobjADORS, "PODetails", lstrWhereClause, "POID, PONum")
+'                    lstrErrDescr = "Error updating PODetails"
+'                End If
+'Label:
+'                Call CnnBTMS.Execute(lstrSQL, 0, adCmdText And adExecuteNoRecords)
+'                lstrErrDescr = ""
+'                lobjADORS.MoveNext
+'            Loop
+'
+'            lobjADORS.Close
+'        End If
+'    End If
+'
+'    Set lobjADORS = Nothing
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Me.Move (Screen.Width - Me.Width) / 2, (Screen.Height - Me.Height) / 2
+    Call LoadPOs
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Screen.MousePointer = vbDefault
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub

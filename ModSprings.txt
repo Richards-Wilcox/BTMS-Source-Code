@@ -1,0 +1,3313 @@
+Option Explicit
+
+Const cstrModuleName As String = "ModSprings"
+
+Public Sub LoadSprings()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadSprings()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Load frmSprSolutions
+    
+    frmSprSolutions.Visible = False
+     
+    Call stamping
+    
+    MinCycLife = frmSprSolutions.cboMin.Text
+    MaxCycLife = frmSprSolutions.cboMax.Text
+    
+
+''''''''''Change in .NET''''''''''''''''
+'    If frmSprSolutions.cboStamping.ListCount > 0 Then frmSprSolutions.cboStamping.ListIndex = 0
+    If frmSprSolutions.cboStamping.ListCount > 0 Then
+        frmSprSolutions.cboStamping.ListIndex = 0
+    Else
+        MsgBox "No drums found for this door.", vbInformation + vbApplicationModal, "No Drums Found"
+    End If
+
+''''''''''END Change in .NET
+    
+    frmSprSolutions.Show
+    frmSprSolutions.Visible = True
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+  
+End Sub
+
+
+Public Sub ShowPic()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ShowPic()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim Pat As String
+    Dim pictn As String
+    Dim a As Single, b As Single
+    Dim X
+    frmSprSolutions.Image1.Stretch = False
+    
+    If PicLoc = 0 Then
+        If Dir(App.Path & "\RWPictures\" & frmSprSolutions.lblPnRight & ".jpg") <> "" Then
+            pictn = App.Path & "\RWPictures\" & frmSprSolutions.lblPnRight & ".jpg"
+            If frmSprSolutions.lblPnRight <> "" Then
+                Set X = LoadPicture(pictn)
+                Set frmSprSolutions.Image1 = X
+                a = frmSprSolutions.Image1.Width
+                b = frmSprSolutions.Image1.Height
+                frmSprSolutions.Image1.Stretch = True
+                frmSprSolutions.Image1.Width = a * (0.4 * (Screen.Width / 15360#)) 'based on maximum resolution of 1024/ 768
+                frmSprSolutions.Image1.Height = b * (0.4 * (Screen.Height / 11520#))
+                Set X = LoadPicture(pictn)
+                Set frmSprSolutions.Image1 = X
+                frmSprSolutions.Image1.Move frmSprSolutions.lblDescr.Left, frmSprSolutions.lblDrWght.Top
+            End If
+        End If
+    Else
+        Pat = CheckCDROM
+        If CDROMPic = True Then
+            If Dir(Pat & "\RWPictures\" & frmSprSolutions.lblPnRight & ".jpg") <> "" Then
+                pictn = Pat & "\RWPictures\" & frmSprSolutions.lblPnRight & ".jpg"
+                If frmSprSolutions.lblPnRight <> "" Then
+                    Set X = LoadPicture(pictn)
+                    Set frmSprSolutions.Image1 = X
+                    a = frmSprSolutions.Image1.Width
+                    b = frmSprSolutions.Image1.Height
+                    frmSprSolutions.Image1.Stretch = True
+                    frmSprSolutions.Image1.Width = a * (0.4 * (Screen.Width / 15360#)) 'based on maximum resolution of 1024/ 768
+                    frmSprSolutions.Image1.Height = b * (0.4 * (Screen.Height / 11520#))
+                    Set X = LoadPicture(pictn)
+                    Set frmSprSolutions.Image1 = X
+                frmSprSolutions.Image1.Move frmSprSolutions.lblDescr.Left, frmSprSolutions.lblDrWght.Top
+                End If
+            End If
+        End If
+    End If
+    frmSprSolutions.Image1.Visible = True
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+Public Function CheckCDROM() As String
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".CheckCDROM()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim objFSO As FileSystemObject, objdrive
+    Set objFSO = New FileSystemObject
+    For Each objdrive In objFSO.Drives
+        If objdrive.DriveType = 4 Then 'CDROM
+            CDROMPic = objFSO.FolderExists(objdrive & "\RWPictures")
+        End If
+    Next
+    CheckCDROM = objdrive
+    Set objFSO = Nothing
+
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Sub stamping()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".stamping()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim tempTyp As String
+    Dim HL As Single
+    Dim Q As Integer
+    Dim lobjDrumsRS As ADODB.Recordset
+    Dim Price As Double, Num As Integer
+    Dim MultiU As Single
+    Dim lobjMainRS As ADODB.Recordset
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    
+    Set lobjDrumsRS = New ADODB.Recordset
+    
+    lobjDrumsRS.Open "Drums", CnnBTMS, adOpenKeyset, adLockOptimistic
+    
+    Q = 0
+    
+    If LiftType = "Low Headroom Front Mount" Or LiftType = "Low Headroom Rear Mount" Or LiftType = "Standard Lift" Then
+        tempTyp = "S"
+    End If
+    If LiftType = "Low Headroom Vertical Lift" Or LiftType = "Vertical Lift" Then
+        tempTyp = "V"
+    End If
+    If LiftType = "High Lift" Then
+        tempTyp = "H"
+    End If
+    
+    lobjDrumsRS.MoveFirst
+    Do Until lobjDrumsRS.EOF = True
+        If lobjDrumsRS.Fields("Type").Value = tempTyp Then
+            If DrWgt < DBLValue(lobjDrumsRS.Fields("MaxDrWgt").Value) Then
+                If DrHgt <= DBLValue(lobjDrumsRS.Fields("MaxDrHgt").Value) Then
+                    If varDoorData.ShaftDia = DBLValue(lobjDrumsRS.Fields("Shafts").Value) Then
+                        If tempTyp = "H" And varDoorData.sngHeadroom > 0 Then
+                            Select Case lobjDrumsRS.Fields("Stamping").Value
+                                Case "D400-54"
+                                    HL = IIf(HWType < 3, varDoorData.sngHeadroom - 7.49, varDoorData.sngHeadroom - 8.553)
+                                Case "D525-54"
+                                    HL = IIf(HWType < 3, varDoorData.sngHeadroom - 8.844, varDoorData.sngHeadroom - 10.334)
+                                Case "D575-120"
+                                    HL = IIf(HWType < 3, varDoorData.sngHeadroom - 10.219, varDoorData.sngHeadroom - 11.969)
+                                Case "D6375-164"
+                                    HL = varDoorData.sngHeadroom - 17.75
+                                Case "D800-120"
+                                    HL = varDoorData.sngHeadroom - 18.2
+                                Case "D850-132"
+                                    HL = IIf(LiftType = "Vertical Lift", DrHgt * 2 + 22, DrHgt * 2 + 10)
+                                Case "D1100-216"
+                                    HL = IIf(LiftType = "Vertical Lift", DrHgt * 2 + 10, DrHgt * 2 + 22)
+                                Case Else
+                                    HL = 0
+                            End Select
+                            If HL > DrHgt - 9 Or HL > 164 Then 'set the Hl to the maximum allowed.
+                                HL = IIf(DrHgt - 9 < 164, DrHgt - 9, 164)
+                            End If
+                        Else
+                            HL = HILIFT
+                        End If
+                        If (Not tempTyp = "H") Or (tempTyp = "H" And (DrHgt - HL <= lobjDrumsRS.Fields("MaxDrHgt").Value - lobjDrumsRS.Fields("MaxHilift").Value And HL <= lobjDrumsRS.Fields("MaxHilift").Value And HL >= 17 And HWType >= GetMinHWSizeForStamping(lobjDrumsRS.Fields("Stamping").Value))) Then
+                            
+                            
+                        '-- Mod Hanover  MultId changed to strMultId
+                            
+                            
+                           ' lstrSQL = "select PartNum, G,I,N,T,MultID,SpecialMult from Main where PartNum=" & SQLString(lobjDrumsRS.Fields("Part N").Value)
+                            lstrSQL = "select PartNum, G,I,N,T,J,M,S,V," & strMultId & ",SpecialMult from Main where PartNum=" & SQLString(lobjDrumsRS.Fields("Part N").Value)
+
+                            
+                            Set lobjMainRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                            If Not lobjMainRS Is Nothing Then
+                                If Not (lobjMainRS.EOF And lobjMainRS.BOF) Then
+                            
+                                    Select Case intCheck
+                                    Case 1
+                                        Price = Decrypt(GetSym(lobjMainRS.Fields("PartNum").Value), lobjMainRS.Fields("G").Value)
+                                    Case 2
+                                        Price = Decrypt(GetSym(lobjMainRS.Fields("PartNum").Value), lobjMainRS.Fields("I").Value)
+                                    Case 3
+                                        Price = Decrypt(GetSym(lobjMainRS.Fields("PartNum").Value), lobjMainRS.Fields("N").Value)
+                                    Case 4
+                                        Price = Decrypt(GetSym(lobjMainRS.Fields("PartNum").Value), lobjMainRS.Fields("T").Value)
+                                    
+                                    Case 5
+                                        Price = Decrypt(GetSym(lobjMainRS.Fields("PartNum").Value), lobjMainRS.Fields("J").Value)
+                                    Case 6
+                                        Price = Decrypt(GetSym(lobjMainRS.Fields("PartNum").Value), lobjMainRS.Fields("M").Value)
+                                    Case 7
+                                        Price = Decrypt(GetSym(lobjMainRS.Fields("PartNum").Value), lobjMainRS.Fields("S").Value)
+                                    Case 8
+                                        Price = Decrypt(GetSym(lobjMainRS.Fields("PartNum").Value), lobjMainRS.Fields("V").Value)
+    
+                                    End Select
+
+                                    If lobjMainRS.Fields("SpecialMult").Value <> "0" Then
+                                        MultiU = lobjMainRS.Fields("SpecialMult").Value
+                                    Else
+                                    
+                     '-- Mod Hanover  MultId changed to strMultId
+
+                                        Num = lobjMainRS.Fields(strMultId).Value
+                                        MultiU = MultipliersCase(Num)
+                                    End If
+                                    
+                                    If MultiU < 1 Then
+                                        Price = Price * MultiU
+                                    End If
+                                    
+                                    Set lobjMainRS = Nothing
+                                    'load stamping and price into invisible grid for sorting by price
+                                    frmSprSolutions.VSFlexGrid1.Rows = Q + 1
+                                    frmSprSolutions.VSFlexGrid1.Row = Q
+                                    frmSprSolutions.VSFlexGrid1.Col = 0
+                                    frmSprSolutions.VSFlexGrid1.Text = lobjDrumsRS.Fields("Stamping")
+                                    frmSprSolutions.VSFlexGrid1.Col = 1
+                                    frmSprSolutions.VSFlexGrid1.Text = Format(Price, "Fixed")
+                                    Q = Q + 1
+                                End If
+                            End If
+                        End If
+                    End If
+                End If
+            End If
+        End If
+        lobjDrumsRS.MoveNext
+        lobjDrumsRS.MoveNext
+    Loop
+    
+    lobjDrumsRS.Close
+    Set lobjDrumsRS = Nothing
+    
+    If frmSprSolutions.VSFlexGrid1.TextMatrix(0, 0) = "" Then
+''''''''''Change in .NET''''''''''''''''
+'        frmSprSolutions.cboStamping.AddItem ""
+'        frmSprSolutions.cboStamping.ListIndex = 0
+''''''''''END Change in .NET
+        frmSprSolutions.cboStamping.Enabled = False
+    Else
+
+        frmSprSolutions.VSFlexGrid1.Select 0, 1, frmSprSolutions.VSFlexGrid1.Rows - 1, 1
+        frmSprSolutions.VSFlexGrid1.Sort = flexSortNumericAscending
+    
+        If frmSprSolutions.VSFlexGrid1.Rows < 1 Then
+            Exit Sub
+        End If
+        
+        For Q = 0 To frmSprSolutions.VSFlexGrid1.Rows - 1
+            frmSprSolutions.cboStamping.List(Q) = frmSprSolutions.VSFlexGrid1.TextMatrix(Q, 0)
+        Next Q
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+Public Function GetDrumPartN(ByVal pstrLeft As String) As String
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetDrumPartN()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    Dim lobjDrumsRS As ADODB.Recordset
+    Set lobjDrumsRS = New ADODB.Recordset
+    lobjDrumsRS.Open "Drums", CnnBTMS, adOpenKeyset, adLockOptimistic
+        
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim e As Byte
+    e = 0
+    lobjDrumsRS.MoveFirst
+    Do Until e = 1
+        If (lobjDrumsRS.Fields("Stamping").Value = varDoorData.aDrum.strStamping) And (pstrLeft = lobjDrumsRS.Fields("Position").Value) Then
+            If varDoorData.ShaftDia = lobjDrumsRS.Fields("Shafts").Value Then
+                GetDrumPartN = lobjDrumsRS.Fields("Part N")
+                e = e + 1
+            End If
+        End If
+        lobjDrumsRS.MoveNext
+    Loop
+    lobjDrumsRS.Close
+    Set lobjDrumsRS = Nothing
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function Get_Cable_Length(ByVal PartN As String, ByVal Ret As Byte)
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Get_Cable_Length()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    'if ret is 1 then return cable length, if ret is 0 then return cable PN
+    Dim sngCblLen As Single, PN As String
+    Select Case PartN
+    Case "950-044", "950-045" ' 400-144 drums
+        If LiftType = "Low Headroom Rear Mount" Then
+            If HWType = 2 Then
+                sngCblLen = Sqr(121 + (DrHgt + 5.781) ^ 2) + DrHgt + 17 + 8
+            Else
+                sngCblLen = Sqr(154 + (DrHgt + 3) ^ 2) + DrHgt + 20.5 + 8
+            End If
+        ElseIf LiftType = "Low Headroom Front Mount" Then
+            If HWType = 2 Then
+                sngCblLen = DrHgt + 16.4375
+            Else
+                sngCblLen = DrHgt + 17.625
+            End If
+        Else
+            If HRadius = 12 Then
+                sngCblLen = DrHgt + 18.4375
+            Else
+                If HWType = 2 Then
+                    sngCblLen = DrHgt + 21.4375
+                Else
+                    sngCblLen = DrHgt + 22.5
+                End If
+            End If
+        End If
+        PN = "133-021"
+        
+    Case "773-127", "773-128", "773-137", "773-138" ' 5250-216 drums
+        If LiftType = "Low Headroom Rear Mount" Then
+            If HWType = 2 Then
+                sngCblLen = Sqr(121 + (DrHgt + 5.781) ^ 2) + DrHgt + 17 + 10
+            Else
+                sngCblLen = Sqr(154 + (DrHgt + 3) ^ 2) + DrHgt + 20.5 + 10
+            End If
+        ElseIf LiftType = "Low Headroom Front Mount" Then
+            If HWType = 2 Then
+                sngCblLen = DrHgt + 19
+            Else
+                sngCblLen = DrHgt + 19.625
+            End If
+        Else
+            If HRadius = 12 Then
+                sngCblLen = DrHgt + 21
+            Else
+                If HWType = 2 Then
+                    sngCblLen = DrHgt + 24
+                Else
+                    sngCblLen = DrHgt + 25.5
+                End If
+            End If
+        End If
+        PN = "133-061"
+        
+    Case "950-048", "950-049", "950-050", "950-051" ' 800-384 drums
+        If LiftType = "Low Headroom Rear Mount" Then
+            If HWType = 2 Then
+                sngCblLen = Sqr(121 + (DrHgt + 5.781) ^ 2) + DrHgt + 17 + 14
+            Else
+                sngCblLen = Sqr(154 + (DrHgt + 3) ^ 2) + DrHgt + 20.5 + 14
+            End If
+        ElseIf LiftType = "Low Headroom Front Mount" Then
+            If HWType = 2 Then
+                sngCblLen = DrHgt + 23.375
+            Else
+                sngCblLen = DrHgt + 24.5625
+            End If
+        Else
+            If HWType = 2 Then
+                If HRadius = 12 Then
+                    sngCblLen = DrHgt + 25.375
+                Else
+                    sngCblLen = DrHgt + 28.375
+                End If
+            Else
+                sngCblLen = DrHgt + 30.125
+            End If
+        End If
+        PN = "133-081"
+        
+    Case "950-052", "950-053" ' 400-54 drums
+'        If HRadius = 12 Then
+'            sngCblLen = DrHgt + 67.4375
+'        Else
+'            sngCblLen = DrHgt + 68.5
+'        End If
+        If HWType = 2 Then
+            sngCblLen = DrHgt + 67.4375
+        Else
+            sngCblLen = DrHgt + 68.5
+        End If
+        PN = "133-021"
+        
+    Case "773-141", "773-142" ' 525-54 drums
+        If HWType = 2 Then 'If HRadius = 12 Then
+            sngCblLen = DrHgt + 71
+        Else
+            sngCblLen = DrHgt + 72.5
+        End If
+        PN = "133-061"
+        
+    Case "773-135", "773-136" ' 5750-120 drums
+        If HWType = 2 Then 'If HRadius = 12 Then
+            sngCblLen = DrHgt + 138.375
+        Else
+            sngCblLen = DrHgt + 140.125
+        End If
+        PN = "133-061"
+        
+   Case "950-085", "950-086", "950-087", "950-088" ' D6375-164 drums
+        sngCblLen = DrHgt + 193.125
+        PN = "133-081"
+        
+   Case "950-155", "950-156", "950-157", "950-158" ' 800-120 drums
+        sngCblLen = DrHgt + 149.125
+        PN = "133-081"
+        
+   Case "950-058", "950-059", "950-060", "950-061" ' 850-132 drums
+        If DrWgt <= 550 Then
+            If LiftType = "Low Headroom Vertical Lift" Then
+                sngCblLen = DrHgt + 148 '144 old value 2.0.18
+            Else
+                sngCblLen = DrHgt + 160 '156 old value 2.0.18
+            End If
+            PN = "133-021"
+            
+        Else
+            If LiftType = "Low Headroom Vertical Lift" Then
+                sngCblLen = DrHgt + 148 '147 old value 2.0.18
+            Else
+                sngCblLen = DrHgt + 160 '159 old value 2.0.18
+            End If
+            PN = "133-061"
+            
+        End If
+   Case "773-139", "773-140", "773-129", "773-130"
+        If DrWgt <= 550 Then
+            If LiftType = "Low Headroom Vertical Lift" Then
+                sngCblLen = DrHgt + 241
+            Else
+                sngCblLen = DrHgt + 253
+            End If
+            PN = "133-021"
+            
+        Else
+            If LiftType = "Low Headroom Vertical Lift" Then
+                sngCblLen = DrHgt + 241
+            Else
+                sngCblLen = DrHgt + 253
+            End If
+            PN = "133-061"
+            
+        End If
+        
+    Case "773-157", "773-158"   '1150-236 drums 1-1/4" shaft only
+        
+        If DrWgt <= 1480 Then
+            If LiftType = "Low Headroom Vertical Lift" Then
+                sngCblLen = DrHgt + 259
+            Else
+                sngCblLen = DrHgt + 271
+            End If
+        PN = "133-061"  '3/16" cable
+        
+        Else
+            If LiftType = "Low Headroom Vertical Lift" Then
+                sngCblLen = DrHgt + 259
+            Else
+                sngCblLen = DrHgt + 271
+            End If
+            PN = "133-081"  '1/4" cable
+        
+        End If
+    
+    Case "773-159", "773-160", "773-161", "773-162"  '1350-336 drums 1" & 1-1/4" shaft only
+        
+        If DrWgt <= 1480 Then
+            If LiftType = "Low Headroom Vertical Lift" Then
+                sngCblLen = DrHgt + 357.5
+            Else
+                sngCblLen = DrHgt + 372.5
+            End If
+            PN = "133-061"  '3/16" cable
+        
+        Else
+            If LiftType = "Low Headroom Vertical Lift" Then
+                sngCblLen = DrHgt + 357.5
+            Else
+                sngCblLen = DrHgt + 372.5
+            End If
+            PN = "133-081"  '1/4" cable
+        
+        End If
+    
+    End Select
+    
+    If varDoorData.Track.strMountType = "EU ADCA" Then
+        If varDoorData.gblnCableFailure = True Then
+            If PN = "133-021" Or PN = "133-061" Or PN = "133-081" Then
+                sngCblLen = RoundUp(sngCblLen + 8)   '5
+            End If
+        End If
+    End If
+   
+    If Ret = 1 Then
+        sngCblLen = RoundFraction(sngCblLen - Fix(sngCblLen)) + Fix(sngCblLen)
+        Get_Cable_Length = sngCblLen
+    Else
+        Get_Cable_Length = PN
+    End If
+
+'    Dim CableLen As Single
+'    Dim CablePN As String
+'
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function GetMaxSpringLen(ByVal CID As Single) As Integer
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetMaxSpringLen()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lstrSQL As String
+    Dim lobjMaxLenRS As ADODB.Recordset
+    Dim llngAffected As Long
+    lstrSQL = "SELECT * FROM MaxLen WHERE CoilID=" & Replace(CID, ",", ".")
+    Set lobjMaxLenRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjMaxLenRS Is Nothing Then
+        If Not (lobjMaxLenRS.EOF And lobjMaxLenRS.BOF) Then
+            If varDoorData.ShaftTube = False Then
+                GetMaxSpringLen = Int(lobjMaxLenRS.Fields!Solid)
+            Else
+                GetMaxSpringLen = Int(lobjMaxLenRS.Fields!tube)
+            End If
+        End If
+        lobjMaxLenRS.Close
+    End If
+    Set lobjMaxLenRS = Nothing
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+'Public Function GetSpringLength(ByVal PN As String) As Integer
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetMaxSpringLen()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim lstrSQL As String
+'    Dim lobjLenRS As ADODB.Recordset
+'    Dim llngAffected As Long
+'    lstrSQL = "SELECT PartNum, Length FROM Main WHERE PartNum='" & PN & "'"
+'    Set lobjLenRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+'    If Not lobjLenRS Is Nothing Then
+'        If Not (lobjLenRS.EOF And lobjLenRS.BOF) Then
+'            GetSpringLength = Int(lobjLenRS.Fields!Length)
+'        End If
+'        lobjLenRS.Close
+'    End If
+'    Set lobjLenRS = Nothing
+'    Exit Function
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'
+'End Function
+
+Public Sub DrumInfoFromTable()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".DrumInfoFromTable()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    Dim lobjDrumsRS As ADODB.Recordset
+    Set lobjDrumsRS = New ADODB.Recordset
+    lobjDrumsRS.Open "Drums", CnnBTMS, adOpenKeyset, adLockOptimistic
+
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim Pos1 As Integer, Pos2 As Integer, TAngle As Single, CableDia As Single
+    Dim lstrDesc As String, DWUP As Single
+    Dim sym As String ' will hold second symbol in Part N
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjMainRS As ADODB.Recordset
+    
+    'If Val(frmSectionsOptions.cboSwitches.Text) > 0 Then MRSBWgt = GetMRSBWeight(Val(frmSectionsOptions.cboSwitches.Text))
+    TAngle = Sin(SlopHAng * (3.14159265358979 / 180))
+    
+    lobjDrumsRS.MoveFirst
+    Do Until lobjDrumsRS.EOF = True
+        If lobjDrumsRS.Fields("Part N").Value = frmSprSolutions.lblPnRight.Caption Then  'drum part number
+            sym = GetSym(lobjDrumsRS.Fields("Part N").Value)
+            varDoorData.aDrum.sngMaxWeight = lobjDrumsRS.Fields("MaxDrWgt").Value
+            If MeasU = 0 Then ' metric
+                aCon.KG = 0
+                aCon.LB = varDoorData.aDrum.sngMaxWeight
+                aCon.KGcalc
+                frmSprSolutions.lblDrWght.Caption = Format(aCon.KG, "###0.00") & " kg"
+            Else
+                frmSprSolutions.lblDrWght.Caption = varDoorData.aDrum.sngMaxWeight & " lb"
+            End If
+            varDoorData.aDrum.sngMaxHgt = DBLValue(lobjDrumsRS.Fields("MaxDrHgt").Value)
+            If MeasU = 0 Then ' metric
+                aCon.mm = 0
+                aCon.Inch = varDoorData.aDrum.sngMaxHgt
+                aCon.mmcalc
+                frmSprSolutions.lblDrHgt = Round(aCon.mm, 0)
+            Else
+                frmSprSolutions.lblDrHgt = varDoorData.aDrum.sngMaxHgt & Chr$(34)
+            End If
+            varDoorData.sngMaxHiLift = DBLValue(lobjDrumsRS.Fields("maxhilift").Value)
+            If HILIFT > 0 Then
+                If MeasU = 0 Then ' metric
+                    aCon.mm = 0
+                    aCon.Inch = varDoorData.sngMaxHiLift
+                    aCon.mmcalc
+                    frmSprSolutions.lblMaxHiLift.Caption = Round(aCon.mm, 0)
+                Else
+                    frmSprSolutions.lblMaxHiLift.Caption = varDoorData.sngMaxHiLift & Chr$(34)
+                End If
+            Else
+                frmSprSolutions.lblMaxHiLift.Caption = "N/A"
+            End If
+            
+            varDoorData.aDrum.DrumDia = DBLValue(lobjDrumsRS.Fields("Diam").Value)
+            varDoorData.aDrum.RoR = DBLValue(lobjDrumsRS.Fields("RoRise").Value)
+            If MeasU = 0 Then ' metric
+                aCon.mm = 0
+                aCon.Inch = varDoorData.aDrum.DrumDia
+                aCon.mmcalc
+                frmSprSolutions.lblDia.Caption = Round(aCon.mm, 0)
+            Else
+                frmSprSolutions.lblDia.Caption = Format(varDoorData.aDrum.DrumDia, "Fixed") & Chr$(34)
+            End If
+            lstrDesc = lobjDrumsRS.Fields("Description").Value
+            Pos1 = InStr(lstrDesc, "LH")
+            Pos2 = InStr(lstrDesc, "RH")
+            
+            If Pos1 <> 0 Then
+                lstrDesc = Mid(lstrDesc, 1, Pos1 - 1)
+            Else
+                If Pos2 <> 0 Then
+                    lstrDesc = Mid(lstrDesc, 1, Pos2 - 1)
+                End If
+            End If
+            
+            frmSprSolutions.lblDescr.Caption = lstrDesc
+            varDoorData.aDrum.strDescr = lstrDesc
+            varDoorData.aDrum.Circ = lobjDrumsRS.Fields("Circ")
+            CableDia = GetCableDia(lobjDrumsRS.Fields("Stamping"))
+            varDoorData.aDrum.FMA = DBLValue(lobjDrumsRS.Fields("FMArm").Value) + CableDia / 2
+            
+            Select Case LiftType
+            Case "Standard Lift"
+                Select Case HRadius
+                Case 16 'Can be 2" or 3" or Super 3"
+                    If HWType = 2 Then    '2"
+                        If SlopHAng > 0 Then
+                            DWUP = ((18 / DrHgt) + ((DrHgt - 18) / DrHgt) * TAngle) * (DrWgt - MRSBWgt) + MRSBWgt
+                        Else
+                            DWUP = (18 / DrHgt) * (DrWgt - MRSBWgt) + MRSBWgt
+                        End If
+                    Else  '3" or Super 3"
+                        If SlopHAng > 0 Then
+                            DWUP = ((18.625 / DrHgt) + ((DrHgt - 18.625) / DrHgt) * TAngle) * (DrWgt - MRSBWgt) + MRSBWgt
+                        Else
+                            DWUP = (18.625 / DrHgt) * (DrWgt - MRSBWgt) + MRSBWgt
+                        End If
+                    End If
+                Case 12 'Only 2" track can have a 12" radius
+                    If HWType = 2 Then
+                        If SlopHAng > 0 Then
+                            DWUP = ((15 / DrHgt) + ((DrHgt - 15) / DrHgt) * TAngle) * (DrWgt - MRSBWgt) + MRSBWgt
+                        Else
+                            DWUP = (15 / DrHgt) * (DrWgt - MRSBWgt) + MRSBWgt
+                        End If
+                    End If
+                End Select
+                varDoorData.aDrum.TTDU = DWUP * varDoorData.aDrum.FMA
+                varDoorData.aDrum.HMA = DBLValue(lobjDrumsRS.Fields("HMArm").Value) + CableDia / 2
+                varDoorData.aDrum.TTDD = DrWgt * varDoorData.aDrum.HMA
+                varDoorData.aDrum.REVS = DrHgt / (varDoorData.aDrum.Circ + CableDia * 3.14159265358979)
+                varDoorData.aDrum.IPPT = (varDoorData.aDrum.TTDD - varDoorData.aDrum.TTDU) / varDoorData.aDrum.REVS
+                
+            Case "Low Headroom Front Mount", "Low Headroom Rear Mount"
+                Select Case HWType
+                Case 2    '2" NOTE: Special Radius - different track required than other lift types
+                      'The radius is reduced here to compensate for more of the door being in the radius when in the open position
+                    
+                    If SlopHAng > 0 Then
+                            DWUP = ((9 / DrHgt) + ((DrHgt - 9) / DrHgt) * TAngle) * (DrWgt - MRSBWgt) + MRSBWgt
+                    Else
+                        DWUP = (9 / DrHgt) * (DrWgt - MRSBWgt) + MRSBWgt
+                    End If
+                        
+'                    DWUP = (11 / DrHgt) * (DrWgt - MRSBWgt - varPassDoor.sngWgt) + MRSBWgt + varPassDoor.sngWgt
+                    'DWUP = (9 / DrHgt) * (DrWgt - MRSBWgt) + MRSBWgt   commented in version 2.0.18  - added slop dimensions above
+                    
+                Case 3, 3.25    '3" or Super 3" NOTE: Special Radius - different track required than other lift types
+                      'The radius is reduced here to compensate for more of the door being in the radius when in the open position
+                    
+                    'DWUP = (9 / DrHgt) * (DrWgt - MRSBWgt) + MRSBWgt  commented in version 2.0.18  - added slop dimensions above
+                
+                    If SlopHAng > 0 Then
+                            DWUP = ((9 / DrHgt) + ((DrHgt - 9) / DrHgt) * TAngle) * (DrWgt - MRSBWgt) + MRSBWgt
+                    Else
+                        DWUP = (9 / DrHgt) * (DrWgt - MRSBWgt) + MRSBWgt
+                    End If
+                    
+                End Select
+                
+                varDoorData.aDrum.TTDU = DWUP * varDoorData.aDrum.FMA
+                varDoorData.aDrum.HMA = DBLValue(lobjDrumsRS.Fields("HMArm").Value) + CableDia / 2
+                varDoorData.aDrum.TTDD = DrWgt * varDoorData.aDrum.HMA
+                varDoorData.aDrum.REVS = DrHgt / (varDoorData.aDrum.Circ + CableDia * 3.14159265358979)
+                varDoorData.aDrum.IPPT = (varDoorData.aDrum.TTDD - varDoorData.aDrum.TTDU) / varDoorData.aDrum.REVS
+            
+            Case "High Lift"
+                If SlopHAng > 0 Then
+                    DWUP = (((HILIFT + 9) / DrHgt) + ((DrHgt - HILIFT + 9) / DrHgt) * TAngle) * (DrWgt - MRSBWgt) + MRSBWgt
+                Else
+                    If (HILIFT + 9) <= DrHgt Then
+                        DWUP = ((HILIFT + 9) / DrHgt) * (DrWgt - MRSBWgt) + MRSBWgt
+                    Else
+                        DWUP = DrWgt
+                    End If
+                End If
+                varDoorData.aDrum.TTDU = DWUP * varDoorData.aDrum.FMA
+                varDoorData.aDrum.HMA = ((varDoorData.aDrum.FMA ^ 2) + (HILIFT * lobjDrumsRS.Fields("RoRise").Value) / 3.14159265358979) ^ 0.5 '+ CableDia / 2
+                varDoorData.aDrum.TTDD = DrWgt * varDoorData.aDrum.HMA
+                varDoorData.aDrum.REVS = (varDoorData.aDrum.HMA - varDoorData.aDrum.FMA) / lobjDrumsRS.Fields("RoRise").Value + (DrHgt - HILIFT) / (varDoorData.aDrum.Circ + CableDia * 3.14159265358979)
+                varDoorData.aDrum.IPPT = (varDoorData.aDrum.TTDD - varDoorData.aDrum.TTDU) / varDoorData.aDrum.REVS
+            Case "Vertical Lift", "Low Headroom Vertical Lift"
+                If SlopHAng > 0 Then 'if you arrived here through the exclusion offered when using either Standard or High lift style then one of the following formulas will apply.
+                    If HILIFT = 0 Then
+                        DWUP = (DrWgt - MRSBWgt) * TAngle + MRSBWgt
+                    Else
+                        DWUP = (((HILIFT + 9) / DrHgt) + ((DrHgt - HILIFT + 9) / DrHgt) * TAngle) * (DrWgt - MRSBWgt) + MRSBWgt
+                    End If
+                Else
+                    DWUP = DrWgt
+                End If
+             
+                varDoorData.aDrum.TTDU = DWUP * varDoorData.aDrum.FMA
+                varDoorData.aDrum.HMA = ((varDoorData.aDrum.FMA ^ 2) + ((lobjDrumsRS.Fields("RoRise").Value) * DrHgt / 3.14159265358979)) ^ 0.5 ' + CableDia / 2
+                varDoorData.aDrum.RoR = DBLValue(lobjDrumsRS.Fields("RoRise").Value)
+                varDoorData.aDrum.TTDD = DrWgt * varDoorData.aDrum.HMA
+                varDoorData.aDrum.REVS = (varDoorData.aDrum.HMA - varDoorData.aDrum.FMA) / varDoorData.aDrum.RoR
+                varDoorData.aDrum.IPPT = (varDoorData.aDrum.TTDD - varDoorData.aDrum.TTDU) / varDoorData.aDrum.REVS
+               
+            End Select
+            
+            '-- Mod Hanover  MultId changed to strMultId
+
+'               lstrSQL = "select PartNum, G,I,N,T,MultID,SpecialMult from Main where PartNum=" & SQLString(lobjDrumsRS.Fields("Part N").Value)
+                lstrSQL = "select PartNum, G,I,N,T, J,M,S,V, " & strMultId & ",SpecialMult from Main where PartNum=" & SQLString(lobjDrumsRS.Fields("Part N").Value)
+   
+            
+            Set lobjMainRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+            If Not lobjMainRS Is Nothing Then
+                If Not (lobjMainRS.EOF And lobjMainRS.BOF) Then
+                    Dim ldblPrice As Double, MultiU As Single
+                    Select Case intCheck
+                        Case 1
+                        ldblPrice = Decrypt(sym, DBLValue(lobjMainRS.Fields("G").Value))
+                        Case 2
+                        ldblPrice = Decrypt(sym, DBLValue(lobjMainRS.Fields("I").Value))
+                        Case 3
+                        ldblPrice = Decrypt(sym, DBLValue(lobjMainRS.Fields("N").Value))
+                        Case 4
+                        ldblPrice = Decrypt(sym, DBLValue(lobjMainRS.Fields("T").Value))
+                                  
+                        Case 5
+                        ldblPrice = Decrypt(sym, DBLValue(lobjMainRS.Fields("J").Value))
+                        Case 6
+                        ldblPrice = Decrypt(sym, DBLValue(lobjMainRS.Fields("M").Value))
+                        Case 7
+                        ldblPrice = Decrypt(sym, DBLValue(lobjMainRS.Fields("S").Value))
+                        Case 8
+                        ldblPrice = Decrypt(sym, DBLValue(lobjMainRS.Fields("V").Value))
+     
+                        
+                    End Select
+
+                    Dim Num As Integer
+                    If lobjMainRS.Fields("SpecialMult").Value <> "0" Then
+                        MultiU = lobjMainRS.Fields("SpecialMult").Value
+                    Else
+                    
+                '-- Mod Hanover  MultId changed to strMultId
+                     
+                        Num = lobjMainRS.Fields(strMultId).Value
+                        MultiU = MultipliersCase(Num)
+                    End If
+                    If MultiU = 1 Then
+                        varDoorData.aDrum.Price = Format(ldblPrice, cstrDollarMask)
+                    Else
+                        varDoorData.aDrum.Price = Format(ldblPrice * MultiU, cstrDollarMask)
+                    End If
+                    frmSprSolutions.lblPrice = varDoorData.aDrum.Price
+                End If
+            End If
+
+''''''''''Change in .NET''''''''''''''''
+'            frmSprSolutions.lblRevs = Format(varDoorData.aDrum.REVS, "Fixed")
+            
+            'Floor to shaft centre
+            frmSprSolutions.lblRevs = Format(GetFloorToShaftCenter, "Fixed")
+
+''''''''''END Change in .NET
+            
+            'IPPT
+            frmSprSolutions.lblIPPT = Format(varDoorData.aDrum.IPPT, "Fixed")
+            
+            'winds
+            Winds = varDoorData.aDrum.TTDD / varDoorData.aDrum.IPPT
+            
+            'springing weight
+             If MeasU = 0 Then ' metric
+                aCon.KG = 0
+                aCon.LB = DrWgt
+                aCon.KGcalc
+                frmSprSolutions.lblSpringingWeight.Caption = Format(aCon.KG, "Fixed") & " kg"
+            Else
+                frmSprSolutions.lblSpringingWeight.Caption = Format(DrWgt, "Fixed") & " lb"
+            End If
+            
+            'Min ceiling height
+            If MeasU = 0 Then ' metric
+                aCon.mm = 0
+                aCon.Inch = GetMinCeilingHeight
+                aCon.mmcalc
+                frmSprSolutions.lblMinCeilingHgt.Caption = Round(aCon.mm, 0) & " mm"
+            Else
+                frmSprSolutions.lblMinCeilingHgt.Caption = Format(GetMinCeilingHeight, "Fixed") & Chr(34)
+            End If
+            
+            Exit Do
+        End If
+        lobjDrumsRS.MoveNext
+    Loop
+    lobjDrumsRS.Close
+    Set lobjDrumsRS = Nothing
+    Set lobjMainRS = Nothing
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Function Springs(ByVal WireType As String, ByVal clr As Boolean) As Boolean
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Springs()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Screen.MousePointer = vbHourglass
+    
+    Dim lintCLife As Integer, lintCoilIDCnt As Integer
+    Dim lsngTempLen As Single
+    Dim lintSprQty As Integer
+    Dim lsngCLFact As Single
+    Dim lsngSMTen As Single
+    Dim lsngTorten As Single
+    Dim lblTight As Boolean
+    Dim i As Integer
+    Dim lsngSprSpace As Single, lsngsqfact As Single
+    Dim AvailableShaft As Single
+    Dim lsngCycleLife As Single
+    Dim T As Double
+    Dim lsngCoilID As Single
+    Dim lsngDeadcoils As Single
+    Dim lsngActiveCoils As Single
+    Dim lsngWSizeConverted As Single, lsngFAC As Single, lsngMD As Single
+    Dim ldblPrice As Double
+    Dim lsngMultiU As Single
+    Dim lsngTempPrice As Double
+    Dim lsngWireSize As Single
+    Dim lsngIPPTspring As Single
+    Dim lobjWireSizeRS As ADODB.Recordset
+    Dim lobjSpringPriceListRS As ADODB.Recordset
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim DrumW As Single
+    
+    DrumW = GetDrumWidth(varDoorData.aDrum.strStamping)
+    AvailableShaft = GetAvailableShaft(DrumW)
+    If clr = True Then SpringIndex = 0
+    
+    If varDoorData.aDrum.TTDD = 0 Or MaxCycLife = 0 Then
+        Screen.MousePointer = vbDefault
+        Exit Function
+    End If
+    
+    If StandardVariance = 1 Then
+        If frmSprSolutions.cboMin.Text = "10" Then
+            MinCycLife = 9.5
+        End If
+    Else
+        If frmSprSolutions.cboMin.Text = "10" Then
+            MinCycLife = 10
+        End If
+    End If
+    
+    Set lobjWireSizeRS = New ADODB.Recordset
+    
+    If WireType = "Round" Then
+        lstrSQL = "SELECT * FROM WireSize WHERE SqWire=0"
+    Else
+        lstrSQL = "SELECT * FROM WireSize WHERE SqWire=1"
+    End If
+    lobjWireSizeRS.CursorType = adOpenForwardOnly
+    Set lobjWireSizeRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    
+    If Not lobjWireSizeRS Is Nothing Then
+        lobjWireSizeRS.ActiveConnection = Nothing
+        If Not (lobjWireSizeRS.EOF And lobjWireSizeRS.BOF) Then
+            For lintSprQty = 1 To Fix((AvailableShaft - (CouplNum * 6)) \ 15)
+                lobjWireSizeRS.MoveFirst
+                Do Until lobjWireSizeRS.EOF = True
+                    'DoEvents
+                    For lintCLife = Int(MinCycLife) To MaxCycLife
+                        If lintCLife = 9 Then
+                            lsngCLFact = 1 / (1.38498 - (Log(9.5) / 5.9809))
+                        Else
+                            lsngCLFact = 1 / (1.38498 - (Log(lintCLife) / 5.9809))
+                        End If
+                        
+'                        lsngSMTen = (varDoorData.aDrum.TTDD / lintSprQty) * lsngCLFact  'MIP
+                        lsngSMTen = (varDoorData.aDrum.TTDD / lintSprQty)   'MIP per spring - added for 2.0.14 release
+                        
+                        If varDoorData.gblnSpringFailure = True And lsngSMTen > 1858.5 Then Exit For  'smten will increase when increasing cycle life, but for the next torten, smten drops.
+                        If T = DBLValue(lobjWireSizeRS.Fields("TorTen").Value) Then Exit For
+                        If DBLValue(lobjWireSizeRS.Fields("TorTen").Value) > lsngSMTen Then
+                            
+                            Dim startLoopIndex As Integer
+                            If varDoorData.ShaftDia = 1.25 Then
+                                startLoopIndex = 5
+                            Else
+                                startLoopIndex = 2
+                            End If
+                            
+                            For lintCoilIDCnt = startLoopIndex To 8
+                                If lobjWireSizeRS.Fields(lintCoilIDCnt).Value <> "N/A" Then
+                                    T = DBLValue(lobjWireSizeRS.Fields("TorTen").Value)
+                                    lsngWireSize = DBLValue(lobjWireSizeRS.Fields("WSize").Value)
+                                        
+                                    Select Case lintCoilIDCnt
+                                    
+                                    Case 2
+                                        lsngCoilID = 1.75
+                                        lsngDeadcoils = 7
+                                    Case 3
+                                        lsngCoilID = 2
+                                        lsngDeadcoils = 7
+                                    Case 4
+                                        lsngCoilID = 2.625
+                                        lsngDeadcoils = 7
+                                    Case 5
+                                        lsngCoilID = 3.625
+                                        lsngDeadcoils = 1
+                                    Case 6
+                                        lsngCoilID = 3.75
+                                        lsngDeadcoils = 5
+                                    Case 7
+                                        If lobjWireSizeRS.Fields("SqWire").Value = 1 And lobjWireSizeRS.Fields("WSize").Value > 0.375 Then
+                                            lsngDeadcoils = 1
+                                        Else
+                                            lsngDeadcoils = 5
+                                        End If
+                                        lsngCoilID = 5.25
+                                    Case 8
+                                        lsngCoilID = 6
+                                        lsngDeadcoils = 5
+                                    End Select
+                                    lsngTorten = DBLValue(lobjWireSizeRS.Fields("TorTen").Value)
+                                    
+                                    lsngCycleLife = Exp(8.2834 - 5.9809 * (varDoorData.aDrum.TTDD / (lsngTorten * lintSprQty)))
+                                    If MaxCycLife >= lsngCycleLife Then
+                                        If MinCycLife <= lsngCycleLife Then
+                                            
+                                            lsngWSizeConverted = lsngWireSize
+                                            If WireType = "Round" Then
+                                                lsngFAC = 3.14159265358979 / 32
+                                            End If
+                                            If WireType = "Square" Then
+                                                lsngFAC = 1 / 6
+                                                If lsngWireSize = 0.3125 Then
+                                                    lsngWSizeConverted = 0.3050536 '0.30442 '0.3031
+                                                ElseIf lsngWireSize = 0.34375 Then
+                                                    lsngWSizeConverted = 0.3345314 '0.33906 '0.3379
+                                                ElseIf lsngWireSize = 0.375 Then 'added after 2.0.13 + torten field for sq.wire needs also be updated
+                                                    lsngWSizeConverted = 0.361006 '0.3707  '0.360442
+                                                ElseIf lsngWireSize = 0.40625 Then
+                                                    lsngWSizeConverted = 0.3960648 '0.40228
+                                                ElseIf lsngWireSize = 0.4375 Then
+                                                    lsngWSizeConverted = 0.4255254 '0.43382
+                                                End If
+                                            End If
+                                            lsngMD = lsngCoilID + lsngWireSize
+                                            
+                                            lsngActiveCoils = (30000000 * (lsngWSizeConverted ^ 4) * lsngFAC) / ((varDoorData.aDrum.IPPT / lintSprQty) * lsngMD)
+                                            lsngActiveCoils = Round(lsngActiveCoils, 1)
+                                            
+                                            If WireType = "Round" Then
+                                                lsngTempLen = (lsngActiveCoils + lsngDeadcoils) * lsngWireSize
+                                            Else
+                                                lsngsqfact = GetSquareFactor(lsngWireSize, lsngCoilID)
+                                                lsngTempLen = (lsngActiveCoils + lsngDeadcoils) * lsngWireSize * lsngsqfact
+                                            End If
+                                            
+                                            If frmSprSolutions.chkMaxLen.Value = 0 Then
+                                                MaxSpringLength = AvailableShaft / lintSprQty
+                                            Else
+                                                MaxSpringLength = GetMaxSpringLen(lsngCoilID)
+                                            End If
+                                            
+                                            If lsngTempLen <= MaxSpringLength And lsngTempLen > 15 Then
+                                                'actual space taken up by the springs
+                                                
+                                                If WireType = "Round" Then
+                                                    lsngSprSpace = lintSprQty * ((lsngActiveCoils + lsngDeadcoils + Winds) * lsngWireSize + 6) '(3 for plugs and centerplate, 3 for key)
+                                                Else
+                                                    
+                                                    lsngSprSpace = lintSprQty * ((lsngActiveCoils + lsngDeadcoils + Winds) * lsngWireSize * lsngsqfact + 6) '(3 for plugs and centerplate, 3 for key)
+                                                End If
+                                                If lsngSprSpace <= AvailableShaft - (CouplNum * 6) Then
+                                                    lblTight = True
+                                                    If lsngSprSpace <= AvailableShaft - (CouplNum * 8) Then lblTight = False
+                                                    Dim X As Integer, lblnSel As Boolean
+                                                    lblnSel = False
+                                                    If Not isEmptySelectedSpringSolutionArray Then 'do not add already selected solutions
+                                                        For X = 0 To UBound(varDoorData.arrSelectedSolution)
+                                                            If varDoorData.arrSelectedSolution(X).blnMismatched = False Then
+                                                                If varDoorData.arrSelectedSolution(X).strDrumStamping = varDoorData.aDrum.strStamping Then
+                                                                    'For y = 0 To UBound(varDoorData.arrSelectedSolution(x).arrSpring)
+                                                                        If varDoorData.arrSelectedSolution(X).arrSpring(0).strPN = lobjWireSizeRS.Fields(lintCoilIDCnt).Value Then
+                                                                            If UBound(varDoorData.arrSelectedSolution(X).arrSpring) + 1 = lintSprQty Then
+                                                                                lblnSel = True
+                                                                                'Exit For
+                                                                            End If
+                                                                        End If
+                                                                    'Next
+                                                                End If
+                                                            End If
+                                                        Next
+                                                    End If
+                                                    If lblnSel = False Then
+                                                    
+                                                        Springs = True
+                                                        Dim sym As String
+    
+                                                        sym = GetSym(lobjWireSizeRS.Fields(lintCoilIDCnt).Value)
+                                                        
+                                                        'lstrSQL = "SELECT * FROM SpringPriceList WHERE [Part N]='" & lobjWireSizeRS.Fields(lintCoilIDCnt).Value & "'"
+                                                        
+                                         '             lstrSQL = "SELECT * FROM Main WHERE PartNum=" & SQLString(lobjWireSizeRS.Fields(lintCoilIDCnt).Value)
+                                                        lstrSQL = "SELECT * FROM Main WHERE PartNum=" & SQLString(lobjWireSizeRS.Fields(lintCoilIDCnt).Value)
+                                                        Set lobjSpringPriceListRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                                                        
+                                                        lobjSpringPriceListRS.MoveFirst
+                                                        lobjSpringPriceListRS.Find "PartNum=" & SQLString(lobjWireSizeRS.Fields(lintCoilIDCnt).Value)
+                                                            
+                                                        Select Case intCheck
+                                                        Case 1
+                                                            ldblPrice = Decrypt(sym, DBLValue(lobjSpringPriceListRS.Fields("G").Value))
+                                                        Case 2
+                                                            ldblPrice = Decrypt(sym, DBLValue(lobjSpringPriceListRS.Fields("I").Value))
+                                                        Case 3
+                                                            ldblPrice = Decrypt(sym, DBLValue(lobjSpringPriceListRS.Fields("N").Value))
+                                                        Case 4
+                                                            ldblPrice = Decrypt(sym, DBLValue(lobjSpringPriceListRS.Fields("T").Value))
+                                                            
+                                                          Case 5
+                                                            ldblPrice = Decrypt(sym, DBLValue(lobjSpringPriceListRS.Fields("J").Value))
+                                                        Case 6
+                                                            ldblPrice = Decrypt(sym, DBLValue(lobjSpringPriceListRS.Fields("M").Value))
+                                                        Case 7
+                                                            ldblPrice = Decrypt(sym, DBLValue(lobjSpringPriceListRS.Fields("S").Value))
+                                                        Case 8
+                                                            ldblPrice = Decrypt(sym, DBLValue(lobjSpringPriceListRS.Fields("V").Value))
+     
+                                                        
+                                                        
+                                                        End Select
+
+                                                        
+                                                        If DBLValue(lobjSpringPriceListRS.Fields("SpecialMult").Value) > 0 Then
+                                                            lsngMultiU = DBLValue(lobjSpringPriceListRS.Fields("SpecialMult").Value)
+                                                        Else
+                                                        
+                                                     '-- Mod Hanover  MultId changed to strMultId
+
+                                                            lsngMultiU = MultipliersCase(lobjSpringPriceListRS.Fields(strMultId).Value)
+                                                        End If
+                                                        
+                                                        If WireType = "Round" Then
+                                                            ldblPrice = ldblPrice * lsngTempLen
+                                                        Else
+                                                            ldblPrice = ldblPrice * (lsngActiveCoils + lsngDeadcoils)
+                                                        End If
+                                                        
+                                                        lsngTempPrice = ldblPrice * lsngMultiU
+                                                        lobjSpringPriceListRS.Close
+                                                        Set lobjSpringPriceListRS = Nothing
+                                                        ReDim Preserve varDoorData.arrSpringSolution(SpringIndex)
+                                                        ReDim Preserve varDoorData.arrSpringSolution(SpringIndex).arrSpring(lintSprQty - 1)
+                                                        
+                                                        varDoorData.arrSpringSolution(SpringIndex).CL = lsngCycleLife
+                                                        varDoorData.arrSpringSolution(SpringIndex).Torten = lsngTorten
+                                                        varDoorData.arrSpringSolution(SpringIndex).CoilID = lsngCoilID
+                                                        
+                                                        varDoorData.arrSpringSolution(SpringIndex).DC = lsngDeadcoils
+                                                        varDoorData.arrSpringSolution(SpringIndex).WireType = WireType
+                                                       
+                                                        
+                                                        For i = 0 To lintSprQty - 1
+                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).strPN = lobjWireSizeRS.Fields(lintCoilIDCnt).Value
+                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).AC = lsngActiveCoils
+                                                            
+                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Length = IIf(WireType = "Round", ((lsngActiveCoils + lsngDeadcoils) * lsngWireSize), (lsngActiveCoils + lsngDeadcoils))
+                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).WireSize = lsngWireSize
+                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).IPPT = varDoorData.aDrum.IPPT / lintSprQty
+                                                            If varDoorData.arrSpringSolution(SpringIndex).CoilID >= 5.25 Then
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).PVC = IIf(WireType = "Round", _
+                                                                        varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Length - 6, _
+                                                                        varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Length * lsngWireSize * GetSquareFactor(varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).WireSize, _
+                                                                        varDoorData.arrSpringSolution(SpringIndex).CoilID) - 6)
+                                                            End If
+
+                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Price = lsngTempPrice
+                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Turns = Winds
+                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).WoundSpringLength = IIf(WireType = "Round", _
+                                                                        varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Length + (Winds * lsngWireSize) + 3, _
+                                                                        (varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Length + Winds) * lsngWireSize * (GetSquareFactor(lsngWireSize, lsngCoilID)) + 3)
+                                                        Next
+                                                    
+                                                        If lblTight = True Then varDoorData.arrSpringSolution(SpringIndex).Tight = True
+                                                        SpringIndex = SpringIndex + 1
+                                                                                                                
+                                                    End If
+                                                End If
+                                            End If
+                                        End If
+                                    End If
+                                End If
+                            Next lintCoilIDCnt
+                        Else
+                            Exit For
+                        End If
+                    Next lintCLife
+                    lobjWireSizeRS.MoveNext
+                Loop
+            Next
+        End If
+        lobjWireSizeRS.Close
+    End If
+    frmSprSolutions.Grid1.Refresh
+    Screen.MousePointer = vbDefault
+    Set lobjWireSizeRS = Nothing
+    Exit Function
+    
+Error_Handler:
+    Screen.MousePointer = vbDefault
+
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function Swap(ByVal strSwap As String, ByVal chk As Boolean) As String
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Swap()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim aa As Integer
+    Dim a As String
+    Dim b As String
+    If chk = True Then
+        aa = InStr(strSwap, Chr$(45))
+        If aa <> 0 Then
+            a = Mid(strSwap, aa + 1)
+            b = Mid(strSwap, 1, aa)
+            a = Val(a) + 1
+            If Len(a) = 2 Then a = "0" & a
+            Swap = b & a
+        End If
+    End If
+    If chk = False Then
+        aa = InStr(strSwap, Chr$(45))
+        If aa <> 0 Then
+            a = Mid(strSwap, aa + 1)
+            b = Mid(strSwap, 1, aa)
+            a = Val(a) - 1
+            If Len(a) = 2 Then a = "0" & a
+            Swap = b & a
+        End If
+    End If
+
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+Public Function MisMatch(ByVal clr As Boolean) As Boolean
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MisMatch()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    'returns true if Solutions are found
+    Dim MultiU As Single
+    Dim TotQty As Integer, SmQty As Integer, BigQty As Integer
+    Dim CurrRow As Integer, SmTorten As Single, BigTorten As Single, Torten As Single
+    Dim smWirS As Single, BigWirS As Single 'actual wiresize value cases like WL, SrgLen, Shaft space, database  fields
+    Dim WType As Byte
+    Dim WireType As String
+    Dim ID As Integer ' db field index representing Coil ID
+    Dim Deadcoils As Integer
+    Dim smActiveCoils As Single
+    Dim bigActiveCoils As Single
+    Dim smLen As Single, bigLen As Single
+    Dim SmPN As String, BigPN As String
+    Dim CoilID As Single
+    Dim KeepWire As Single, smMD As Single, bigMD As Single
+    Dim CLife As Single
+    Dim T As Double
+    Dim SMten As Single, CL As Integer, CLFact As Single
+    Dim smSprSpace As Single, bigSprSpace As Single, Fact As Single
+    Dim Num As Integer
+    Dim blTight As Boolean
+    Dim i As Integer
+    Dim TempLen As Single
+    Dim SmIPPT As Single, BigIPPT As Single
+    Dim lobjWireSizeRS As ADODB.Recordset
+    Dim lobjSpringPriceListRS As ADODB.Recordset
+    Dim FAC As Single
+    Dim AvailableShaft As Single
+    Dim DrumW As Single
+    Dim lsngWireSize As Single
+    Dim lsngWireSizeConv As Single  'converted wiresize values cases like MD, MIP, IPPT, ACLen
+    
+   
+    'If clr = True Then SpringIndex = 0
+
+    DrumW = GetDrumWidth(varDoorData.aDrum.strStamping)
+    AvailableShaft = GetAvailableShaft(DrumW)
+
+    Set lobjWireSizeRS = New ADODB.Recordset
+    Set lobjSpringPriceListRS = New ADODB.Recordset
+    lobjSpringPriceListRS.Open "Main", CnnBTMS, , , adCmdTable
+    lobjWireSizeRS.Open "WireSize", CnnBTMS, adOpenKeyset, adLockOptimistic
+    
+    Screen.MousePointer = vbHourglass
+    For TotQty = 2 To Fix((AvailableShaft - (CouplNum * 6)) \ 15)   'all possible spring qtys
+        For SmQty = 1 To TotQty - 1 'incrementing number of small springs
+            BigQty = TotQty - SmQty
+            lobjWireSizeRS.MoveFirst
+            Do Until lobjWireSizeRS.EOF = True
+                'loop for cycle life Min to Max
+                Torten = DBLValue(lobjWireSizeRS.Fields("Torten").Value)
+                'calcuate SMTen
+                For CL = Int(MinCycLife) To MaxCycLife
+                    If CL = 9 Then
+                        CLFact = 1 / (1.38498 - (Log(9.5) / 5.9809))
+                    Else
+                        CLFact = 1 / (1.38498 - (Log(CL) / 5.9809))
+                    End If
+                    
+                    SMten = (varDoorData.aDrum.TTDD / TotQty) * CLFact
+                    
+                    If varDoorData.gblnSpringFailure = True And SMten > 1858.5 Then Exit For  'smten will increase when increasing cycle life, but for the next torten, smten drops.
+                    If T = DBLValue(lobjWireSizeRS.Fields("TorTen").Value) Then Exit For 'to avoid repeated frmSprSolutions
+                    'If SMten > Torten Then Exit For
+                    If SMten > Torten / CLFact Then Exit For    'MIP per spring - added for 2.0.14 release
+                        BigTorten = Torten
+                        BigWirS = DBLValue(lobjWireSizeRS.Fields("WSize").Value)
+                        If (DBLValue(lobjWireSizeRS.Fields("WSize").Value) <> 0.3125 And lobjWireSizeRS.Fields("SqWire") = 1) Or (DBLValue(lobjWireSizeRS.Fields("WSize").Value) <> 0.192 And lobjWireSizeRS.Fields("SqWire") = 0) Then 'smallest square/round wire, will not find MM
+                            If lobjWireSizeRS.Fields("SqWire") = 1 Then
+                                If frmSprSolutions.chkSquare.Value = 0 Then Exit For
+                                WType = 1 'square
+                                WireType = "Square"
+                            Else
+                                If frmSprSolutions.chkRound.Value = 0 Then Exit For
+                                WType = 0 'round
+                                WireType = "Round"
+                            End If
+                            
+                            Dim startLoopIndex As Integer
+                            If varDoorData.ShaftDia = 1.25 Then
+                                startLoopIndex = 5
+                            Else
+                                startLoopIndex = 2
+                            End If
+                            
+                            For ID = startLoopIndex To 8
+                                If lobjWireSizeRS(ID) <> "N/A" Then
+                                    T = lobjWireSizeRS("Torten")
+                                    Select Case ID
+                                        Case 2
+                                            CoilID = 1.75
+                                            Deadcoils = 7
+                                            BigPN = lobjWireSizeRS(ID)
+                                        Case 3
+                                            CoilID = 2
+                                            Deadcoils = 7
+                                            BigPN = lobjWireSizeRS(ID)
+                                        Case 4
+                                            CoilID = 2.625
+                                            Deadcoils = 7
+                                            BigPN = lobjWireSizeRS(ID)
+                                        Case 5
+                                            CoilID = 3.625
+                                            Deadcoils = 1
+                                            BigPN = lobjWireSizeRS(ID)
+                                        Case 6
+                                            CoilID = 3.75
+                                            Deadcoils = 5
+                                            BigPN = lobjWireSizeRS(ID)
+                                        Case 7
+                                            If WType = 1 And lobjWireSizeRS.Fields("WSize").Value > 0.375 Then
+                                                Deadcoils = 1
+                                            Else
+                                                Deadcoils = 5
+                                            End If
+                                            CoilID = 5.25
+                                            BigPN = lobjWireSizeRS(ID)
+                                        Case 8
+                                            CoilID = 6
+                                            Deadcoils = 5
+                                            BigPN = lobjWireSizeRS(ID)
+                                    End Select
+                                    lobjWireSizeRS.MovePrevious
+                                    Do Until WType = DBLValue(lobjWireSizeRS("SqWire").Value)
+                                        lobjWireSizeRS.MovePrevious
+                                    Loop
+                                    If lobjWireSizeRS(ID) <> "N/A" Then
+                                        SmPN = lobjWireSizeRS(ID)
+                                        SmTorten = DBLValue(lobjWireSizeRS.Fields("Torten").Value)
+                                        smWirS = DBLValue(lobjWireSizeRS.Fields("WSize").Value)
+                                        If SmTorten * SmQty + BigTorten * BigQty >= varDoorData.aDrum.TTDD * CLFact Then
+                                            
+                                            CLife = Exp(8.2834 - (5.9809 * varDoorData.aDrum.TTDD / (BigTorten * BigQty + SmTorten * SmQty)))
+                                            If CLife > MaxCycLife Then Exit Do
+                                            If MaxCycLife > CLife And MinCycLife < CLife Then 'if calculated Cycle Life is in the defined range
+'                                                If varDoorData.gblnSpringFailure = True And (BigTorten / BigQty) > 1858.5 Then Exit Do   'check to see big torten falls into max. MIP
+                                                
+                                                If varDoorData.gblnSpringFailure = True And ((BigTorten / BigQty)) / CLife > 1858.5 Then Exit Do   'MIP per spring - added for 2.0.14 release
+                                                BigIPPT = (BigTorten / (BigTorten * BigQty + SmTorten * SmQty)) * varDoorData.aDrum.IPPT
+                                                SmIPPT = (SmTorten / (BigTorten * BigQty + SmTorten * SmQty)) * varDoorData.aDrum.IPPT ' smtorten / torque ratio (winds for this solution)
+'                                                BigIPPT = BigTorten / ((BigTorten * BigQty + SmTorten * SmQty) * varDoorData.aDrum.IPPT)
+'                                                SmIPPT = SmTorten / ((BigTorten * BigQty + SmTorten * SmQty) * varDoorData.aDrum.IPPT) ' smtorten / torque ratio (winds for this solution)
+'                                                KeepWire = BigWirS
+                                                lsngWireSizeConv = BigWirS
+                                                If WType = 1 Then
+                                                    FAC = 1 / 6
+                                                    If BigWirS = 0.3125 Then
+                                                        lsngWireSizeConv = 0.3050536 '0.30442 '0.3031
+                                                    ElseIf BigWirS = 0.34375 Then
+                                                        lsngWireSizeConv = 0.3345314 '0.33906 '0.3379
+                                                    ElseIf BigWirS = 0.375 Then 'added after 2.0.13 + tortan field in wiresize table needs also be updated
+                                                        lsngWireSizeConv = 0.361006 '0.3707 '0.360442
+                                                    ElseIf BigWirS = 0.40625 Then
+                                                        lsngWireSizeConv = 0.3960648 '0.40228
+                                                    ElseIf BigWirS = 0.4375 Then
+                                                        lsngWireSizeConv = 0.4255254 '0.43382
+                                                    End If
+                                                Else
+                                                    FAC = 3.14159265358979 / 32
+                                                End If
+'                                                bigMD = BigWirS + CoilID
+'                                                bigActiveCoils = (30000000 * (KeepWire ^ 4) * FAC) / (BigIPPT * bigMD)
+                                                bigMD = BigWirS + CoilID
+                                                bigActiveCoils = (30000000 * (lsngWireSizeConv ^ 4) * FAC) / (BigIPPT * bigMD)
+                                                
+                                                lsngWireSizeConv = 0    're-instantiate
+'                                                KeepWire = smWirS
+                                                lsngWireSizeConv = smWirS
+                                                If WType = 1 Then
+                                                    FAC = 1 / 6
+                                                    If smWirS = 0.3125 Then
+                                                        lsngWireSizeConv = 0.3050536 '0.30442 '0.3031
+                                                    ElseIf smWirS = 0.34375 Then
+                                                        lsngWireSizeConv = 0.3345314 '0.33906 '0.3379
+                                                    ElseIf smWirS = 0.375 Then 'added after 2.0.13
+                                                        lsngWireSizeConv = 0.361006 '0.3707 '0.360442
+                                                    ElseIf smWirS = 0.40625 Then
+                                                        lsngWireSizeConv = 0.3960648 '0.40228
+                                                    ElseIf smWirS = 0.4375 Then
+                                                        lsngWireSizeConv = 0.4255254 '0.43382
+                                                    End If
+                                                Else
+                                                    FAC = 3.14159265358979 / 32
+                                                End If
+                                                
+'                                                smMD = smWirS + CoilID
+'                                                smActiveCoils = (30000000 * (KeepWire ^ 4) * FAC) / (SmIPPT * smMD)
+
+                                                smMD = smWirS + CoilID
+                                                smActiveCoils = (30000000 * (lsngWireSizeConv ^ 4) * FAC) / (SmIPPT * smMD)
+                                                
+                                                If WType = 0 Then
+                                                    bigLen = (bigActiveCoils + Deadcoils) * BigWirS
+                                                    smLen = (smActiveCoils + Deadcoils) * smWirS
+                                                Else
+                                                    Fact = GetSquareFactor(smWirS, CoilID)
+                                                    smLen = (smActiveCoils + Deadcoils) * smWirS * Fact
+                                                    Fact = GetSquareFactor(smWirS, CoilID)
+                                                    bigLen = (bigActiveCoils + Deadcoils) * BigWirS * Fact
+                                                End If
+                                                
+                                                bigActiveCoils = Round(bigActiveCoils, 1)
+                                                smActiveCoils = Round(smActiveCoils, 1)
+                                                
+                                                If smLen <= MaxSpringLength And bigLen <= MaxSpringLength And smLen > 15 And bigLen > 15 Then
+                                                    'actual space taken up by the springs
+                                                    
+                                                    If WType = 0 Then
+                                                        smSprSpace = SmQty * ((smActiveCoils + Deadcoils + Winds) * smWirS + 6) '(3 for plugs and centerplate, 3 for key)
+                                                    Else
+                                                        smSprSpace = SmQty * ((smActiveCoils + Deadcoils + Winds) * smWirS * Fact + 6) '(3 for plugs and centerplate, 3 for key)
+                                                    End If
+                                                    
+                                                    If WType = 0 Then
+                                                        bigSprSpace = BigQty * ((bigActiveCoils + Deadcoils + Winds) * BigWirS + 6) '(3 for plugs and centerplate, 3 for key)
+                                                    Else
+                                                        Fact = GetSquareFactor(BigWirS, CoilID)
+                                                        bigSprSpace = BigQty * ((bigActiveCoils + Deadcoils + Winds) * BigWirS * Fact + 6) '(3 for plugs and centerplate, 3 for key)
+                                                    End If
+                                                    If smSprSpace + bigSprSpace <= AvailableShaft - (CouplNum * 6) Then
+                                                        blTight = True
+                                                        If smSprSpace + bigSprSpace <= AvailableShaft - (CouplNum * 8) Then blTight = False 'if springs fit on the shaft
+                                                        Dim X As Integer, lblnSel As Boolean
+                                                        lblnSel = False
+                                                        If Not isEmptySelectedSpringSolutionArray Then 'do not add already selected solutions
+                                                            For X = 0 To UBound(varDoorData.arrSelectedSolution)
+                                                                If varDoorData.arrSelectedSolution(X).blnMismatched = True Then
+                                                                    If varDoorData.arrSelectedSolution(X).strDrumStamping = varDoorData.aDrum.strStamping Then
+                                                                        'For y = 0 To UBound(varDoorData.arrSelectedSolution(x).arrSpring)
+                                                                            If varDoorData.arrSelectedSolution(X).arrSpring(0).strPN = lobjWireSizeRS.Fields(ID).Value Then
+                                                                                If UBound(varDoorData.arrSelectedSolution(X).arrSpring) + 1 = SmQty + BigQty Then
+                                                                                    lblnSel = True
+                                                                                    'Exit For
+                                                                                End If
+                                                                            End If
+                                                                        'Next
+                                                                    End If
+                                                                End If
+                                                            Next
+                                                        End If
+                                                        If lblnSel = False Then
+                                                            'big price
+                                                            lobjSpringPriceListRS.MoveFirst
+                                                            lobjSpringPriceListRS.Find "PartNum=" & SQLString(BigPN)
+                                                            Dim Bcena As Double, Scena As Double
+                                                            Select Case intCheck
+                                                            Case 1
+                                                                Bcena = Decrypt(GetSym(BigPN), DBLValue(lobjSpringPriceListRS.Fields("G").Value))
+                                                            Case 2
+                                                                Bcena = Decrypt(GetSym(BigPN), DBLValue(lobjSpringPriceListRS.Fields("I").Value))
+                                                            Case 3
+                                                                Bcena = Decrypt(GetSym(BigPN), DBLValue(lobjSpringPriceListRS.Fields("N").Value))
+                                                            Case 4
+                                                                Bcena = Decrypt(GetSym(BigPN), DBLValue(lobjSpringPriceListRS.Fields("T").Value))
+                                                            
+                                                            Case 5
+                                                                Bcena = Decrypt(GetSym(BigPN), DBLValue(lobjSpringPriceListRS.Fields("J").Value))
+                                                            Case 6
+                                                                Bcena = Decrypt(GetSym(BigPN), DBLValue(lobjSpringPriceListRS.Fields("M").Value))
+                                                            Case 7
+                                                                Bcena = Decrypt(GetSym(BigPN), DBLValue(lobjSpringPriceListRS.Fields("S").Value))
+                                                            Case 8
+                                                                Bcena = Decrypt(GetSym(BigPN), DBLValue(lobjSpringPriceListRS.Fields("V").Value))
+                                                    
+                                                            
+                                                            
+                                                            End Select
+                                                            
+                                                            If DBLValue(lobjSpringPriceListRS.Fields("SpecialMult").Value) > 0 Then
+                                                                MultiU = DBLValue(lobjSpringPriceListRS.Fields("SpecialMult").Value)
+                                                            Else
+                                                            
+                                                   '-- Mod Hanover  MultId changed to strMultId
+
+                                                                Num = Val(lobjSpringPriceListRS.Fields(strMultId).Value)
+                                                                MultiU = MultipliersCase(Num)
+                                                            End If
+                                                            If WType = 0 Then 'multiply round springs by length square springs by No of coils
+                                                                Bcena = Bcena * bigLen
+                                                            Else
+                                                                Bcena = Bcena * (bigActiveCoils + Deadcoils)
+                                                            End If
+                                                            Dim BigPrice As Double
+                                                            BigPrice = (Bcena * MultiU)
+                                                            
+                                                            'small price
+                                                            lobjSpringPriceListRS.MoveFirst
+                                                            lobjSpringPriceListRS.Find "PartNum=" & SQLString(SmPN)
+                                                            Select Case intCheck
+                                                            Case 1
+                                                                Scena = Decrypt(GetSym(SmPN), DBLValue(lobjSpringPriceListRS.Fields("G").Value))
+                                                            Case 2
+                                                                Scena = Decrypt(GetSym(SmPN), DBLValue(lobjSpringPriceListRS.Fields("I").Value))
+                                                            Case 3
+                                                                Scena = Decrypt(GetSym(SmPN), DBLValue(lobjSpringPriceListRS.Fields("N").Value))
+                                                            Case 4
+                                                                Scena = Decrypt(GetSym(SmPN), DBLValue(lobjSpringPriceListRS.Fields("T").Value))
+                                                            
+                                                            Case 5
+                                                                Scena = Decrypt(GetSym(SmPN), DBLValue(lobjSpringPriceListRS.Fields("J").Value))
+                                                            Case 6
+                                                                Scena = Decrypt(GetSym(SmPN), DBLValue(lobjSpringPriceListRS.Fields("M").Value))
+                                                            Case 7
+                                                                Scena = Decrypt(GetSym(SmPN), DBLValue(lobjSpringPriceListRS.Fields("S").Value))
+                                                            Case 8
+                                                                Scena = Decrypt(GetSym(SmPN), DBLValue(lobjSpringPriceListRS.Fields("V").Value))
+                                                   
+                                                            
+                                                            
+                                                            
+                                                            End Select
+
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            If DBLValue(lobjSpringPriceListRS.Fields("SpecialMult").Value) > 0 Then
+                                                                MultiU = DBLValue(lobjSpringPriceListRS.Fields("SpecialMult").Value)
+                                                            Else
+                                                            
+                                                '-- Mod Hanover  MultId changed to strMultId
+
+                                                                Num = Val(lobjSpringPriceListRS.Fields(strMultId).Value)
+                                                                MultiU = MultipliersCase(Num)
+                                                            End If
+                                                            If WType = 0 Then 'multiply square springs by No of coils round springs by length
+                                                                Scena = Scena * smLen
+                                                            Else
+                                                                Scena = Scena * (smActiveCoils + Deadcoils)
+                                                            End If
+                                                            Dim SmPrice As Double
+                                                            SmPrice = (Scena * MultiU)
+                                                            MisMatch = True
+                                                            
+                                                            
+                                                            ReDim Preserve varDoorData.arrSpringSolution(SpringIndex)
+                                                            ReDim varDoorData.arrSpringSolution(SpringIndex).arrSpring(SmQty + BigQty - 1)
+                                                            
+                                                            varDoorData.arrSpringSolution(SpringIndex).CL = CLife
+                                                            varDoorData.arrSpringSolution(SpringIndex).Torten = BigTorten * BigQty + SmTorten * SmQty
+                                                            varDoorData.arrSpringSolution(SpringIndex).CoilID = CoilID
+                                                            varDoorData.arrSpringSolution(SpringIndex).Mismatched = True
+                                                            varDoorData.arrSpringSolution(SpringIndex).DC = Deadcoils
+                                                            varDoorData.arrSpringSolution(SpringIndex).WireType = WireType
+
+'                                                            ReDim Preserve varDoorData.arrSpringSolution(SpringIndex).arrSpring(SmQty + BigQty - 1)
+                                                            
+                                                            For i = 0 To SmQty - 1
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).strPN = SmPN
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).AC = smActiveCoils
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).IPPT = SmIPPT
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Length = IIf(WireType = "Round", ((smActiveCoils + Deadcoils) * smWirS), (smActiveCoils + Deadcoils))
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).WireSize = smWirS
+                                                                If varDoorData.arrSpringSolution(SpringIndex).CoilID >= 5.25 Then
+                                                                    varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).PVC = IIf(WireType = "Round", _
+                                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Length - 6, _
+                                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Length * smWirS * GetSquareFactor(varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).WireSize, _
+                                                                            varDoorData.arrSpringSolution(SpringIndex).CoilID) - 6)
+                                                                End If
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Price = SmPrice
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Turns = Winds 'added for 2.0.14 - could have been added into varDoorData.arrSpringSolution() but we used varDoorData.arrSpringSolution().arrSpring() to save Turns(just like in standard solution)
+                                                                'varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Left = False
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).WoundSpringLength = IIf(WireType = "Round", _
+                                                                            (varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Length) + (Winds * smWirS) + 3, _
+                                                                            (varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Length + Winds) * smWirS * GetSquareFactor(smWirS, CoilID) + 3)
+                                                            Next
+                                                            For i = 0 To BigQty - 1
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).strPN = BigPN
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).AC = bigActiveCoils
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).IPPT = BigIPPT
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).Length = IIf(WireType = "Round", ((bigActiveCoils + Deadcoils) * BigWirS), (bigActiveCoils + Deadcoils))
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).WireSize = BigWirS
+                                                                If varDoorData.arrSpringSolution(SpringIndex).CoilID >= 5.25 Then
+                                                                    varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).PVC = IIf(WireType = "Round", _
+                                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).Length - 6, _
+                                                                            varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).Length * BigWirS * GetSquareFactor(varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).WireSize, _
+                                                                            varDoorData.arrSpringSolution(SpringIndex).CoilID) - 6)
+                                                                End If
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).Price = BigPrice
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Turns = Winds 'added for 2.0.14 - could have been added into varDoorData.arrSpringSolution() but we used varDoorData.arrSpringSolution().arrSpring() to save (just like in standard solution)
+                                                                'varDoorData.arrSpringSolution(SpringIndex).arrSpring(i).Left = True
+                                                                varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).WoundSpringLength = IIf(WireType = "Round", _
+                                                                            (varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).Length) + (Winds * BigWirS) + 3, _
+                                                                            (varDoorData.arrSpringSolution(SpringIndex).arrSpring(i + SmQty).Length + Winds) * BigWirS * GetSquareFactor(BigWirS, CoilID) + 3)
+                                                                            
+                                                            Next
+                                                            If blTight = True Then varDoorData.arrSpringSolution(SpringIndex).Tight = True
+                                                            SpringIndex = SpringIndex + 1
+                                                        End If
+                                                    End If
+                                                    Do Until DBLValue(lobjWireSizeRS("Torten")) = Torten
+                                                        lobjWireSizeRS.MoveNext
+                                                    Loop
+                                                Else
+                                                    Do Until DBLValue(lobjWireSizeRS("Torten")) = Torten
+                                                        lobjWireSizeRS.MoveNext
+                                                    Loop
+                                                End If
+                                            Else
+                                                Do Until DBLValue(lobjWireSizeRS("Torten")) = Torten
+                                                    lobjWireSizeRS.MoveNext
+                                                Loop
+                                            End If
+                                        Else
+                                            Do Until DBLValue(lobjWireSizeRS("Torten")) = Torten
+                                                lobjWireSizeRS.MoveNext
+                                            Loop
+                                        End If
+                                    Else
+                                        Do Until DBLValue(lobjWireSizeRS("Torten")) = Torten
+                                            lobjWireSizeRS.MoveNext
+                                        Loop
+                                    End If
+                                End If
+                            Next ID
+                        End If
+                Next CL
+                lobjWireSizeRS.MoveNext
+            Loop
+        Next SmQty
+    Next TotQty
+    If frmSprSolutions.Grid2.Rows > 2 And frmSprSolutions.Grid2.TextMatrix(frmSprSolutions.Grid2.Rows - 1, 0) = "" Then frmSprSolutions.Grid2.RemoveItem (frmSprSolutions.Grid2.Rows - 1)
+    lobjSpringPriceListRS.Close
+    lobjWireSizeRS.Close
+    Set lobjWireSizeRS = Nothing
+    Screen.MousePointer = vbDefault
+    Set lobjSpringPriceListRS = Nothing
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function GetDrumWidth(ByVal stamping As String) As Single
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetDrumWidth()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    Dim lobjDrumsRS As ADODB.Recordset
+    Set lobjDrumsRS = New ADODB.Recordset
+    lobjDrumsRS.Open "Drums", CnnBTMS, adOpenKeyset, adLockOptimistic
+    
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim W As Single
+    lobjDrumsRS.MoveFirst
+    Do While lobjDrumsRS.EOF = False
+        If stamping = lobjDrumsRS.Fields("Stamping") Then
+            W = DBLValue(lobjDrumsRS.Fields("DrumWidth").Value)
+        End If
+        lobjDrumsRS.MoveNext
+    Loop
+    GetDrumWidth = W
+    lobjDrumsRS.Close
+    Set lobjDrumsRS = Nothing
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function GetAvailableShaft(ByVal DrumW As Single)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetAvailableShaft()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    GetAvailableShaft = DrWidth + 3 - (DrumW * 2)
+
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function GetCableDia(ByVal Stmp As String) As Single
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetCableDia()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim rstCblDia As Recordset
+    Dim Cdia As Single
+    
+'    Set rstCblDia = New ADODB.Recordset
+'    rstCblDia.Open "CableDia", CnnBTMS, adOpenKeyset, adLockOptimistic
+'    rstCblDia.MoveFirst
+'    rstCblDia.Find "Stamping=" & SQLString(Stmp)
+'    If Not rstCblDia.EOF Then
+'        If DrWgt <= 550 Then
+'            Cdia = DBLValue(rstCblDia.Fields("<=").Value)
+'        Else
+'            Cdia = DBLValue(rstCblDia.Fields(">").Value)
+'        End If
+'    End If
+'    rstCblDia.Close
+'    Set rstCblDia = Nothing
+
+    'cable diameter according to the user selection
+    If frmSprSolutions.cboCable.ItemData(frmSprSolutions.cboCable.ListIndex) = 1 Then       '1/8"
+        GetCableDia = 0.125
+    ElseIf frmSprSolutions.cboCable.ItemData(frmSprSolutions.cboCable.ListIndex) = 2 Then   '3/16"
+        GetCableDia = 0.1875
+    ElseIf frmSprSolutions.cboCable.ItemData(frmSprSolutions.cboCable.ListIndex) = 3 Then   '1/4"
+        GetCableDia = 0.25
+    End If
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function GetSquareFactor(ByVal Ga As Single, ByVal CID As Single) As Single
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetSquareFactor()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim f As Single
+    Dim rstSqFactor As ADODB.Recordset
+    Set rstSqFactor = New ADODB.Recordset
+    rstSqFactor.Open "SquareFactor", CnnBTMS, , , adCmdTable
+    
+    rstSqFactor.MoveFirst
+    Do Until rstSqFactor.EOF = True
+        If Ga = rstSqFactor.Fields!Wsize Then
+            If CID = 3.63 Then
+                f = rstSqFactor.Fields![3 5/8]
+            ElseIf CID = 6 Then
+                f = rstSqFactor.Fields![6]
+            Else
+                f = rstSqFactor.Fields![5 1/4]
+            End If
+            Exit Do
+        End If
+        rstSqFactor.MoveNext
+    Loop
+    rstSqFactor.Close
+    GetSquareFactor = f
+
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function GetSprQtyPerSide(ByVal pintID As Integer, ByVal Left As Boolean) As Integer
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetSprQtyPerSide()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Integer
+    Dim Q As Integer
+    For i = 0 To UBound(varDoorData.arrSelectedSolution(pintID).arrSpring())
+        If varDoorData.arrSelectedSolution(pintID).arrSpring(i).Left = Left Then
+            Q = Q + 1
+        End If
+    Next
+    GetSprQtyPerSide = Q
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+Public Function GetSprQtyPerPN(ByVal pintID As Integer, ByVal PN As String) As Integer
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetSprQtyPerPN()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Integer
+    Dim Q As Integer
+    Dim aL As Boolean
+    
+    If Not (DBLValue(Right(PN, 1)) / 2 = DBLValue(Right(PN, 1)) \ 2) Then ' if odd then right
+        PN = Mid(PN, 1, 7) & DBLValue(Right(PN, 1)) - 1
+        aL = False
+    Else
+        aL = True
+    End If
+    
+    For i = 0 To UBound(varDoorData.arrSelectedSolution(pintID).arrSpring())
+        If varDoorData.arrSelectedSolution(pintID).arrSpring(i).strPN = PN And varDoorData.arrSelectedSolution(pintID).arrSpring(i).Left = aL Then
+            Q = Q + 1
+        End If
+    Next
+    GetSprQtyPerPN = Q
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function GetSprQtyPerGauge(ByVal pintID As Integer, ByVal Wsize As Single) As Integer
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetSprQtyPerGauge()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Integer
+    Dim Q As Integer
+    For i = 0 To UBound(varDoorData.arrSpringSolution(pintID).arrSpring())
+        If varDoorData.arrSpringSolution(pintID).arrSpring(i).WireSize = Wsize Then
+            Q = Q + 1
+        End If
+    Next
+    GetSprQtyPerGauge = Q
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+Public Function GetSelectedSprQtyPerGauge(ByVal pintID As Integer, ByVal Wsize As Single) As Integer
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetSelectedSprQtyPerGauge()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Integer
+    Dim Q As Integer
+    For i = 0 To UBound(varDoorData.arrSelectedSolution(pintID).arrSpring())
+        If varDoorData.arrSelectedSolution(pintID).arrSpring(i).WireSize = Wsize Then
+            Q = Q + 1
+        End If
+    Next
+    GetSelectedSprQtyPerGauge = Q
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Sub SelectHeadPlateFastenerPkgs()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SelectHeadPlateFastenerPkgs()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+'    If varDoorData.aDrum.strStamping = "D6375-164" Or varDoorData.aDrum.strStamping = "D800-120" Then
+'        If varDoorData.ShaftTube = True Then
+'            Call FillSummaryGrid("4-0072", 1, "Torsion", GetSubCategory("4-0072"), 0)
+'        Else
+'            Call FillSummaryGrid("4-0072", 1, "Torsion", GetSubCategory("4-0072"), 0)
+'            Call FillSummaryGrid("436-0046", 2, "Torsion", GetSubCategory("436-0046"), 0)
+'        End If
+'    Else
+'        If varDoorData.ShaftTube = True Then
+'            Call FillSummaryGrid("4-0070", 1, "Torsion", GetSubCategory("4-0070"), 0)
+'        Else
+'            Call FillSummaryGrid("4-0071", 1, "Torsion", GetSubCategory("4-0071"), 0)
+'        End If
+'    End If
+    
+    'Bill Leather 11 June/03:
+    
+    If varDoorData.ShaftTube = True Then
+        Call FillSummaryGrid("4-0071", 1, "Torsion", GetSubCategory("4-0071"), 0)
+    Else
+        If varDoorData.KeyedTubeShaft = True Then  'need w/keyed tube shaft
+            Call FillSummaryGrid("4-0096", 1, "Torsion", GetSubCategory("4-0096"), 0)
+        Else
+            Call FillSummaryGrid("4-0070", 1, "Track", GetSubCategory("4-0070"), 0) 'switch category from torsion to track as it doubles the 4-0070 qty as per auxillary shaft selection in generate bom.
+        End If
+    End If
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub SelectHeadPlates()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SelectHeadPlates()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim PN As String
+    
+    If varDoorData.Track.strMountType = "EU ADCA" And LiftType = "Standard Lift" Then
+        PN = "425-1035"
+        Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+        PN = "425-1036"
+        Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+        Exit Sub
+    End If
+    
+    Select Case LiftType
+        Case "Vertical Lift", "Low Headroom Vertical Lift"
+'            PN = "425-1015"
+'            Call FillSummaryGrid(PN, 2, "Torsion", GetSubCategory(PN), 0)
+            If varDoorData.aDrum.strStamping = "D1150-236" Then
+                
+                If varDoorData.ShaftDia = 1 Then    'added drum plate selection is dependable on shaft dia
+                    PN = "425-1015"
+                ElseIf varDoorData.ShaftDia = 1.25 Then
+                    PN = "425-1031"
+                
+                End If
+            
+'                PN = "425-1031"
+                Call FillSummaryGrid(PN, 2, "Torsion", GetSubCategory(PN), 0)
+            ElseIf varDoorData.aDrum.strStamping = "D1350-336" Then
+                If DrHgt <= 276 Then
+                    Call FillSummaryGrid("7-3100", 1, "Torsion", GetSubCategory("7-3100"), 0)
+                    Call FillSummaryGrid("7-3101", 1, "Torsion", GetSubCategory("7-3101"), 0)
+                Else
+                    Call FillSummaryGrid("7-3102", 1, "Torsion", GetSubCategory("7-3102"), 0)
+                    Call FillSummaryGrid("7-3103", 1, "Torsion", GetSubCategory("7-3103"), 0)
+                End If
+            ElseIf varDoorData.aDrum.strStamping = "D1100-216" Or varDoorData.aDrum.strStamping = "D850-132" Then
+'                PN = "425-1015"
+                If varDoorData.ShaftDia = 1 Then    'added drum plate selection is dependable on shaft dia
+                    PN = "425-1015"
+                ElseIf varDoorData.ShaftDia = 1.25 Then
+                    PN = "425-1031"
+                
+                End If
+
+'                PN = "425-1031"
+                Call FillSummaryGrid(PN, 2, "Torsion", GetSubCategory(PN), 0)
+            End If
+            
+            
+        Case "Low Headroom Front Mount"
+            If HWType = 2 Then
+                PN = "425-1010"
+                Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+                PN = "425-1011"
+                Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+            End If
+        Case "Standard Lift", "High Lift" ', "Low Headroom Rear Mount" commented in 2.0.19 for LHR mount kit includes the Head Plates already
+            If HWType = 2 Then
+                PN = "425-1010"
+                Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+                PN = "425-1011"
+                Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+            Else
+                If varDoorData.aDrum.strStamping = "D6375-164" Or varDoorData.aDrum.strStamping = "D800-120" Then
+                    PN = "436-0074"
+                    Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+                    PN = "436-0075"
+                    Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+                    If varDoorData.ShaftDia = 1 Then
+                        PN = "328-219" '1"Bore Steel Collar
+                        Call FillSummaryGrid(PN, 2, "Torsion", GetSubCategory(PN), 0)
+                        PN = "7-4050" 'drum plates
+                        Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+                        PN = "7-4051"
+                        Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+                    Else
+                        PN = "328-252" '1-1/4"Bore Steel Collar
+                        Call FillSummaryGrid(PN, 2, "Torsion", GetSubCategory(PN), 0)
+                        PN = "7-4052"
+                        Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+                        PN = "7-4053"
+                        Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+                    End If
+                Else
+                    If HWType >= 3 Then
+                        'commented for 2.0.14 release and up
+                        
+'                        If varDoorData.aDrum.strStamping = "D575-120" And varDoorData.ShaftDia = 1 Then
+'                        ' picked with center plates  PN = "426-1003"
+'                        ' Call FillSummaryGrid(PN, 2, "Torsion", GetSubCategory(PN), 0)
+'                            PN = "425-1016"
+'                            Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+'                            PN = "425-1017"
+'                            Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+'                        Else
+                            'If specialorder Then
+                            'special order (creative door)
+                            'Else
+                            
+                            ''' YS ( Inhouse only) -  because dr wgt was halved , due to  Aux Shaft  selection , need to revert back to original dr wgt for head plate seelction.
+                                    
+                                If varDoorData.AuxillaryShaft = True Then
+                                  DrWgt = DrWgt * 2  ' It was halved when aux shaft was selected in Track screen.
+                                Else
+                                    DrWgt = DrWgt
+                                End If
+                                  ''''''''''''''''''''''''''''''''''''
+                                  
+                                  If DrWidth > 290 Or DrWgt > 800 Then
+                                    PN = "425-1016"
+                                    Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+                                    PN = "425-1017"
+                                    Call FillSummaryGrid(PN, 1, "Torsion", GetSubCategory(PN), 0)
+                                    
+                            ''' YS ( Inhouse only) -  because dr wgt was halved , due to  Aux Shaft  selection , need to revert back to original dr wgt for head plate seelction.
+                                    
+                                If varDoorData.AuxillaryShaft = True Then
+                                  DrWgt = DrWgt / 2 ' Change back to what is was before HeadPlate Selection. At this point DrWgt is half.
+                                Else
+                                    DrWgt = DrWgt
+                                End If
+                                  ''''''''''''''''''''''''''''''''''''
+
+                                    
+                                Else
+                                    Dim lstrResp As String
+                                    lstrResp = MsgBox("13 gauge head plates will be selected." & vbCrLf & _
+                                        "Would you like to select 11 gauge instead?", vbYesNo + vbApplicationModal + vbQuestion, "Head Plates")
+                                    If lstrResp = vbYes Then
+                                        Call FillSummaryGrid("425-1016", 1, "Torsion", GetSubCategory("425-1016"), 0)
+                                        Call FillSummaryGrid("425-1017", 1, "Torsion", GetSubCategory("425-1017"), 0)
+                                    Else
+                                        Call FillSummaryGrid("425-1012", 1, "Torsion", GetSubCategory("425-1012"), 0)
+                                        Call FillSummaryGrid("425-1013", 1, "Torsion", GetSubCategory("425-1013"), 0)
+                                    End If
+                                End If
+                            'End If
+'                        End If
+                    End If
+                End If
+            End If
+    End Select
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub Select_Plug_And_Winders()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Select_Plug_And_Winders()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim Fitting As String
+    Dim PNPlug(2) As String, PNWinder(2) As String, PNStationary(2) As String
+    Dim Ql As Integer, Qr As Integer
+    Ql = GetSelectedSprQtyPerGauge(SpringIndex, varDoorData.arrSelectedSolution(SpringIndex).arrSpring(0).WireSize)
+    If varDoorData.arrSelectedSolution(SpringIndex).blnMismatched = True Then Qr = GetSelectedSprQtyPerGauge(SpringIndex, varDoorData.arrSelectedSolution(SpringIndex).arrSpring(UBound(varDoorData.arrSelectedSolution(SpringIndex).arrSpring())).WireSize)
+
+    Select Case varDoorData.arrSelectedSolution(SpringIndex).sngSpringCoilID
+    
+    Case 1.75
+        Fitting = "APCO"
+        PNWinder(0) = "950-027"
+        PNStationary(0) = "950-028"
+        Call FillSummaryGrid(PNWinder(0), Ql + Qr, "Torsion", GetSubCategory(PNWinder(0)), 0)
+        Call FillSummaryGrid(PNStationary(0), Ql + Qr, "Torsion", GetSubCategory(PNStationary(0)), 0)
+    Case 2
+        Fitting = "APCO"
+        PNStationary(0) = "773-173"
+        PNWinder(0) = "773-172"
+        Call FillSummaryGrid(PNWinder(0), Ql + Qr, "Torsion", GetSubCategory(PNWinder(0)), 0)
+        Call FillSummaryGrid(PNStationary(0), Ql + Qr, "Torsion", GetSubCategory(PNStationary(0)), 0)
+    Case 2.625
+        Fitting = "APCO"
+        PNStationary(0) = "773-143"
+        PNWinder(0) = "773-147"
+        Call FillSummaryGrid(PNWinder(0), Ql + Qr, "Torsion", GetSubCategory(PNWinder(0)), 0)
+        Call FillSummaryGrid(PNStationary(0), Ql + Qr, "Torsion", GetSubCategory(PNStationary(0)), 0)
+    Case 3.625, 3.75
+        If varDoorData.arrSelectedSolution(SpringIndex).strSpringWireType = "Square" Then
+            Fitting = "RW"
+            PNPlug(0) = "7-2161"
+            If varDoorData.ShaftDia = 1.25 Then
+                PNWinder(0) = "7-3081"
+            Else
+                PNWinder(0) = "7-3080"
+            End If
+            Call FillSummaryGrid(PNWinder(0), Ql + Qr, "Torsion", GetSubCategory(PNWinder(0)), 0)
+            Call FillSummaryGrid(PNPlug(0), Ql + Qr, "Torsion", PNPlug(0), 0)
+        Else
+            Fitting = "APCO"
+            PNStationary(0) = "773-171"
+            If varDoorData.ShaftDia = 1.25 Then
+                PNWinder(0) = "773-169"
+            Else
+                PNWinder(0) = "773-170"
+            End If
+            Call FillSummaryGrid(PNWinder(0), Ql + Qr, "Torsion", GetSubCategory(PNWinder(0)), 0)
+            Call FillSummaryGrid(PNStationary(0), Ql + Qr, "Torsion", GetSubCategory(PNStationary(0)), 0)
+        End If
+    Case 5.25
+        If varDoorData.arrSelectedSolution(SpringIndex).strSpringWireType = "Square" Then
+            If varDoorData.arrSelectedSolution(SpringIndex).arrSpring(0).WireSize >= 0.406 Then
+                Fitting = "RW"
+                PNPlug(0) = "7-2160"
+                If varDoorData.ShaftDia = 1.25 Then
+                    PNWinder(0) = "7-3083"
+                Else
+                    PNWinder(0) = "7-3082"
+                End If
+            Else
+                Fitting = "APCO"
+                PNStationary(0) = "773-150"
+                If varDoorData.ShaftDia = 1.25 Then
+                    PNWinder(0) = "773-152"
+                Else
+                    PNWinder(0) = "773-151"
+                End If
+            End If
+            
+            If varDoorData.arrSelectedSolution(SpringIndex).arrSpring(UBound(varDoorData.arrSelectedSolution(SpringIndex).arrSpring())).WireSize >= 0.406 Then
+                Fitting = "RW"
+                PNPlug(1) = "7-2160"
+                If varDoorData.ShaftDia = 1.25 Then
+                    PNWinder(1) = "7-3083"
+                Else
+                    PNWinder(1) = "7-3082"
+                End If
+            Else
+                Fitting = "APCO"
+                PNStationary(1) = "773-150"
+                If varDoorData.ShaftDia = 1.25 Then
+                    PNWinder(1) = "773-152"
+                Else
+                    PNWinder(1) = "773-151"
+                End If
+            End If
+            If PNWinder(0) <> "" And PNWinder(1) <> "" Then
+                If PNWinder(0) <> PNWinder(1) Then
+                    Call FillSummaryGrid(PNWinder(1), Qr, "Torsion", GetSubCategory(PNWinder(1)), 0)
+                    Call FillSummaryGrid(PNWinder(0), Ql, "Torsion", GetSubCategory(PNWinder(0)), 0)
+                Else
+                    Call FillSummaryGrid(PNWinder(0), Ql + Qr, "Torsion", GetSubCategory(PNWinder(0)), 0)
+                End If
+            End If
+            If PNStationary(0) <> "" And PNStationary(1) <> "" Then
+                If PNStationary(0) <> PNStationary(1) Then
+                    Call FillSummaryGrid(PNStationary(1), Qr, "Torsion", GetSubCategory(PNStationary(1)), 0)
+                    Call FillSummaryGrid(PNStationary(0), Ql, "Torsion", GetSubCategory(PNStationary(0)), 0)
+                Else
+                    Call FillSummaryGrid(PNStationary(0), Ql + Qr, "Torsion", GetSubCategory(PNWinder(0)), 0)
+                End If
+            End If
+            If PNPlug(0) <> "" And PNPlug(1) <> "" Then
+                If PNPlug(0) <> PNPlug(1) Then
+                    Call FillSummaryGrid(PNPlug(1), Qr, "Torsion", GetSubCategory(PNPlug(1)), 0)
+                    Call FillSummaryGrid(PNPlug(0), Ql, "Torsion", GetSubCategory(PNPlug(0)), 0)
+                Else
+                    Call FillSummaryGrid(PNPlug(0), Ql + Qr, "Torsion", GetSubCategory(PNPlug(0)), 0)
+                End If
+            End If
+        Else
+            Fitting = "DNS"
+            PNStationary(0) = "773-150"
+            If varDoorData.ShaftDia = 1.25 Then
+                PNWinder(0) = "773-152"
+            Else
+                PNWinder(0) = "773-151"
+            End If
+            Call FillSummaryGrid(PNWinder(0), Ql + Qr, "Torsion", GetSubCategory(PNWinder(0)), 0)
+            Call FillSummaryGrid(PNStationary(0), Ql + Qr, "Torsion", GetSubCategory(PNStationary(0)), 0)
+        End If
+    
+    Case 6
+    
+            PNStationary(0) = "773-175"
+            If varDoorData.ShaftDia = 1.25 Then
+                PNWinder(0) = "773-176"
+            Else
+                PNWinder(0) = "773-174"
+            End If
+        
+            Call FillSummaryGrid(PNWinder(0), Ql + Qr, "Torsion", GetSubCategory(PNWinder(0)), 0)
+            Call FillSummaryGrid(PNStationary(0), Ql + Qr, "Torsion", GetSubCategory(PNWinder(0)), 0)
+
+    End Select
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+Public Sub SelectCenterPlatesAndSupports()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SelectCenterPlatesAndSupports()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    'This routine will select Center plates, Centre brackets and support angles.
+    Dim P1 As String, P2 As String
+    Dim lintQty As Integer
+    Dim lintLeft As Integer, lintRight As Integer
+    
+    lintRight = GetSprQtyPerSide(SpringIndex, False)
+    lintLeft = GetSprQtyPerSide(SpringIndex, True)
+    
+
+''''''''''Change in .NET''''''''''''''''
+'    lintQty = IIf(varDoorData.OneCenterPlatePerSpring = True, lintRight + lintLeft, IIf(lintRight > lintLeft, lintRight, lintLeft))
+    lintQty = IIf(varDoorData.arrSelectedSolution(SpringIndex).OneCenterPlatePerSpring = True, lintRight + lintLeft, IIf(lintRight > lintLeft, lintRight, lintLeft))
+    
+    'Auxillary shaft
+    If varDoorData.AuxillaryShaft = True Then lintQty = (lintQty * 2) + 2
+
+''''''''''END Change in .NET
+    varDoorData.intCenterPlates = lintQty
+    
+    If (LiftType = "Standard Lift") Or (LiftType = "Low Headroom Rear Mount") Then
+        If (varDoorData.aDrum.strStamping = "D400-144") Then
+            If varDoorData.OperatorType = 4 Or varDoorData.OperatorType = 11 Then
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-2368", lintQty, "Torsion", GetSubCategory("7-2368"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            Else
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-2368", lintQty, "Torsion", GetSubCategory("7-2368"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                       Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                End If
+            End If
+          
+            'No support angles needed
+        ElseIf (varDoorData.aDrum.strStamping = "D525-216") Then
+            
+            If varDoorData.ShaftDia = 1.25 Then '1-1/4 inch shaft
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3130", lintQty, "Torsion", GetSubCategory("7-3130"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-163", lintRight, "Torsion", GetSubCategory("950-163"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-164", lintLeft, "Torsion", GetSubCategory("950-164"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+        
+            Else
+            
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-2369", lintQty, "Torsion", GetSubCategory("7-2369"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            End If
+            
+            'No support angles needed
+        ElseIf (varDoorData.aDrum.strStamping = "D800-384") Then
+            If varDoorData.ShaftDia = 1 Then '1" shafts
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3129", lintQty, "Torsion", GetSubCategory("7-3129"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+
+            ElseIf varDoorData.ShaftDia = 1.25 Then '1-1/4 inch shaft
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3130", lintQty, "Torsion", GetSubCategory("7-3130"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-163", lintRight, "Torsion", GetSubCategory("950-163"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-164", lintLeft, "Torsion", GetSubCategory("950-164"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            End If
+            
+            'Pick Adaptor
+            If varDoorData.ShaftDia = 1 Then '1" shafts
+                P1 = "426-1003"
+            ElseIf varDoorData.ShaftDia = 1.25 Then '1-1/4 inch shaft
+                P1 = "426-1004"
+            End If
+            Call FillSummaryGrid(P1, 2, "Torsion", GetSubCategory(P1), 0)
+        End If
+        
+    ElseIf LiftType = "Low Headroom Front Mount" Then
+        If (varDoorData.aDrum.strStamping = "D400-144") Then
+            If varDoorData.OperatorType = 4 Or varDoorData.OperatorType = 11 Then
+                If varDoorData.gblnSpringFailure = False Then
+                    If HWType = 2 Then
+                        Call FillSummaryGrid("7-2368", lintQty, "Torsion", GetSubCategory("7-2368"), 0)
+                    Else
+                        Call FillSummaryGrid("7-2368", lintQty, "Torsion", GetSubCategory("7-2368"), 0) 'changed on Dec 13/10 7-3129 with 5" offset instead we need 7-2368 3 3/8" offset
+                        'Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0) 'considering the above change, we do not need support angle
+                    End If
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            Else
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-2368", lintQty, "Torsion", GetSubCategory("7-2368"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                End If
+            End If
+          
+            'No support angles needed
+        ElseIf (varDoorData.aDrum.strStamping = "D525-216") Then
+            
+            
+            If varDoorData.ShaftDia = 1.25 Then '1-1/4 inch shaft
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3130", lintQty, "Torsion", GetSubCategory("7-3130"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-163", lintRight, "Torsion", GetSubCategory("950-163"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-164", lintLeft, "Torsion", GetSubCategory("950-164"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                       Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            
+            Else
+            
+                If varDoorData.gblnSpringFailure = False Then
+                    If varDoorData.OperatorType = 4 Or varDoorData.OperatorType = 11 Then
+                        If HWType = 2 Then
+                            Call FillSummaryGrid("7-2368", lintQty, "Torsion", GetSubCategory("7-2368"), 0) 'old value 7-2369
+                        Else
+                            Call FillSummaryGrid("7-2368", lintQty, "Torsion", GetSubCategory("7-2368"), 0) 'changed on Dec 13/10 7-3129 with 5" offset instead we need 7-2368 3 3/8" offset
+                            'Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0) 'considering the above change, we do not need support angle
+                        End If
+                    Else
+                        Call FillSummaryGrid("7-2368", lintQty, "Torsion", GetSubCategory("7-2368"), 0)
+                    End If
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            End If
+            
+            'No support angles needed
+        ElseIf (varDoorData.aDrum.strStamping = "D800-384") Then
+            If varDoorData.ShaftDia = 1 Then '1" shafts
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3129", lintQty, "Torsion", GetSubCategory("7-3129"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+
+            ElseIf varDoorData.ShaftDia = 1.25 Then '1-1/4 inch shaft
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3130", lintQty, "Torsion", GetSubCategory("7-3130"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-163", lintRight, "Torsion", GetSubCategory("950-163"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-164", lintLeft, "Torsion", GetSubCategory("950-164"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                       Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            End If
+            
+            'Pick Adaptor
+            If varDoorData.ShaftDia = 1 Then '1" shafts
+                P1 = "426-1003"
+            ElseIf varDoorData.ShaftDia = 1.25 Then '1-1/4 inch shaft
+                P1 = "426-1004"
+            End If
+            Call FillSummaryGrid(P1, 2, "Torsion", GetSubCategory(P1), 0)
+        End If
+
+    ElseIf (LiftType = "High Lift") Then
+        If (varDoorData.aDrum.strStamping = "D400-54") Then
+            'If varDoorData.OperatorType = 4 Or varDoorData.OperatorType = 11 Then
+            If varDoorData.OperatorType = 4 Then 'canamax approved
+                If varDoorData.gblnSpringFailure = False Then
+                    
+                    Call FillSummaryGrid("7-2369", lintQty, "Torsion", GetSubCategory("7-2369"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                       Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            Else
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-2368", lintQty, "Torsion", GetSubCategory("7-2368"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                End If
+            End If
+        ElseIf (varDoorData.aDrum.strStamping = "D525-54") Then
+            
+            If varDoorData.ShaftDia = 1.25 Then  '1-1/4 inch solid shaft
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3130", lintQty, "Torsion", GetSubCategory("7-3130"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-163", lintRight, "Torsion", GetSubCategory("950-163"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-164", lintLeft, "Torsion", GetSubCategory("950-164"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            
+            Else
+            
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-2369", lintQty, "Torsion", GetSubCategory("7-2369"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            End If
+            
+        ElseIf (varDoorData.aDrum.strStamping = "D575-120") Then
+            
+            If varDoorData.ShaftDia = 1.25 Then  '1-1/4 inch solid shaft
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3130", lintQty, "Torsion", GetSubCategory("7-3130"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-163", lintRight, "Torsion", GetSubCategory("950-163"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-164", lintLeft, "Torsion", GetSubCategory("950-164"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            
+            Else
+            
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3129", lintQty, "Torsion", GetSubCategory("7-3129"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            End If
+            
+            'Pick Adaptor for 3" hardware and Super 3" hardware
+            If Not (HWType = 2) Then
+                If varDoorData.ShaftDia = 1 Then  '1" shafts
+                    P1 = "426-1003"
+                ElseIf varDoorData.ShaftDia = 1.25 Then  '1-1/4 inch shaft
+                    P1 = "426-1004"
+                End If
+                Call FillSummaryGrid(P1, 2, "Torsion", GetSubCategory(P1), 0)
+            End If
+        ElseIf (varDoorData.aDrum.strStamping = "D6375-164") Or (varDoorData.aDrum.strStamping = "D800-120") Then
+            If varDoorData.ShaftDia = 1 Then  '1 inch shafts
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3129", lintQty, "Torsion", GetSubCategory("7-3129"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            ElseIf varDoorData.ShaftDia = 1.25 Then  '1-1/4 inch solid shaft
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3130", lintQty, "Torsion", GetSubCategory("7-3130"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-163", lintRight, "Torsion", GetSubCategory("950-163"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-164", lintLeft, "Torsion", GetSubCategory("950-164"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            End If
+        End If
+    ElseIf (LiftType = "Vertical Lift") Or (LiftType = "Low Headroom Vertical Lift") Then
+        If (varDoorData.aDrum.strStamping = "D850-132") Then
+            If varDoorData.ShaftDia = 1 Then
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3129", lintQty, "Torsion", GetSubCategory("7-3129"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            ElseIf varDoorData.ShaftDia = 1.25 Then
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3130", lintQty, "Torsion", GetSubCategory("7-3130"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-163", lintRight, "Torsion", GetSubCategory("950-163"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-164", lintLeft, "Torsion", GetSubCategory("950-164"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            End If
+        ElseIf (varDoorData.aDrum.strStamping = "D1100-216") Or (varDoorData.aDrum.strStamping = "D1150-236") Or (varDoorData.aDrum.strStamping = "D1350-336") Then
+            If varDoorData.ShaftDia = 1 Then
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3129", lintQty, "Torsion", GetSubCategory("7-3129"), 0)
+                    Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                                        
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-161", lintRight, "Torsion", GetSubCategory("950-161"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-162", lintLeft, "Torsion", GetSubCategory("950-162"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                       Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            ElseIf varDoorData.ShaftDia = 1.25 Then
+                If varDoorData.gblnSpringFailure = False Then
+                    Call FillSummaryGrid("7-3130", lintQty, "Torsion", GetSubCategory("7-3130"), 0)
+                    
+                    If (varDoorData.aDrum.strStamping = "D1350-336") Then
+                    
+                        Call FillSummaryGrid("432-0017", lintQty, "Torsion", GetSubCategory("432-0017"), 0)
+                    Else
+                        Call FillSummaryGrid("432-0016", lintQty, "Torsion", GetSubCategory("432-0016"), 0)
+                    End If
+                Else
+                    If lintRight > 0 Then Call FillSummaryGrid("950-163", lintRight, "Torsion", GetSubCategory("950-163"), 0)
+                    If lintLeft > 0 Then Call FillSummaryGrid("950-164", lintLeft, "Torsion", GetSubCategory("950-164"), 0)
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", lintLeft + lintRight, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", lintLeft + lintRight, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                    Call FillSummaryGrid("950-165", lintLeft + lintRight, "Torsion", GetSubCategory("950-165"), 0)
+                End If
+            End If
+        
+        End If
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Public Sub SelectPVC()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SelectPVC()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lsngLen As Single, lsngMetLen As Single
+    Dim lsngLenM As Single, lsngMetLenM As Single
+    Dim QtySm As Integer, QtyBig As Integer
+    
+    'small length and big length
+    lsngLen = varDoorData.arrSelectedSolution(SpringIndex).arrSpring(0).PVC
+    lsngLenM = varDoorData.arrSelectedSolution(SpringIndex).arrSpring(UBound(varDoorData.arrSelectedSolution(SpringIndex).arrSpring())).PVC
+    'round to 1/16"
+    lsngLen = RoundFraction(lsngLen - Fix(lsngLen)) + Fix(lsngLen)
+    lsngLenM = RoundFraction(lsngLenM - Fix(lsngLenM)) + Fix(lsngLenM)
+    
+    
+    QtySm = GetSelectedSprQtyPerGauge(SpringIndex, varDoorData.arrSelectedSolution(SpringIndex).arrSpring(0).WireSize)
+    QtyBig = GetSelectedSprQtyPerGauge(SpringIndex, varDoorData.arrSelectedSolution(SpringIndex).arrSpring(UBound(varDoorData.arrSelectedSolution(SpringIndex).arrSpring())).WireSize)
+    
+    
+     'auxillary shaft - double the QTY (in-house feature only that's why imperial measurements are considered)
+    If varDoorData.AuxillaryShaft = True Then
+        QtySm = QtySm * 2
+        QtyBig = QtyBig * 2
+    End If
+    
+    If MeasU = 0 Then
+        aCon.Inch = lsngLen
+        aCon.mmcalc
+        lsngMetLen = aCon.mm
+        aCon.Inch = lsngLenM
+        aCon.mmcalc
+        lsngMetLenM = aCon.mm
+    End If
+    
+    If varDoorData.arrSelectedSolution(SpringIndex).blnMismatched Then
+        If MeasU = 1 Then
+            Call FillSummaryGrid("328-227", _
+                QtySm * lsngLen + QtyBig * lsngLenM, "Torsion", _
+                GetSubCategory("328-227"), QtySm * lsngLen + QtyBig * lsngLenM, _
+                "Cut (" & QtySm & ") to " & _
+                GetImpString(lsngLen) & " (" & QtyBig & _
+                ") to " & GetImpString(lsngLenM))
+        Else
+            Call FillSummaryGrid("328-227", _
+                QtySm * lsngMetLen + QtyBig * lsngMetLenM, "Torsion", _
+                GetSubCategory("328-227"), QtySm * lsngLen + QtyBig * lsngLenM, _
+                "Cut (" & QtySm & ") to " & _
+                Format(lsngMetLen, "Fixed") & " (" & QtyBig & _
+                ") to " & Round(lsngMetLenM, 0) & " mm")
+        End If
+    Else
+        If MeasU = 1 Then
+            Call FillSummaryGrid("328-227", QtySm * lsngLen, "Torsion", _
+                GetSubCategory("328-227"), QtySm * lsngLen, _
+                "Cut (" & QtySm & ") to " & GetImpString(lsngLen))
+        Else
+            Call FillSummaryGrid("328-227", QtySm * lsngMetLen, "Torsion", _
+                GetSubCategory("328-227"), QtySm * lsngLen, _
+                "Cut (" & QtySm & ") to " & Round(lsngMetLen, 0) & " mm")
+        End If
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub SelectSpringFastenerPkg()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SelectSpringFastenerPkg()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim NSpr As Integer
+    
+    NSpr = UBound(varDoorData.arrSelectedSolution(SpringIndex).arrSpring()) + 1
+    
+'    If varDoorData.AuxillaryShaft = True Then
+'        NSpr = NSpr * 2
+'    End If
+    
+    
+'    If NSpr = 1 Then
+'        If varDoorData.arrSpringSolution(SpringIndex).CoilID <= 3.75 Then
+'            Call FillSummaryGrid("4-0080", 1, "Torsion", GetSubCategory("4-0080"), 0)
+'        Else
+'            Call FillSummaryGrid("4-0081", 1, "Torsion", GetSubCategory("4-0081"), 0)
+'        End If
+'    ElseIf NSpr = 2 Then
+'        If varDoorData.arrSpringSolution(SpringIndex).CoilID <= 3.75 Then
+'            If DrWidth > 170 Or CouplNum > 0 Then
+'                Call FillSummaryGrid("4-0080", 2, "Torsion", GetSubCategory("4-0080"), 0)
+'            Else
+'                Call FillSummaryGrid("4-0082", 1, "Torsion", GetSubCategory("4-0082"), 0)
+'            End If
+'        Else
+'            Call FillSummaryGrid("4-0081", 2, "Torsion", GetSubCategory("4-0081"), 0)
+'        End If
+'    Else
+'        If varDoorData.arrSpringSolution(SpringIndex).CoilID <= 3.75 Then
+'            Call FillSummaryGrid("4-0080", 3 + (NSpr - 3), "Torsion", GetSubCategory("4-0080"), 0)
+'        Else
+'            Call FillSummaryGrid("4-0081", 3 + (NSpr - 3), "Torsion", GetSubCategory("4-0081"), 0)
+'        End If
+'    End If
+    
+    'schedule revised by Bill Leather on Nov6/2003 (due to change in how we select center plates)
+    If NSpr = 1 Then
+        If varDoorData.ShaftTube = True Then
+            Call FillSummaryGrid("4-0080", 1, "Torsion", GetSubCategory("4-0080"), 0)
+        Else
+            If varDoorData.KeyedTubeShaft = True Then
+                Call FillSummaryGrid("4-0097", 1, "Torsion", GetSubCategory("4-0097"), 0)
+            Else 'solid shaft
+                Call FillSummaryGrid("4-0081", 1, "Torsion", GetSubCategory("4-0081"), 0)
+            End If
+        End If
+    ElseIf NSpr = 2 Then
+        If varDoorData.ShaftTube = True Then
+            If varDoorData.arrSelectedSolution(SpringIndex).sngSpringCoilID <= 3.75 And DrWidth <= 170 Then
+                Call FillSummaryGrid("4-0082", 1, "Torsion", GetSubCategory("4-0082"), 0)
+            Else
+                Call FillSummaryGrid("4-0080", 2, "Torsion", GetSubCategory("4-0080"), 0)
+            End If
+        Else
+
+''''''''''Change in .NET''''''''''''''''
+'            Call FillSummaryGrid("4-0081", 2, "Torsion", GetSubCategory("4-0081"), 0)
+            If varDoorData.arrSelectedSolution(SpringIndex).OneCenterPlatePerSpring = False Then
+                Call FillSummaryGrid("4-0082", 1, "Torsion", GetSubCategory("4-0082"), 0)
+                
+                If varDoorData.arrSelectedSolution(SpringIndex).sngSpringCoilID > 3.75 Then
+                    'add keys for the springs that are keyed. 4-0082 does not include them.
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", 2, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", 2, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                End If
+            Else
+                If varDoorData.GlavanizedTubeShaft = True Then
+                    Call FillSummaryGrid("4-0097", 2, "Torsion", GetSubCategory("4-0097"), 0)
+                Else
+                    Call FillSummaryGrid("4-0081", 2, "Torsion", GetSubCategory("4-0081"), 0)
+                End If
+            End If
+''''''''''END Change in .NET
+        End If
+    Else
+        If varDoorData.ShaftTube = True Then
+            If varDoorData.arrSelectedSolution(SpringIndex).sngSpringCoilID <= 3.75 And DrWidth <= 170 Then
+                If NSpr Mod 2 = 1 Then  'odd springs
+                    Call FillSummaryGrid("4-0082", NSpr \ 2, "Torsion", GetSubCategory("4-0082"), 0)
+                    Call FillSummaryGrid("4-0080", NSpr Mod 2, "Torsion", GetSubCategory("4-0080"), 0)
+                Else    'even springs
+                    Call FillSummaryGrid("4-0082", NSpr \ 2, "Torsion", GetSubCategory("4-0082"), 0)
+                End If
+            Else
+                Call FillSummaryGrid("4-0080", NSpr, "Torsion", GetSubCategory("4-0080"), 0)
+            End If
+        Else
+''''''''''Change in .NET''''''''''''''''
+'            Call FillSummaryGrid("4-0081", NSpr, "Torsion", GetSubCategory("4-0081"), 0)
+            If varDoorData.arrSelectedSolution(SpringIndex).OneCenterPlatePerSpring = False Then
+                Call FillSummaryGrid("4-0082", varDoorData.intCenterPlates, "Torsion", GetSubCategory("4-0082"), 0)
+                
+                If varDoorData.arrSelectedSolution(SpringIndex).sngSpringCoilID > 3.75 Then
+                    'add keys for the springs that are keyed. 4-0082 does not include them.
+                    If varDoorData.KeyedTubeShaft = True Then
+                        Call FillSummaryGrid("436-0097", 2, "Torsion", GetSubCategory("436-0097"), 0)
+                    Else
+                        Call FillSummaryGrid("436-0047", 2, "Torsion", GetSubCategory("436-0047"), 0)
+                    End If
+                End If
+            Else
+                If varDoorData.KeyedTubeShaft = True Then
+                    Call FillSummaryGrid("4-0097", NSpr, "Torsion", GetSubCategory("4-0097"), 0)
+                Else
+                    Call FillSummaryGrid("4-0081", NSpr, "Torsion", GetSubCategory("4-0081"), 0)
+                End If
+            End If
+''''''''''END Change in .NET
+            
+        End If
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Function IsSquare(ByVal pstrPN As String) As Boolean
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".IsSquare()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lobjSpringRS As ADODB.Recordset
+    
+    lstrSQL = "select Square, Round from Main where PartNum= " & SQLString(pstrPN)
+    Set lobjSpringRS = CnnBTMS.Execute(lstrSQL, 0, adCmdText)
+    If Not lobjSpringRS Is Nothing Then
+        If Not (lobjSpringRS.EOF And lobjSpringRS.BOF) Then
+            If DBLValue(lobjSpringRS.Fields("Square").Value) > 0 Then
+                IsSquare = True
+            Else
+                IsSquare = False
+            End If
+        End If
+    End If
+    
+    Set lobjSpringRS = Nothing
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+Public Function isEmptySpringSolutionArray() As Boolean
+
+    On Local Error Resume Next
+    
+    Dim uLimit As Integer
+    isEmptySpringSolutionArray = False
+    
+    uLimit = UBound(varDoorData.arrSpringSolution)
+    If Err.Number Then isEmptySpringSolutionArray = True
+    
+    Err.Clear
+
+End Function
+Public Function isEmptySelectedSpringSolutionArray() As Boolean
+
+    On Local Error Resume Next
+    
+    Dim uLimit As Integer
+    isEmptySelectedSpringSolutionArray = False
+    
+    uLimit = UBound(varDoorData.arrSelectedSolution)
+    If Err.Number Then isEmptySelectedSpringSolutionArray = True
+    
+    Err.Clear
+
+End Function
+Public Function isEmptySpringsArray() As Boolean
+
+    On Local Error Resume Next
+    
+    Dim uLimit As Integer
+    isEmptySpringsArray = False
+    
+    uLimit = UBound(varDoorData.arrSpringSolution(0).arrSpring)
+    If Err.Number Then isEmptySpringsArray = True
+    
+    Err.Clear
+
+End Function
+Public Function isEmptyShaftArray() As Boolean
+
+    On Local Error Resume Next
+    
+    Dim uLimit As Integer
+    isEmptyShaftArray = False
+    
+    uLimit = UBound(varDoorData.varShaft)
+    If Err.Number Then isEmptyShaftArray = True
+    
+    Err.Clear
+
+End Function
+Public Function GetMinHWSizeForStamping(ByVal pstrStamping As String) As Single
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetMinHWSizeForStamping()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim MinHW As Single
+    
+    Select Case pstrStamping
+    
+    Case "D400-144"
+        MinHW = 2
+    Case "D525-216"
+        MinHW = 2
+    Case "D800-384"
+        MinHW = IIf(LiftType = "Low Headroom Rear Mount", 3, 2)
+    Case "D400-54"
+        MinHW = 2
+    Case "D525-54"
+        MinHW = 2
+    Case "D575-120"
+        MinHW = 2
+    Case "D6375-164"
+        MinHW = 3
+    Case "D800-120"
+        MinHW = 3
+    Case "D850-132"
+        MinHW = 2
+    Case "D1100-216"
+        MinHW = 2
+    Case "D1150-236"
+        MinHW = 2
+    Case "D1350-336"
+        MinHW = 2
+    End Select
+    
+    GetMinHWSizeForStamping = MinHW
+    
+    Exit Function
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+''''''''''Change in .NET''''''''''''''''
+'Private Sub SortSpringsArray()
+Public Sub SortSpringsArray()
+''''''''''END Change in .NET
+
+
+'routine sorts the spring solutions using Bubble Sort techninque by Wire Type, Qty, Wire Size and Price before they are presented in the grid on the screen.
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SortSpringsArray()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim X1 As Integer 'existing array index before sort
+    Dim Y1 As Integer 'new array index, array being created by sort
+    Dim ldblTemp As Double
+    
+    Dim lArrSolution() As SpringSolutionData
+    Dim lArrSpring() As SpringData
+    ReDim lArrSolution(UBound(varDoorData.arrSpringSolution))
+    
+    'sort by price. (all other criteria are fullfilled by the Springs routine, the only sort left
+    ' is by price)
+    
+    For X1 = 0 To UBound(varDoorData.arrSpringSolution()) 'evaluate one element vs. element + 1
+        For Y1 = X1 + 1 To UBound(varDoorData.arrSpringSolution())
+            If (varDoorData.arrSpringSolution(X1).arrSpring(0).WireSize = varDoorData.arrSpringSolution(Y1).arrSpring(0).WireSize) Then
+                If Not (varDoorData.arrSpringSolution(X1).arrSpring(0).Price <= varDoorData.arrSpringSolution(Y1).arrSpring(0).Price) Then
+                    'using temporary array swap elements.
+                    lArrSolution(X1) = varDoorData.arrSpringSolution(X1)
+                    varDoorData.arrSpringSolution(X1) = varDoorData.arrSpringSolution(Y1)
+                    varDoorData.arrSpringSolution(Y1) = lArrSolution(X1)
+                End If
+             End If
+        Next Y1
+    Next X1
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+''''''''''Change in .NET''''''''''''''''
+Public Function GetSpringWeight(ByVal pstrPN As String, ByVal psngLen As Single) As Single
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetSpringWeight()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lobjMain As ADODB.Recordset
+    Dim llngAffected As Long
+    Dim lsngW As Single
+    Dim lstrSQL As String
+    
+    lstrSQL = "Select ShipWeight from Main where PartNum=" & SQLString(pstrPN)
+    Set lobjMain = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjMain Is Nothing Then
+        If Not (lobjMain.EOF And lobjMain.BOF) Then
+            lsngW = DBLValue(lobjMain.Fields("ShipWeight").Value)
+            lsngW = lsngW * psngLen
+        End If
+    End If
+    GetSpringWeight = lsngW
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+''''''''''END Change in .NET
+

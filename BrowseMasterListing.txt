@@ -1,0 +1,1177 @@
+Option Explicit
+
+Const cstrModuleName As String = "frmBrowseMasterListing"
+'Public objParent As Object
+Public mstrBackTag As String
+Public mlngDOCID As Long
+Public mstrDocNum As String
+Public mlngQuoteID As Long
+Public mlngPOID As Long
+Public mblnAlloc As Boolean
+Public mstrUM As String
+Public mblnSpecial As Boolean
+Private mblnInFocus As Boolean
+
+''''''''''Change in .NET''''''''''''''''
+Public mstrAddedPN As String
+Public RowIndex As Long
+''''''''''END Change in .NET
+
+Private Sub chkDescLocal_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkDescLocal_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+
+''''''''''Change in .NET''''''''''''''''
+'    If chkDescLocal.Value = 1 Then
+'        grdData.ColWidth(2) = 0
+'        grdData.ColWidth(3) = grdData.Width / 5
+'    Else
+'        grdData.ColWidth(3) = 0
+'        grdData.ColWidth(2) = grdData.Width / 5
+'    End If
+
+    If chkDescLocal.Value = 1 Then
+        grdData.ColWidth(2) = 0
+        grdData.ColWidth(3) = IIf(IsInvMaint, grdData.Width / 5, grdData.Width / 3)
+    Else
+        grdData.ColWidth(3) = 0
+        grdData.ColWidth(2) = IIf(IsInvMaint, grdData.Width / 5, grdData.Width / 3)
+    End If
+
+''''''''''END Change in .NET
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdAccept_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAccept_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    glngRow = grdData.Row
+    
+    Dim llngRow As Long
+    Dim lstrData As String
+    Dim lstrSQL As String
+    Dim lobjRS As ADODB.Recordset
+    Dim llngAffected As Long
+    
+    llngRow = grdData.RowSel
+    lstrData = Trim(grdData.TextMatrix(llngRow, 0))
+    
+    Select Case mstrBackTag
+        Case "frmBOMDetailList", "frmBOMDetail"
+        
+            If Not lstrData = "" Then
+                Dim frmQB As frmBOMDetail
+                Set frmQB = New frmBOMDetail
+                frmQB.mlngBOMID = mlngDOCID
+                frmQB.mstrDocNum = mstrDocNum
+                frmQB.mstrPtNum = lstrData
+                frmQB.mlngQuoteID = mlngQuoteID
+                frmQB.mblnSpecial = mblnSpecial
+                frmQB.mlngPOID = mlngPOID
+                frmQB.mstrBOMUM = mstrUM
+                frmQB.mblnAlloc = mblnAlloc
+                frmQB.mintMode = MODE_ADD
+                ''''''''''Change in .NET''''''''''''''''
+                frmQB.RowIndex = RowIndex
+        
+                ''''''''''END Change in .NET
+
+''''''''''Change in .NET''''''''''''''''
+'                Unload Me
+'                frmQB.Show
+                
+                Screen.MousePointer = vbDefault  'sha
+                frmQB.Show vbModal      'sha
+''''''''''END Change in .NET
+                
+                Set frmQB = Nothing
+            End If
+    
+        Case "frmQuoteDetail", "frmQDetail"
+            If Not lstrData = "" Then
+                Dim frmQD As frmQDetail
+                Set frmQD = New frmQDetail
+                frmQD.mlngQuoteID = mlngDOCID
+                frmQD.mstrDocNum = mstrDocNum
+                frmQD.mstrPtNum = lstrData
+                frmQD.mblnSpecial = mblnSpecial
+                frmQD.mlngPOID = mlngPOID
+                frmQD.mstrQuoteUM = mstrUM
+                frmQD.mblnAlloc = mblnAlloc
+                frmQD.mintMode = MODE_ADD
+                ''''''''''Change in .NET''''''''''''''''
+                frmQD.RowIndex = RowIndex
+        
+                ''''''''''END Change in .NET
+
+''''''''''Change in .NET''''''''''''''''
+'                Unload Me
+'                frmQD.Show
+'                Screen.MousePointer = vbDefault
+                
+                Screen.MousePointer = vbDefault  'sha
+                frmQD.Show vbModal      'sha
+''''''''''END Change in .NET
+                               
+                Set frmQD = Nothing
+            End If
+        Case "frmPODetails", "frmPODetailMngmt"
+            If Not lstrData = "" Then
+                If lstrData = "4" Then
+                    
+                    lstrSQL = "select Count(*) from PODetails where POID=" & mlngDOCID
+                    Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                    If Not lobjRS Is Nothing Then
+                        If Not (lobjRS.EOF And lobjRS.BOF) Then
+                            If Not lobjRS.Fields(0).Value = 0 Then
+                                If MsgBox("There are other items on this Purchase Order. It is recommended that you use Part Number 4 on a new Purchase Order." & _
+                                    vbCrLf & "You will have to use PO Notes to enter the lengths." & _
+                                    vbCrLf & "Do you still want to add item 4 to this Purchase Order?", vbYesNo + vbInformation + vbApplicationModal, "MRSB") = vbNo Then
+                                    Screen.MousePointer = vbDefault
+                                    Exit Sub
+                                    
+                                End If
+                            Else
+                                MsgBox "It is recommended that you do not add other items to a Purchase Order containing Part Number 4." _
+                                    & vbCrLf & "Please use PO Notes to enter lengths of Part Number 4.", vbInformation + vbApplicationModal, "MRSB"
+                            End If
+                        End If
+                        Set lobjRS = Nothing
+                    End If
+                End If
+                
+                Dim frmQP As frmPODetailMngmt
+                Set frmQP = New frmPODetailMngmt
+                frmQP.mlngPOID = mlngDOCID
+                frmQP.mstrPONum = mstrDocNum
+                frmQP.mstrPtNum = lstrData
+                frmQP.mblnSpecial = mblnSpecial
+                frmQP.mstrPOUM = mstrUM
+                frmQP.mintMode = MODE_ADD
+                frmQP.mstrStatus = "Active"
+                ''''''''''Change in .NET''''''''''''''''
+                frmQP.RowIndex = RowIndex
+        
+                ''''''''''END Change in .NET
+
+''''''''''Change in .NET''''''''''''''''
+'                Unload Me
+'                frmQP.Show
+                
+                Screen.MousePointer = vbDefault  'sha
+                frmQP.Show vbModal 'sha
+''''''''''END Change in .NET
+            
+                Set frmQP = Nothing
+            End If
+        Case "frmSecNonStock"
+                
+                Dim frmQS As frmSecNonStock
+                Set frmQS = New frmSecNonStock
+                frmQS.mstrPtNum = Me.grdData.TextMatrix(grdData.Row, 0)
+                If Me.grdData.TextMatrix(grdData.Row, 1) = "Truss" And _
+                    grdData.TextMatrix(grdData.Row, 0) <> "425-0357" And _
+                    grdData.TextMatrix(grdData.Row, 0) <> "111-2023" Then
+                    If GetLengthFromMain(grdData.TextMatrix(grdData.Row, 0)) < DrWidth - 2 Then
+                        MsgBox "The truss you selected is not long enough for the door you are building.", vbApplicationModal + vbExclamation + vbOKOnly, "Cannot Add"
+                        Screen.MousePointer = vbDefault
+                        Exit Sub
+                    End If
+                    frmQS.mblnTruss = True
+                Else
+                    frmQS.mblnTruss = False
+                End If
+                Unload Me
+                mblnInFocus = False
+                Screen.MousePointer = vbDefault
+                frmQS.Show vbModal
+                mblnInFocus = True
+                Set frmQS = Nothing
+    End Select
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    glngRow = 0
+    Unload Me
+    
+    Select Case mstrBackTag
+        Case "frmBOMDetail", "frmBOMDetailList"
+            Dim frmQB As frmBOMDetailList
+            Set frmQB = New frmBOMDetailList
+            frmQB.mlngBOMID = mlngDOCID
+            frmQB.mstrDocNum = mstrDocNum
+            frmQB.mstrBOMUM = mstrUM
+
+''''''''''Change in .NET''''''''''''''''
+            frmQB.mlngRow = RowIndex
+            frmQB.mstrAddedPN = mstrAddedPN
+            mstrAddedPN = ""
+''''''''''END Change in .NET
+            Screen.MousePointer = vbDefault
+            frmQB.Show
+            Set frmQB = Nothing
+        Case "frmQDetail", "frmQuoteDetail"
+            Dim frmQD As frmQuoteDetail
+            Set frmQD = New frmQuoteDetail
+            frmQD.mlngQuoteID = mlngDOCID
+            frmQD.mstrDocNum = mstrDocNum
+            frmQD.mstrQuoteUM = mstrUM
+''''''''''Change in .NET''''''''''''''''
+            frmQD.mlngRow = RowIndex
+            frmQD.mstrAddedPN = mstrAddedPN
+            mstrAddedPN = ""
+''''''''''END Change in .NET
+            Screen.MousePointer = vbDefault
+            frmQD.Show
+            Set frmQD = Nothing
+        Case "frmPODetailMngmt", "frmPODetails"
+            Dim frmQP As frmPODetails
+            Set frmQP = New frmPODetails
+            frmQP.mlngPOID = mlngDOCID
+            frmQP.mstrPONum = mstrDocNum
+            frmQP.mstrPOUM = mstrUM
+''''''''''Change in .NET''''''''''''''''
+            frmQP.mlngRow = RowIndex
+            frmQP.mstrAddedPN = mstrAddedPN
+            mstrAddedPN = ""
+''''''''''END Change in .NET
+            Screen.MousePointer = vbDefault
+            frmQP.Show
+            Set frmQP = Nothing
+        Case "frmSecNonStock"
+            Dim frmQS As frmSecNonStock
+            Set frmQS = New frmSecNonStock
+            frmQS.mstrPtNum = ""
+            frmQS.mblnTruss = False
+            mblnInFocus = False
+
+''''''''''Change in .NET''''''''''''''''
+            Screen.MousePointer = vbDefault
+''''''''''END Change in .NET
+            
+            frmQS.Show vbModal
+            mblnInFocus = True
+            Set frmQS = Nothing
+    End Select
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdSearch_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSearch_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim objFrmX As frmSearchMasterListing
+    Set objFrmX = New frmSearchMasterListing
+'    objFrmX.mlngDOCID = mlngDOCID
+'    objFrmX.mstrBackTag = mstrBackTag
+'    objFrmX.mstrDocNum = mstrDocNum
+'    objFrmX.mlngQuoteID = mlngQuoteID
+'    objFrmX.mlngPOID = mlngPOID
+'    objFrmX.mstrUM = mstrUM
+'    objFrmX.mblnAlloc = mblnAlloc
+    Set objFrmX.mfrmB = Me
+
+    objFrmX.Show vbModal
+    'lR = SetTopMostWindow(objFrmX.hwnd, True)
+    
+'    Dim lR As Long
+'    frmSearchMasterListing.Show
+'    lR = SetTopMostWindow(frmSearchMasterListing.hwnd, True)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdSpecial_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSpecial_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    mblnSpecial = True
+    Call cmdAccept_Click
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Command1_Click()
+Me.grdData.PrintGrid
+
+End Sub
+
+Private Sub Form_Initialize()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Initialize()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    'Set objParent = Nothing
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Me.Move Screen.Width / 2 - Me.Width / 2, (Screen.Height / 2 - Me.Height / 2) - 200
+    If mstrBackTag = "frmSecNonStock" Then
+        Me.Caption = "Browse Part Listing"
+        Me.cmdSpecial.Enabled = False
+    End If
+    Call LoadData
+    LoadHelpText Me
+    MousePos1.Init Me
+
+    mblnInFocus = True
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Or mblnInFocus = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub LoadData()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lstrDescrField As String
+    Dim lobjRS As ADODB.Recordset
+    Dim i As Integer
+    Dim lstrFilterString As String
+
+''''''''''Change in .NET''''''''''''''''
+    Dim lintONPOS As Integer
+''''''''''END Change in .NET
+        
+    lstrDescrField = IIf(UCase(mstrUM) = "METRIC", "DescMet", "DescImp")
+    lstrSQL = "select M.PartNum, M.Subcategory, " & IIf(UCase(mstrUM) = "METRIC", "M.DescMet", "M.DescImp") & " , M.DescOther "
+    lstrSQL = lstrSQL & " ,INV.InvUM as UM, INV.QtyInStock as InStock,Inv.QtyInStock-Inv.QtyReserved as Available, Inv.QtyOnPOS as OnPOs"
+    lstrSQL = lstrSQL & ",INV.QtyOnOrder  as OnOrder,INV.QtyReserved as ReservedQ, Inv.QtyMin as MinQty, Inv.RestockingLevel as RestockingL, M.UM as UMM, M.Length as Length,M.Obsolete as Obsolete,M.PkgQty as PkgQty,0,0, BOMGroupCategory From Main M"
+    lstrSQL = lstrSQL & " LEFT JOIN Inventory Inv ON  INV.PartNum= M.PartNum where Obsolete=false"
+    lstrSQL = lstrSQL & " order by M.PartNum"
+    
+    Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    
+    If mstrBackTag = "frmSecNonStock" Then
+        lobjRS.MoveFirst
+        lstrFilterString = "Subcategory='Hinge' or Subcategory='Handles and Pulls' or Subcategory='Lock' or Subcategory='Roller' or (Subcategory='Section Extras' and Partnum='152-321') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='324-990') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='324-991') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='324-992') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='324-993') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='328-214') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='328-276') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='328-278') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='328-279') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='426-0310') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='426-0311') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='426-0312') or "
+        lstrFilterString = lstrFilterString & "(Subcategory='Section Extras' and Partnum='426-0313') or "
+        lstrFilterString = lstrFilterString & " Partnum='4' or "
+        lstrFilterString = lstrFilterString & " Partnum='4-0069' or "
+        lstrFilterString = lstrFilterString & "Subcategory='Truss' or (Subcategory='Bracket' and BOMGroupCategory <> 19)"
+        lobjRS.Filter = lstrFilterString
+    ElseIf mstrBackTag = "frmBOMDetail" Or mstrBackTag = "frmBOMDetailList" Or mstrBackTag = "frmQDetail" Or mstrBackTag = "frmQuoteDetail" Then
+        lobjRS.MoveFirst
+        lobjRS.Filter = "Partnum<>'4-0069' and partnum<>'4'"
+    End If
+    
+    If Not lobjRS Is Nothing Then
+        lobjRS.ActiveConnection = Nothing
+        If Not (lobjRS.BOF And lobjRS.EOF) Then
+            grdData.VirtualData = False
+            grdData.DataMode = flexDMFree
+            Set grdData.DataSource = lobjRS
+        End If
+    End If
+        
+    Select Case mstrBackTag
+        Case "frmBOMDetail", "frmBOMDetailList"
+            lstrSQL = "select BomPtNum, BOMPtQtyReq from bomdetails where bomid=" & mlngDOCID
+            Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+            For i = 1 To grdData.Rows - 1
+                If Not lobjRS Is Nothing Then
+                    If Not (lobjRS.EOF = True And lobjRS.BOF = True) Then
+                        lobjRS.MoveFirst
+                        lobjRS.Find "BOMPtNum=" & SQLString(grdData.TextMatrix(i, 0))
+                        'show qty on the document
+                        If lobjRS.EOF = False Then
+                            grdData.TextMatrix(i, 16) = lobjRS.Fields("BOMPtQtyReq").Value
+                        Else
+                            grdData.TextMatrix(i, 16) = Format(0, "Fixed")
+                        End If
+                    Else
+                        grdData.TextMatrix(i, 16) = Format(0, "Fixed")
+                    End If
+                End If
+                'show recommended for order qty
+                If DBLValue(grdData.TextMatrix(i, 5)) >= DBLValue(grdData.TextMatrix(i, 10)) Then
+                    grdData.TextMatrix(i, 17) = Format(0, "Fixed")
+                Else
+                    grdData.TextMatrix(i, 17) = DBLValue(grdData.TextMatrix(i, 10)) + DBLValue(grdData.TextMatrix(i, 11)) - DBLValue(grdData.TextMatrix(i, 5)) - DBLValue(grdData.TextMatrix(i, 7)) - DBLValue(grdData.TextMatrix(i, 8))
+                End If
+                If DBLValue(grdData.TextMatrix(i, 17)) < 0 Then grdData.TextMatrix(i, 17) = Format(0, "Fixed")
+                'translate pkgqty to inches (eg. PVC bushing)
+                If grdData.TextMatrix(i, 4) = "INCHES" And grdData.TextMatrix(i, 12) = "EACH" Then
+                    grdData.TextMatrix(i, 15) = DBLValue(grdData.TextMatrix(i, 15)) * DBLValue(grdData.TextMatrix(i, 13))
+                End If
+
+''''''''''Change in .NET''''''''''''''''
+'                If grdData.TextMatrix(i, 7) = "" Then
+'                    lintONPOS = GetQtyOnActivePOs(grdData.TextMatrix(i, 0))
+'
+'                    If mstrUM = "Metric" Then
+'                        ClearConObj
+'                        aCon.Inch = lintONPOS
+'                        aCon.mmcalc
+'                        lintONPOS = aCon.mm
+'                    End If
+'                    grdData.TextMatrix(i, 7) = lintONPOS
+'                End If
+'                If grdData.TextMatrix(i, 8) = "" Then
+'                    lintONPOS = GetQtyOnOrder(grdData.TextMatrix(i, 0))
+'
+'                    If mstrUM = "Metric" Then
+'                        ClearConObj
+'                        aCon.Inch = lintONPOS
+'                        aCon.mmcalc
+'                        lintONPOS = aCon.mm
+'                    End If
+'                    grdData.TextMatrix(i, 8) = lintONPOS
+'                End If
+                If grdData.TextMatrix(i, 4) = "" Then
+                    grdData.TextMatrix(i, 4) = IIf(mstrUM = "Metric", "MM", "INCHES")
+                End If
+''''''''''END Change in .NET
+                'translate to metric
+                If grdData.TextMatrix(i, 4) = "INCHES" And mstrUM = "Metric" Then
+                    grdData.TextMatrix(i, 4) = "MM"
+                    If DBLValue(grdData.TextMatrix(i, 5)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 5)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 5) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 6)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 6)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 6) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 7)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 7)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 7) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 8)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 8)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 8) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 9)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 9)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 9) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 10)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 10)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 10) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 11)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 11)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 11) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 15)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 15)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 15) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 17)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 17)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 17) = Round(aCon.mm, 0)
+                    End If
+                End If
+            Next
+        Case "frmSecNonStock"
+        
+            For i = 1 To grdData.Rows - 1
+                'translate pkgqty to inches (eg. PVC bushing)
+                If grdData.TextMatrix(i, 4) = "INCHES" And grdData.TextMatrix(i, 12) = "EACH" Then
+                    grdData.TextMatrix(i, 15) = DBLValue(grdData.TextMatrix(i, 15)) * DBLValue(grdData.TextMatrix(i, 13))
+                End If
+                'translate to metric
+                If grdData.TextMatrix(i, 4) = "INCHES" And mstrUM = "Metric" Then
+                    grdData.TextMatrix(i, 4) = "MM"
+                    
+                    If DBLValue(grdData.TextMatrix(i, 5)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 5)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 5) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 6)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 6)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 6) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 7)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 7)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 7) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 8)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 8)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 8) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 9)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 9)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 9) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 10)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 10)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 10) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 11)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 11)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 11) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 15)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 15)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 15) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 17)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 17)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 17) = Round(aCon.mm, 0)
+                    End If
+                End If
+            Next
+        Case "frmQDetail", "frmQuoteDetail"
+            lstrSQL = "select QuotePtNum, QuotePtQty from Quotedetails where Quoteid=" & mlngDOCID
+            Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+            For i = 1 To grdData.Rows - 1
+                If Not lobjRS Is Nothing Then
+                    If Not (lobjRS.EOF = True And lobjRS.BOF = True) Then
+                        lobjRS.MoveFirst
+                        lobjRS.Find "QuotePtNum=" & SQLString(grdData.TextMatrix(i, 0))
+                        'show qty on the document
+                        If lobjRS.EOF = False Then
+                            grdData.TextMatrix(i, 16) = lobjRS.Fields("QuotePtQty").Value
+                        Else
+                            grdData.TextMatrix(i, 16) = Format(0, "Fixed")
+                        End If
+                    Else
+                        grdData.TextMatrix(i, 16) = Format(0, "Fixed")
+                    End If
+                End If
+                'show recommended for order qty
+                If DBLValue(grdData.TextMatrix(i, 5)) >= DBLValue(grdData.TextMatrix(i, 10)) Then
+                    grdData.TextMatrix(i, 17) = Format(0, "Fixed")
+                Else
+                    grdData.TextMatrix(i, 17) = DBLValue(grdData.TextMatrix(i, 10)) + DBLValue(grdData.TextMatrix(i, 11)) - DBLValue(grdData.TextMatrix(i, 5)) - DBLValue(grdData.TextMatrix(i, 7)) - DBLValue(grdData.TextMatrix(i, 8))
+                End If
+                If DBLValue(grdData.TextMatrix(i, 17)) < 0 Then grdData.TextMatrix(i, 17) = Format(0, "Fixed")
+                'translate pkgqty to inches (eg. PVC bushing)
+                If grdData.TextMatrix(i, 4) = "INCHES" And grdData.TextMatrix(i, 12) = "EACH" Then
+                    grdData.TextMatrix(i, 15) = DBLValue(grdData.TextMatrix(i, 15)) * DBLValue(grdData.TextMatrix(i, 13))
+                End If
+                'translate to metric
+                If grdData.TextMatrix(i, 4) = "INCHES" And mstrUM = "Metric" Then
+                    grdData.TextMatrix(i, 4) = "MM"
+                    If DBLValue(grdData.TextMatrix(i, 5)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 5)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 5) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 6)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 6)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 6) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 7)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 7)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 7) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 8)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 8)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 8) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 9)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 9)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 9) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 10)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 10)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 10) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 11)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 11)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 11) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 15)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 15)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 15) = Round(aCon.mm, 0)
+                    End If
+                    If DBLValue(grdData.TextMatrix(i, 17)) > 0 Then
+                        ClearConObj
+                        aCon.Inch = grdData.TextMatrix(i, 17)
+                        aCon.mmcalc
+                        grdData.TextMatrix(i, 17) = Round(aCon.mm, 0)
+                    End If
+                End If
+            Next
+        Case "frmPODetailMngmt", "frmPODetails"
+            lstrSQL = "select POPtNum, POPtQtyOrd from podetails where poid=" & mlngDOCID
+            Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+            For i = 1 To grdData.Rows - 1
+                If Not lobjRS Is Nothing Then
+                    If Not (lobjRS.EOF = True And lobjRS.BOF = True) Then
+                        lobjRS.MoveFirst
+                        lobjRS.Find "poPtNum=" & SQLString(grdData.TextMatrix(i, 0))
+                        'show qty on the document
+                        If lobjRS.EOF = False Then
+                            grdData.TextMatrix(i, 16) = lobjRS.Fields("POPtQtyOrd").Value
+                        Else
+                            grdData.TextMatrix(i, 16) = Format(0, "Fixed")
+                        End If
+                    Else
+                        grdData.TextMatrix(i, 16) = Format(0, "Fixed")
+                    End If
+                End If
+                'show recommended for order qty
+                If DBLValue(grdData.TextMatrix(i, 5)) >= DBLValue(grdData.TextMatrix(i, 10)) Then
+                    grdData.TextMatrix(i, 17) = Format(0, "Fixed")
+                Else
+                    grdData.TextMatrix(i, 17) = DBLValue(grdData.TextMatrix(i, 10)) + DBLValue(grdData.TextMatrix(i, 11)) - DBLValue(grdData.TextMatrix(i, 5)) - DBLValue(grdData.TextMatrix(i, 7)) - DBLValue(grdData.TextMatrix(i, 8))
+                End If
+                If DBLValue(grdData.TextMatrix(i, 17)) < 0 Then grdData.TextMatrix(i, 17) = Format(0, "Fixed")
+                'translate pkgqty to inches (eg. PVC bushing)
+                If grdData.TextMatrix(i, 4) = "INCHES" And grdData.TextMatrix(i, 12) = "EACH" Then
+                    grdData.TextMatrix(i, 15) = DBLValue(grdData.TextMatrix(i, 15)) * DBLValue(grdData.TextMatrix(i, 13))
+                End If
+                'no metric on PO
+                If grdData.TextMatrix(i, 4) = "INCHES" Then
+                    If DBLValue(grdData.TextMatrix(i, 16)) > 0 Then
+                        grdData.TextMatrix(i, 16) = DBLValue(grdData.TextMatrix(i, 16)) * 12
+                    End If
+                End If
+            Next
+    End Select
+    grdData.AutoSearch = 1
+
+    Call SetGridTitles
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub SetGridTitles()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetGridTitles()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+''''''''''Change in .NET''''''''''''''''
+    If IsInvMaint = False Then
+        grdData.ColHidden(5) = True
+        grdData.ColHidden(6) = True
+        grdData.ColHidden(9) = True
+        grdData.ColHidden(10) = True
+        grdData.ColHidden(11) = True
+        grdData.ColHidden(17) = True
+    End If
+''''''''''END Change in .NET
+
+    grdData.TextMatrix(0, 0) = "Part Number"
+    grdData.TextMatrix(0, 1) = "Sub Category"
+    grdData.TextMatrix(0, 2) = "Description"
+    grdData.TextMatrix(0, 3) = "Description"
+    grdData.TextMatrix(0, 4) = "UM"
+    grdData.TextMatrix(0, 5) = "In Stock"
+    grdData.TextMatrix(0, 6) = "Available"
+    grdData.TextMatrix(0, 7) = "On POs"
+    grdData.TextMatrix(0, 8) = "On Order"
+    grdData.TextMatrix(0, 9) = "Reserved"
+    grdData.TextMatrix(0, 10) = "Min Qty"
+    grdData.TextMatrix(0, 11) = "Restock L."
+    grdData.TextMatrix(0, 12) = "MainUM"
+    grdData.TextMatrix(0, 13) = "Length"
+    grdData.TextMatrix(0, 14) = "Obsolete"
+    grdData.TextMatrix(0, 15) = "Pkg Qty"
+    grdData.TextMatrix(0, 16) = "On Doc."
+    grdData.TextMatrix(0, 17) = "Recm'd for Order"
+    
+    grdData.ColHidden(12) = True
+    grdData.ColHidden(13) = True
+    grdData.ColHidden(14) = True
+    
+    grdData.ColWidth(0) = grdData.Width / 12
+    grdData.ColWidth(2) = grdData.Width / 5
+    grdData.ColWidth(4) = grdData.Width / 16
+    grdData.ColWidth(5) = grdData.Width / 11.5
+    grdData.ColWidth(6) = grdData.Width / 11.5
+    grdData.ColWidth(7) = grdData.Width / 11.5
+    grdData.ColWidth(8) = grdData.Width / 11.5
+    grdData.ColWidth(9) = grdData.Width / 11.5
+    grdData.ColWidth(10) = grdData.Width / 11.5
+    grdData.ColWidth(11) = grdData.Width / 11.5
+    grdData.ColWidth(16) = grdData.Width / 11.5
+    grdData.ColWidth(17) = grdData.Width / 8.5
+    
+    grdData.ColWidth(3) = 0
+    grdData.ColWidth(1) = 0
+    grdData.ColWidth(18) = 0
+
+''''''''''Change in .NET''''''''''''''''
+    If IsInvMaint = False Then
+        grdData.ColWidth(4) = grdData.Width / 14
+        grdData.ColWidth(2) = grdData.Width / 3
+        grdData.ColWidth(0) = grdData.Width / 10
+        grdData.ColWidth(15) = grdData.Width / 10
+    End If
+''''''''''END Change in .NET
+    
+    grdData.ColFormat(5) = "0.00"
+    grdData.ColFormat(6) = "0.00"
+    grdData.ColFormat(7) = "0.00"
+    grdData.ColFormat(8) = "0.00"
+    grdData.ColFormat(9) = "0.00"
+    grdData.ColFormat(10) = "0.00"
+    grdData.ColFormat(11) = "0.00"
+    grdData.ColFormat(15) = "0.00"
+    grdData.ColFormat(16) = "0.00"
+    grdData.ColFormat(17) = "0.00"
+    
+    grdData.Row = IIf(glngRow = 0, 1, glngRow)
+    grdData.TopRow = grdData.Row
+    grdData.Col = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Unload()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+'    Dim lR As Long
+'    lR = SetTopMostWindow(objFrmX.hwnd, False)
+'    Unload objFrmX
+'    Set objFrmX = Nothing
+'    Unload frmSearchMasterListing
+'    Set frmSearchMasterListing = Nothing
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+'Public Function FindFirst(ByVal pblnDesc As Boolean, ByVal pblnMatchCase As Boolean, ByVal pblnWholeWord As Boolean, ByVal lstrFindWhat As String) As Long
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".FindFirst()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim lintCol As Integer
+'    Dim llngRet As Long
+'    grdData.Row = glngRow
+'    lintCol = IIf(pblnDesc = True, IIf(chkDescLocal.Value = 1, 3, 2), 0)
+'    llngRet = grdData.FindRow(lstrFindWhat, , lintCol, IIf(pblnMatchCase = True, True, False), IIf(pblnWholeWord = True, True, False))
+'    FindFirst = llngRet
+'    Exit Function
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'End Function
+'Public Function FindNext(ByVal pblnDesc As Boolean, ByVal pblnMatchCase As Boolean, ByVal pblnWholeWord As Boolean, ByVal lstrFindWhat As String) As Long
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".FindNext()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim lintCol As Integer
+'    Dim llngRet As Long
+'    grdData.Row = glngRow
+'    lintCol = IIf(pblnDesc = True, IIf(chkDescLocal.Value = 1, 3, 2), 0)
+'    llngRet = grdData.FindRow(lstrFindWhat, grdData.Row + 1, lintCol, IIf(pblnMatchCase = True, True, False), IIf(pblnWholeWord = True, True, False))
+'    FindNext = llngRet
+'    Exit Function
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'End Function
+
+'Public Function SearchPartial(ByVal pblnDesc As Boolean, ByVal pblnMatchCase As Boolean, ByVal pblnFirst As Boolean, ByVal pstrFindWhat As String) As Long
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SearchPartial()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim lintStartRow As Integer
+'    Dim i As Integer
+'    Dim lintPos As Integer
+'    Dim lintCol As Integer
+'
+'    If pblnDesc = True Then
+'        If Me.chkDescLocal.Value = 1 Then
+'            lintCol = 3
+'        Else
+'            lintCol = 2
+'        End If
+'    Else
+'        lintCol = 0
+'    End If
+'
+'    If pblnFirst = True Then
+'        lintStartRow = 1
+'    Else
+'        grdData.Row = glngRow
+'        lintStartRow = glngRow + 1
+'    End If
+'
+'    For i = lintStartRow To grdData.Rows - 1
+'        lintPos = InStr(1, grdData.TextMatrix(i, lintCol), pstrFindWhat, IIf(pblnMatchCase, vbBinaryCompare, vbTextCompare))
+'        If lintPos > 0 Then
+'            Exit For
+'        End If
+'    Next
+'
+'    If i = grdData.Rows Then i = -1 'no match
+'    SearchPartial = i
+'
+'    Exit Function
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'
+'End Function
+
+'Private Sub grdData_Click()
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".grdData_Click()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim llngRow As Long, i As Integer
+'    llngRow = Me.GrdData.Row
+'    For i = 1 To Me.GrdData.Rows - 1
+'        Me.GrdData.IsSelected(i) = False
+'    Next
+'
+'    Me.GrdData.IsSelected(llngRow) = True
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+'
+'End Sub
+
+Private Sub grdData_DblClick()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".grdData_DblClick()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Call cmdAccept_Click
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub GrdData_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".grdData_MouseMove()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    grdData.ToolTipText = grdData.Cell(flexcpTextDisplay, grdData.MouseRow, grdData.MouseCol)
+    
+    Exit Sub
+
+Error_Handler:
+
+Exit Sub 'sometimes this routine produced unexpected errors if
+'mouse is over the boundaries of the grid. Generating an error
+'screen is not necessary
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Public Function SetGrid(ByVal llngRet As Long) As Boolean
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetGrid()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    For i = 1 To grdData.Rows - 1
+        grdData.IsSelected(i) = False
+    Next
+    
+    grdData.IsSelected(llngRet) = True
+    grdData.Row = llngRet
+    grdData.TopRow = llngRet
+    glngRow = grdData.Row
+    grdData.AutoSearch = 1
+
+
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function

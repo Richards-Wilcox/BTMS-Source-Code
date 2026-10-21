@@ -1,0 +1,672 @@
+Option Explicit
+Const cstrModuleName As String = "frmInvPriceLookup"
+Public lstrExclDesc As String
+Public lstrExclPN As String
+
+
+''''''''''Change in .NET''''''''''''''''
+'new form in .Net.
+''''''''''END Change in .NET
+
+Private Sub LoadData()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim llngRecords As Long
+    Dim lstrSQL As String
+    Dim lobjPOActiveRS As ADODB.Recordset
+    Dim lobjPODetailsRS As ADODB.Recordset
+    Dim mobjADORS As ADODB.Recordset
+    Dim lobjINVRS As ADODB.Recordset
+    Dim lsngQty As Single
+    Dim MainUM As String
+    Dim InvUM As String
+    Dim i As Integer
+    Dim ldblCost As Double
+    Screen.MousePointer = vbHourglass
+    
+    GridData.Clear
+    llngRecords = 0
+    Dim TempIntCheck As Integer
+ '-- Mod Hanover  MultId changed to strMultId is not req'd as NewMultId is alias as MultId
+'If aCryp.GetOption(16, 7) = CKOptionOff Then
+  If strMultId = "MultId" Then
+    lstrSQL = "Select Main.PartNum as PN,MAIN.PartNLocal as PNL,"
+    lstrSQL = lstrSQL & IIf(MeasU = 0, "MAIN.DescMet as D1", "MAIN.DescImp as D1")
+    lstrSQL = lstrSQL & ",MAIN.DescOther as DescO, INV.InvUM as UM, INV.QtyInStock as InStock "
+    lstrSQL = lstrSQL & ", Main.UM as UMM, Main.Length as Length, Main.G as G, Main.I as I, Main.N as N, Main.T as T, Main.MultID as MultID, Main.SpecialMult as SpecialMult, Main.Obsolete as Obsolete, Main.PhantomPN as PhantomPN From Main Main"
+    lstrSQL = lstrSQL & " LEFT JOIN Inventory Inv ON INV.PartNum = MAIN.PartNum where Main.Obsolete=False and Main.PhantomPN=False"
+    lstrSQL = lstrSQL & " order by Main.PartNum"
+
+  Else  'New MultId
+
+    lstrSQL = "Select Main.PartNum as PN,MAIN.PartNLocal as PNL,"
+    lstrSQL = lstrSQL & IIf(MeasU = 0, "MAIN.DescMet as D1", "MAIN.DescImp as D1")
+    lstrSQL = lstrSQL & ",MAIN.DescOther as DescO, INV.InvUM as UM, INV.QtyInStock as InStock "
+    lstrSQL = lstrSQL & ", Main.UM as UMM, Main.Length as Length, Main.J as J, Main.M as M, Main.S as S, Main.V as V, Main.NewMultID as MultID, Main.SpecialMult as SpecialMult, Main.Obsolete as Obsolete, Main.PhantomPN as PhantomPN From Main Main"
+    lstrSQL = lstrSQL & " LEFT JOIN Inventory Inv ON INV.PartNum = MAIN.PartNum where Main.Obsolete=False and Main.PhantomPN=False"
+    lstrSQL = lstrSQL & " order by Main.PartNum"
+
+  End If
+
+    
+    
+    Set mobjADORS = New ADODB.Recordset
+    
+    mobjADORS.CursorLocation = adUseClient 'open disconnected recordset
+    mobjADORS.Open lstrSQL, CnnBTMS, , adLockBatchOptimistic, adCmdText
+
+    If Not mobjADORS Is Nothing Then
+        mobjADORS.ActiveConnection = Nothing
+        If Not (mobjADORS.BOF And mobjADORS.EOF) Then
+            
+            mobjADORS.MoveFirst
+            Do While mobjADORS.EOF = False 'loop though the data in the recordset
+                lsngQty = 0
+                TempIntCheck = intCheck
+                
+              'If aCryp.GetOption(16, 7) = CKOptionOff Then
+                If strMultId = "MultId" Then
+
+                intCheck = 1
+                ldblCost = DBLValue(mobjADORS.Fields("G").Value)
+                ldblCost = Decrypt(GetSym(mobjADORS.Fields("PN").Value), ldblCost)
+                If DBLValue(mobjADORS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(mobjADORS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(mobjADORS.Fields("MultID").Value)) 'No need to change to strMultId as in the sql string it is taken care
+                End If
+                mobjADORS.Fields("G").Value = ldblCost
+                
+                intCheck = 2
+                ldblCost = DBLValue(mobjADORS.Fields("I").Value)
+                ldblCost = Decrypt(GetSym(mobjADORS.Fields("PN").Value), ldblCost)
+                If DBLValue(mobjADORS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(mobjADORS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(mobjADORS.Fields("MultID").Value))
+                End If
+                mobjADORS.Fields("I").Value = ldblCost
+                
+                intCheck = 3
+                ldblCost = DBLValue(mobjADORS.Fields("N").Value)
+                ldblCost = Decrypt(GetSym(mobjADORS.Fields("PN").Value), ldblCost)
+                If DBLValue(mobjADORS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(mobjADORS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(mobjADORS.Fields("MultID").Value))
+                End If
+                mobjADORS.Fields("N").Value = ldblCost
+                
+                intCheck = 4
+                ldblCost = DBLValue(mobjADORS.Fields("T").Value)
+                ldblCost = Decrypt(GetSym(mobjADORS.Fields("PN").Value), ldblCost)
+                If DBLValue(mobjADORS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(mobjADORS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(mobjADORS.Fields("MultID").Value))
+                End If
+                mobjADORS.Fields("T").Value = ldblCost
+                
+             Else 'NEW MULTID
+                intCheck = 5
+                ldblCost = DBLValue(mobjADORS.Fields("J").Value)
+                ldblCost = Decrypt(GetSym(mobjADORS.Fields("PN").Value), ldblCost)
+                If DBLValue(mobjADORS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(mobjADORS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(mobjADORS.Fields("MultID").Value))
+                End If
+                mobjADORS.Fields("J").Value = ldblCost
+                
+                
+                intCheck = 6
+                ldblCost = DBLValue(mobjADORS.Fields("M").Value)
+                ldblCost = Decrypt(GetSym(mobjADORS.Fields("PN").Value), ldblCost)
+                If DBLValue(mobjADORS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(mobjADORS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(mobjADORS.Fields("MultID").Value))
+                End If
+                mobjADORS.Fields("M").Value = ldblCost
+                
+                
+                intCheck = 7
+                ldblCost = DBLValue(mobjADORS.Fields("S").Value)
+                ldblCost = Decrypt(GetSym(mobjADORS.Fields("PN").Value), ldblCost)
+                If DBLValue(mobjADORS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(mobjADORS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(mobjADORS.Fields("MultID").Value))
+                End If
+                mobjADORS.Fields("S").Value = ldblCost
+                
+                
+                intCheck = 8
+                ldblCost = DBLValue(mobjADORS.Fields("V").Value)
+                ldblCost = Decrypt(GetSym(mobjADORS.Fields("PN").Value), ldblCost)
+                If DBLValue(mobjADORS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(mobjADORS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(mobjADORS.Fields("MultID").Value))
+                End If
+                mobjADORS.Fields("V").Value = ldblCost
+                
+                
+                End If
+                
+                
+                intCheck = TempIntCheck
+                If Not IsNull(mobjADORS.Fields("InStock").Value) Then
+                    'perform standard to metric conversion
+                    If MeasU = 0 Then
+                        ClearConObj
+                        If mobjADORS.Fields("UM").Value = "INCHES" Then
+    
+                            If mobjADORS.Fields("UMM").Value = "EACH" Then
+'                                ' If aCryp.GetOption(16, 7) = CKOptionOff Then
+                                If strMultId = "MultId" Then
+
+                                    ldblCost = DBLValue(mobjADORS.Fields("G").Value)
+                                    ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value)) * 0.03937008
+                                    mobjADORS.Fields("G").Value = ldblCost
+        
+                                    ldblCost = DBLValue(mobjADORS.Fields("I").Value)
+                                    ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value)) * 0.03937008
+                                    mobjADORS.Fields("I").Value = ldblCost
+        
+                                    ldblCost = DBLValue(mobjADORS.Fields("N").Value)
+                                    ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value)) * 0.03937008
+                                    mobjADORS.Fields("N").Value = ldblCost
+        
+                                    ldblCost = DBLValue(mobjADORS.Fields("T").Value)
+                                    ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value)) * 0.03937008
+                                    mobjADORS.Fields("T").Value = ldblCost
+                            
+                            Else
+                 
+                 
+                                    ldblCost = DBLValue(mobjADORS.Fields("J").Value)
+                                    ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value)) * 0.03937008
+                                    mobjADORS.Fields("J").Value = ldblCost
+        
+                                    ldblCost = DBLValue(mobjADORS.Fields("M").Value)
+                                    ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value)) * 0.03937008
+                                    mobjADORS.Fields("M").Value = ldblCost
+        
+                                    ldblCost = DBLValue(mobjADORS.Fields("S").Value)
+                                    ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value)) * 0.03937008
+                                    mobjADORS.Fields("S").Value = ldblCost
+        
+                                    ldblCost = DBLValue(mobjADORS.Fields("V").Value)
+                                    ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value)) * 0.03937008
+                                    mobjADORS.Fields("V").Value = ldblCost
+
+                 
+                 
+                            End If
+                 
+                            
+                            
+                            Else
+                            
+'                              'If aCryp.GetOption(16, 7) = CKOptionOff Then
+                               If strMultId = "MultId" Then
+
+                                ldblCost = DBLValue(mobjADORS.Fields("G").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                mobjADORS.Fields("G").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("I").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                mobjADORS.Fields("I").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("N").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                mobjADORS.Fields("N").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("T").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                mobjADORS.Fields("T").Value = ldblCost
+                                
+                              Else
+                              
+                              
+                                ldblCost = DBLValue(mobjADORS.Fields("J").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                mobjADORS.Fields("J").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("M").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                mobjADORS.Fields("M").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("S").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                mobjADORS.Fields("S").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("V").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                mobjADORS.Fields("V").Value = ldblCost
+
+                              
+                              
+                              
+                              End If
+                              
+                                
+                                
+                            End If
+                            
+                            mobjADORS.Fields("UM").Value = "MM"
+    
+                            If mobjADORS.Fields("InStock").Value > 0 Then
+                                aCon.Inch = DBLValue(mobjADORS.Fields("InStock").Value)
+                                aCon.mmcalc
+                                mobjADORS.Fields("InStock").Value = Round(aCon.mm, 0)
+                            End If
+    
+                        Else
+'                            mobjADORS.Fields("G").Value = ldblCost ' Round(ldblCost, 2)
+'                            mobjADORS.Fields("I").Value = ldblCost ' Round(ldblCost, 2)
+'                            mobjADORS.Fields("N").Value = ldblCost ' Round(ldblCost, 2)
+'                            mobjADORS.Fields("T").Value = ldblCost ' Round(ldblCost, 2)
+                        End If
+                    Else ' imperial
+    
+                        If mobjADORS.Fields("UM").Value = "INCHES" Then
+                            If mobjADORS.Fields("UMM").Value = "EACH" Then
+                             'If aCryp.GetOption(16, 7) = CKOptionOff Then
+                            If strMultId = "MultId" Then
+
+                                ldblCost = DBLValue(mobjADORS.Fields("G").Value)
+                                ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value))
+                                mobjADORS.Fields("G").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("I").Value)
+                                ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value))
+                                mobjADORS.Fields("I").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("N").Value)
+                                ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value))
+                                mobjADORS.Fields("N").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("T").Value)
+                                ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value))
+                                mobjADORS.Fields("T").Value = ldblCost
+                            
+                            Else
+                            
+                                ldblCost = DBLValue(mobjADORS.Fields("J").Value)
+                                ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value))
+                                mobjADORS.Fields("J").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("M").Value)
+                                ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value))
+                                mobjADORS.Fields("M").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("S").Value)
+                                ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value))
+                                mobjADORS.Fields("S").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("V").Value)
+                                ldblCost = (ldblCost / DBLValue(mobjADORS.Fields("Length").Value))
+                                mobjADORS.Fields("V").Value = ldblCost
+
+                            
+                            
+                            
+                            End If
+                            
+                            
+                            Else
+                            
+                               'If aCryp.GetOption(16, 7) = CKOptionOff Then
+                                
+                               If strMultId = "MultId" Then
+
+                                ldblCost = DBLValue(mobjADORS.Fields("G").Value)
+                                ldblCost = (ldblCost / 12)
+                                mobjADORS.Fields("G").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("I").Value)
+                                ldblCost = (ldblCost / 12)
+                                mobjADORS.Fields("I").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("N").Value)
+                                ldblCost = (ldblCost / 12)
+                                mobjADORS.Fields("N").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("T").Value)
+                                ldblCost = (ldblCost / 12)
+                                mobjADORS.Fields("T").Value = ldblCost
+                                
+                           Else
+                           
+                                ldblCost = DBLValue(mobjADORS.Fields("J").Value)
+                                ldblCost = (ldblCost / 12)
+                                mobjADORS.Fields("J").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("M").Value)
+                                ldblCost = (ldblCost / 12)
+                                mobjADORS.Fields("M").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("S").Value)
+                                ldblCost = (ldblCost / 12)
+                                mobjADORS.Fields("S").Value = ldblCost
+    
+                                ldblCost = DBLValue(mobjADORS.Fields("V").Value)
+                                ldblCost = (ldblCost / 12)
+                                mobjADORS.Fields("V").Value = ldblCost
+
+                           
+                           
+                           
+                           End If
+                           
+                                
+                                
+                                
+                                
+                            End If
+                        Else
+'                            mobjADORS.Fields("G").Value = ldblCost ' Round(ldblCost, 2)
+'                            mobjADORS.Fields("I").Value = ldblCost ' Round(ldblCost, 2)
+'                            mobjADORS.Fields("N").Value = ldblCost ' Round(ldblCost, 2)
+'                            mobjADORS.Fields("T").Value = ldblCost ' Round(ldblCost, 2)
+                        End If
+                    End If
+                Else
+                    'springs not in invenory:
+                    
+                 ' If aCryp.GetOption(16, 7) = CKOptionOff Then
+                If strMultId = "MultId" Then
+
+                    
+                    mobjADORS.Fields("G").Value = DBLValue(mobjADORS.Fields("G").Value) * DBLValue(mobjADORS.Fields("Length").Value)
+                    mobjADORS.Fields("I").Value = DBLValue(mobjADORS.Fields("I").Value) * DBLValue(mobjADORS.Fields("Length").Value)
+                    mobjADORS.Fields("N").Value = DBLValue(mobjADORS.Fields("N").Value) * DBLValue(mobjADORS.Fields("Length").Value)
+                    mobjADORS.Fields("T").Value = DBLValue(mobjADORS.Fields("T").Value) * DBLValue(mobjADORS.Fields("Length").Value)
+                    mobjADORS.Fields("UM").Value = "EACH"
+                    
+                    Else
+                    
+                    mobjADORS.Fields("J").Value = DBLValue(mobjADORS.Fields("J").Value) * DBLValue(mobjADORS.Fields("Length").Value)
+                    mobjADORS.Fields("M").Value = DBLValue(mobjADORS.Fields("M").Value) * DBLValue(mobjADORS.Fields("Length").Value)
+                    mobjADORS.Fields("S").Value = DBLValue(mobjADORS.Fields("S").Value) * DBLValue(mobjADORS.Fields("Length").Value)
+                    mobjADORS.Fields("V").Value = DBLValue(mobjADORS.Fields("V").Value) * DBLValue(mobjADORS.Fields("Length").Value)
+                    mobjADORS.Fields("UM").Value = "EACH"
+
+                    End If
+                    
+                    
+                    
+                    
+                End If
+                
+              ' If aCryp.GetOption(16, 7) = CKOptionOff Then
+   
+            If strMultId = "MultId" Then
+  
+                mobjADORS.Fields("G").Value = IIf(DBLValue(mobjADORS.Fields("G").Value) < 0.01, Round(mobjADORS.Fields("G").Value, 4), Round(mobjADORS.Fields("G").Value, 2))
+                mobjADORS.Fields("I").Value = IIf(DBLValue(mobjADORS.Fields("I").Value) < 0.01, Round(mobjADORS.Fields("I").Value, 4), Round(mobjADORS.Fields("I").Value, 2))
+                mobjADORS.Fields("N").Value = IIf(DBLValue(mobjADORS.Fields("N").Value) < 0.01, Round(mobjADORS.Fields("N").Value, 4), Round(mobjADORS.Fields("N").Value, 2))
+                mobjADORS.Fields("T").Value = IIf(DBLValue(mobjADORS.Fields("T").Value) < 0.01, Round(mobjADORS.Fields("T").Value, 4), Round(mobjADORS.Fields("T").Value, 2))
+                mobjADORS.Update
+                mobjADORS.MoveNext
+            
+            
+            
+            Else
+            
+                mobjADORS.Fields("J").Value = IIf(DBLValue(mobjADORS.Fields("J").Value) < 0.01, Round(mobjADORS.Fields("J").Value, 4), Round(mobjADORS.Fields("J").Value, 2))
+                mobjADORS.Fields("M").Value = IIf(DBLValue(mobjADORS.Fields("M").Value) < 0.01, Round(mobjADORS.Fields("M").Value, 4), Round(mobjADORS.Fields("M").Value, 2))
+                mobjADORS.Fields("S").Value = IIf(DBLValue(mobjADORS.Fields("S").Value) < 0.01, Round(mobjADORS.Fields("S").Value, 4), Round(mobjADORS.Fields("S").Value, 2))
+                mobjADORS.Fields("V").Value = IIf(DBLValue(mobjADORS.Fields("V").Value) < 0.01, Round(mobjADORS.Fields("V").Value, 4), Round(mobjADORS.Fields("V").Value, 2))
+                mobjADORS.Update
+                mobjADORS.MoveNext
+
+            
+            End If
+            
+            
+            
+            Loop
+            
+            'set the grid on the screen to the recordset.
+            
+
+''''''''''FIND AND DESTROY''''''''''''''''
+'Dim exApp As Excel.Application
+'Dim exWbk As Excel.Workbook
+'Dim exWsht As Excel.Worksheet
+'On Error Resume Next 'ignore errors
+'Set exApp = GetObject(, "Excel.Application") 'look for a running copy of Excel
+'If Err.Number <> 0 Then 'If Excel is not running then
+'    Set exApp = CreateObject("Excel.Application") 'run it
+'End If
+'Err.Clear   ' Clear Err object in case error occurred.
+'
+'On Error GoTo 0 'Resume normal error processing
+'Dim X As Integer
+'
+'Set exWbk = exApp.Workbooks.Open(App.Path & "\aTest.xls")
+'Set exWsht = exApp.Worksheets.Item(1)
+'X = 1
+'mobjADORS.MoveFirst
+'Do Until mobjADORS.EOF = True
+'    For i = 0 To mobjADORS.Fields.Count - 1
+'        exWsht.Cells(X, i + 1).Value = mobjADORS.Fields(i).Value
+'    Next
+'    X = X + 1
+'    mobjADORS.MoveNext
+'Loop
+'exWbk.Save
+'exApp.Quit
+''''''''''END TEMPORARY CHANGES
+            
+            llngRecords = mobjADORS.RecordCount
+            GridData.VirtualData = False
+            GridData.DataMode = flexDMFree
+            Set GridData.DataSource = mobjADORS
+        
+        End If
+    End If
+    GridData.AutoSearch = 1
+    'destroy objects.
+    Set mobjADORS = Nothing
+'    Set lobjPOActiveRS = Nothing
+    
+    Screen.MousePointer = vbDefault
+    Frame1.Caption = " " & llngRecords & " Records "
+    Call SetGridTitles
+    
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Public Sub SetGridTitles()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetGridTitles()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    GridData.ColWidth(3) = 0
+    GridData.ColHidden(6) = True
+    GridData.ColHidden(7) = True
+    GridData.ColHidden(14) = True
+    GridData.ColHidden(15) = True
+'    GridData.ColHidden(10) = True
+'    GridData.ColHidden(11) = True
+    GridData.ColHidden(12) = True
+    GridData.ColHidden(13) = True
+'    GridData.ColHidden(18) = True
+'If MeasU = 0 Then
+'    GridData.ColFormat(8) = "###00.0000"
+'    GridData.ColFormat(9) = "###00.0000"
+'    GridData.ColFormat(10) = "###00.0000"
+'    GridData.ColFormat(11) = "###00.0000"
+'Else
+'        GridData.ColFormat(8) = "###00.00"
+'    GridData.ColFormat(9) = "###00.00"
+'    GridData.ColFormat(10) = "###00.00"
+'    GridData.ColFormat(11) = "###00.00"
+'End If
+    If UBound(PriceArr()) = 1 Then
+    
+        If strMultId = "MultId" Then  '2.0.21 Hanover
+            If intCheck = 1 Then
+                GridData.ColHidden(9) = True
+                GridData.ColHidden(10) = True
+                GridData.ColHidden(11) = True
+            ElseIf intCheck = 2 Then
+                GridData.ColHidden(8) = True
+                GridData.ColHidden(10) = True
+                GridData.ColHidden(11) = True
+            ElseIf intCheck = 3 Then
+                GridData.ColHidden(8) = True
+                GridData.ColHidden(9) = True
+                GridData.ColHidden(11) = True
+            ElseIf intCheck = 4 Then
+                GridData.ColHidden(8) = True
+                GridData.ColHidden(9) = True
+                GridData.ColHidden(10) = True
+            End If
+        
+        Else  'New MultId - 2.0.21 Hanover
+        
+             If intCheck = 5 Then
+                GridData.ColHidden(9) = True
+                GridData.ColHidden(10) = True
+                GridData.ColHidden(11) = True
+            ElseIf intCheck = 6 Then
+                GridData.ColHidden(8) = True
+                GridData.ColHidden(10) = True
+                GridData.ColHidden(11) = True
+            ElseIf intCheck = 7 Then
+                GridData.ColHidden(8) = True
+                GridData.ColHidden(9) = True
+                GridData.ColHidden(11) = True
+            ElseIf intCheck = 8 Then
+                GridData.ColHidden(8) = True
+                GridData.ColHidden(9) = True
+                GridData.ColHidden(10) = True
+            End If
+
+        
+        
+        End If
+    End If
+    
+    GridData.ColWidth(0) = GridData.Width / 6
+    GridData.ColWidth(1) = GridData.Width / 6
+    GridData.ColWidth(2) = GridData.Width / 4
+    GridData.ColWidth(4) = GridData.Width / 9
+    GridData.ColWidth(5) = GridData.Width / 8
+    GridData.ColWidth(8) = GridData.Width / 7
+    GridData.ColWidth(9) = GridData.Width / 7
+    GridData.ColWidth(10) = GridData.Width / 7
+    GridData.ColWidth(11) = GridData.Width / 7
+    
+    GridData.TextMatrix(0, 0) = "Part No."
+    GridData.TextMatrix(0, 1) = "Local No."
+    GridData.TextMatrix(0, 2) = "Description"
+    GridData.TextMatrix(0, 3) = "Description"
+    GridData.TextMatrix(0, 4) = "UM"
+    GridData.TextMatrix(0, 5) = "In Stock"
+    GridData.TextMatrix(0, 8) = "Price"
+    GridData.TextMatrix(0, 9) = "Price"
+    GridData.TextMatrix(0, 10) = "Price"
+    GridData.TextMatrix(0, 11) = "Price"
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkDescLocal_Click()
+    If chkDescLocal.Value = 1 Then
+        GridData.ColWidth(2) = 0
+        GridData.ColWidth(3) = GridData.Width / 4
+    Else
+        GridData.ColWidth(3) = 0
+        GridData.ColWidth(2) = GridData.Width / 4
+    End If
+End Sub
+
+Private Sub cmdBack_Click()
+Unload Me
+End Sub
+
+Private Sub cmdExport_Click()
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdExport_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    CommonDialog1.DefaultExt = ".txt"
+    CommonDialog1.FileName = GetTempDir & "RWInventoryListing.txt"
+    CommonDialog1.Filter = "Text (*.txt)|*.txt"
+    CommonDialog1.CancelError = True
+    CommonDialog1.FLAGS = cdlOFNOverwritePrompt Or cdlOFNHideReadOnly
+    CommonDialog1.ShowSave
+    Set frmInvExportOptions.mobjParent = Me
+    frmInvExportOptions.Show vbModal
+    If lstrExclDesc <> "" And lstrExclPN <> "" Then
+        Call ExportToText_PriceLookup(CommonDialog1.FileName, lstrExclDesc, lstrExclPN)
+    End If
+    Exit Sub
+
+Error_Handler:
+    If Err.Number = 32755 Then Exit Sub 'cancel
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Call LoadData
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+

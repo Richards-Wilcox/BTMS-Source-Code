@@ -1,0 +1,221 @@
+Const cstrModuleName As String = "frmStockPrint"
+Public mblnLocal As Boolean
+Public mintIndex As Integer
+
+Private Sub cmdPrint_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdPrint_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    Dim i As Integer
+    
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    frmPrint.mblnPNValue = optDefault.Value
+    frmPrint.mblnDefaultDescr = IIf(optRWDesc.Value = True, True, False)
+    
+    frmPrint.mstrReportName = "Stock Count.rpt"
+    frmPrint.mstrTitle = "Cycle Count Sheet"
+
+''''''''''Change in .NET''''''''''''''''
+    frmPrint.mblnPrintZeroStock = IIf(chkPrintZeroStock.Value = 1, False, True)
+    
+''''''''''END Change in .NET
+    
+    frmPrint.mstrSubCat = cboLoadSubcat.Text
+    Dim counter As Integer
+    'global array used to send list of sub categories to the crystal report.
+    For i = 1 To grdData.Rows - 1
+        If grdData.Cell(flexcpChecked, i, 1) = flexChecked Then
+            If Not isEmptyArraySubCat Then
+                ReDim Preserve gstrArraySubCat(UBound(gstrArraySubCat) + 1)
+            Else
+                ReDim gstrArraySubCat(0)
+            End If
+            gstrArraySubCat(counter) = grdData.TextMatrix(i, 0)
+            counter = counter + 1
+       End If
+    Next
+    
+    If counter = 0 Then
+        MsgBox "Please select Sub Category(ies) for printing.", vbApplicationModal + vbInformation, "No Selection."
+        Exit Sub
+    End If
+    
+    Unload Me
+    frmPrint.Show vbModal
+    
+    Exit Sub
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdCancel_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+''''''''''Change in .NET''''''''''''''''
+Private Sub cmdSelectAll_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SubName()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Integer
+    grdData.Col = 1
+    If grdData.Visible = True Then
+        For i = 1 To Me.grdData.Rows - 1
+            If grdData.TextMatrix(i, 0) <> "" Then 'PN
+                grdData.Cell(flexcpChecked, i, 1) = flexChecked
+            Else
+                grdData.Cell(flexcpChecked, i, 1) = flexUnchecked
+            End If
+        Next
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+''''''''''END Change in .NET
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    Call LoadSubCategory
+    optDefault.Value = True
+    Me.optLocalDesc.Value = mblnLocal
+    LoadHelpText Me
+    MousePos1.Init Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Public Sub LoadSubCategory()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadSubcategory()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim lobjSubCatRS As ADODB.Recordset
+    Dim i As Integer
+    
+    grdData.TextMatrix(0, 0) = "Sub Category"
+    grdData.TextMatrix(0, 1) = "Select"
+    grdData.ColWidth(0) = grdData.Width * 0.7
+    grdData.ColDataType(1) = flexDTBoolean
+    
+    lstrSQLQuery = "select subcategory from catsub order by subcategory"
+    Set lobjSubCatRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjSubCatRS Is Nothing Then
+        lobjSubCatRS.ActiveConnection = Nothing
+        If Not (lobjSubCatRS.BOF And lobjSubCatRS.EOF) Then
+            lobjSubCatRS.MoveFirst
+            Dim lstrName As String
+            i = 1
+            grdData.Rows = 2
+            Do While lobjSubCatRS.EOF = False
+                lstrName = IIf(IsNull(lobjSubCatRS.Fields("subcategory").Value), "", Trim(lobjSubCatRS.Fields("subcategory").Value))
+                If Not lstrName = "" Then 'Call cboLoadSubcat.AddItem(lstrName)
+                    If i > 1 Then grdData.Rows = grdData.Rows + 1
+                    grdData.TextMatrix(i, 0) = lstrName
+                End If
+                i = i + 1
+                
+                lobjSubCatRS.MoveNext
+            Loop
+                lobjSubCatRS.Close
+        End If
+    End If
+    Set lobjSubCatRS = Nothing
+        
+    grdData.Cell(flexcpChecked, mintIndex + 1, 1) = flexChecked
+    If grdData.RowIsVisible(mintIndex + 1) = False Then grdData.TopRow = mintIndex + 1
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub grdData_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".grdData_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If grdData.RowSel > 0 And grdData.ColSel = 1 Then
+        grdData.EditCell
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+

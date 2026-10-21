@@ -1,0 +1,425 @@
+Option Explicit
+Const cstrModuleName As String = "frmBOMPO"
+Private mlngDistID As Long
+Public objParent As Object
+
+''''''''''Change in .NET''''''''''''''''
+'txtdate, label5 and label4 set visible = false
+''''''''''END Change in .NET
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+'Private Sub cmbDist_Click()
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmbDist_Click()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Call LoadShip
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+'End Sub
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrData As String
+    lstrData = " " & Trim(txtPONum.Text) & "~"
+    lstrData = lstrData & "True~"
+    lstrData = lstrData & " " & Trim(txtDate.Text) & "~"
+    lstrData = lstrData & " " & mlngDistID & "~"
+    lstrData = lstrData & " " & cmbShip.ItemData(cmbShip.ListIndex)
+    objParent.mstrData = lstrData
+    Unload Me
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdOK_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdOK_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Dim lobjPORS As ADODB.Recordset
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    
+    lstrSQLQuery = "Select PONum from PO where PONum=" & SQLString(txtPONum.Text)
+    Set lobjPORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjPORS Is Nothing Then
+        If Not (lobjPORS.EOF = True And lobjPORS.BOF = True) Then
+            
+            Screen.MousePointer = vbDefault
+            MsgBox "The PO name already exist, please select a different one.", vbInformation + vbApplicationModal, "Duplicate PO name"
+            txtPONum.SetFocus
+            Exit Sub
+        End If
+    End If
+    
+    If VerifyData Then
+        Dim lstrData As String
+        lstrData = " " & Trim(txtPONum.Text) & "~"
+        lstrData = lstrData & "False~"
+        lstrData = lstrData & " " & Trim(txtDate.Text) & "~"
+        lstrData = lstrData & " " & mlngDistID & "~"
+        lstrData = lstrData & " " & cmbShip.ItemData(cmbShip.ListIndex) & "~"
+        If cboPrice.ListCount > 0 Then lstrData = lstrData & " " & cboPrice.ItemData(cboPrice.ListIndex)
+         
+        'lstrData = lstrData & " " & cboPrice.ItemData(cboPrice.ListIndex)
+        objParent.mstrData = lstrData
+        Unload Me
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Initialize()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Initialize()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Set objParent = Nothing
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim LCID As Long
+    Dim currBPP As Long
+    
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    LCID = GetUserDefaultLCID()
+    
+    Label5.Caption = GetUserLocaleInfo(LCID, LOCALE_SSHORTDATE)
+    
+    If objParent Is Nothing Then Unload Me
+    
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    
+    Dim i As Integer, Ind As Integer
+    For i = 1 To UBound(PriceArr)
+        cboPrice.AddItem PriceArr(i)
+        Select Case cboPrice.List(i - 1)
+            Case "Canadian": cboPrice.ItemData(cboPrice.NewIndex) = 1
+            Case "US21": cboPrice.ItemData(cboPrice.NewIndex) = 2
+            Case "US22": cboPrice.ItemData(cboPrice.NewIndex) = 3
+            Case "US23": cboPrice.ItemData(cboPrice.NewIndex) = 4
+            'Mod Hanover
+            
+            Case "Canadian RVSD": cboPrice.ItemData(cboPrice.NewIndex) = 5
+            Case "US21 RVSD": cboPrice.ItemData(cboPrice.NewIndex) = 6
+            Case "US22 RVSD": cboPrice.ItemData(cboPrice.NewIndex) = 7
+            Case "US23 RVSD": cboPrice.ItemData(cboPrice.NewIndex) = 8
+ 
+            
+            
+        End Select
+        If cboPrice.ItemData(cboPrice.NewIndex) = intCheck Then Ind = i - 1
+    Next i
+    
+    If cboPrice.ListCount > 0 Then cboPrice.ListIndex = Ind
+    If cboPrice.ListCount < 2 Then
+        lblPrice.Visible = False
+        cboPrice.Visible = False
+    Else
+        lblPrice.Visible = True
+        cboPrice.Visible = True
+    End If
+    
+    txtDate.Text = Format(Now() + 14, cstrDateMask)
+    Call LoadDist
+    Call LoadShip
+    LoadHelpText Me
+    MousePos1.Init Me
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub LoadDist()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadDist()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim lobjDistRS As ADODB.Recordset
+    
+    lstrSQLQuery = "select DistNum,DistName from Distributor order by DistName"
+    Set lobjDistRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjDistRS Is Nothing Then
+        lobjDistRS.ActiveConnection = Nothing
+        If Not (lobjDistRS.BOF And lobjDistRS.EOF) Then
+            lobjDistRS.MoveFirst
+            txtDist.Text = (lobjDistRS.Fields("DistName").Value)
+
+''''''''''Change in .NET''''''''''''''''
+            txtDist.Enabled = False
+''''''''''END Change in .NET
+            
+            mlngDistID = lobjDistRS.Fields("DistNum").Value
+            lobjDistRS.Close
+        End If
+    End If
+    Set lobjDistRS = Nothing
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub LoadShip()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadDist()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+'    If cmbDist.ListIndex < 0 Then Exit Sub
+'    If cmbDist.ItemData(cmbDist.ListIndex) < 0 Then Exit Sub
+    
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim lobjShipRS As ADODB.Recordset
+    
+'    lstrSQLQuery = "select ShipToNum, ShipToName from ShipTo where ShipToDistrNum=" & mlngDistID
+    
+    lstrSQLQuery = "select ShipToNum, ShipToStrAddress1 from ShipTo where ShipToDistrNum=" & mlngDistID
+    lstrSQLQuery = lstrSQLQuery & " Order By ShipToStrAddress1"
+    Set lobjShipRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjShipRS Is Nothing Then
+        lobjShipRS.ActiveConnection = Nothing
+        If Not (lobjShipRS.BOF And lobjShipRS.EOF) Then
+            lobjShipRS.MoveFirst
+            Do While lobjShipRS.EOF = False
+'                Call cmbShip.AddItem(lobjShipRS.Fields("ShipToName").Value)
+                Call cmbShip.AddItem(IIf(IsNull(lobjShipRS.Fields("ShipToStrAddress1").Value), "", lobjShipRS.Fields("ShipToStrAddress1").Value))
+                cmbShip.ItemData(cmbShip.NewIndex) = lobjShipRS.Fields("ShipToNum").Value
+                lobjShipRS.MoveNext
+            Loop
+            lobjShipRS.Close
+        End If
+    End If
+    Set lobjShipRS = Nothing
+
+    If cmbShip.ListCount = 0 Then
+        cmbShip.AddItem ("")
+        cmbShip.ItemData(cmbShip.NewIndex) = -1
+        cmbShip.ListIndex = cmbShip.NewIndex
+    Else
+        cmbShip.ListIndex = 0
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Function VerifyData() As Boolean
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".VerifyData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrMsg As String
+    Dim lintErrFld As Integer
+    lstrMsg = ""
+    lintErrFld = 1
+
+''''''''''Change in .NET''''''''''''''''
+
+    
+'    If Not IsDate(Trim(txtDate.Text)) Then
+'
+'       lstrMsg = "Invalid Date."
+'        lintErrFld = 2
+''    ElseIf cmbDist.ListIndex < 0 Then
+''       lstrMsg = "Must enter a Distributor via the Administration program."
+''        lintErrFld = 3
+'    Else
+'        If DateValue(Now()) > DateValue(Me.txtDate.Text) Then
+'            lstrMsg = "Invalid Date."
+'            lintErrFld = 2
+'        End If
+'    End If
+''''''''''END Change in .NET
+    
+    If Trim(txtPONum.Text) = "" Then
+        lstrMsg = "PONum cannot be blank."
+        lintErrFld = 1
+    End If
+    
+    If Not lstrMsg = "" Then
+        VerifyData = False
+        Call MsgBox(lstrMsg, vbOKOnly + vbApplicationModal + vbExclamation, "Validation Error")
+        Select Case lintErrFld
+            Case 1: txtPONum.SetFocus
+            'Case 3: cmbDist.SetFocus
+
+''''''''''Change in .NET''''''''''''''''
+'            Case 2: txtDate.SetFocus
+
+''''''''''END Change in .NET
+        End Select
+        Exit Function
+    End If
+    
+    VerifyData = True
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Private Sub cboPrice_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboPrice_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+'    If cboPrice.ListIndex > 0 Then
+'        intCheck = cboPrice.ItemData(cboPrice.ListIndex)
+'    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+

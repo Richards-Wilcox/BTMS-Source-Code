@@ -1,0 +1,136 @@
+Option Explicit
+'to change to gray scale on 256 colours load
+Public Declare Function GetDeviceCaps Lib "gdi32" _
+   (ByVal hdc As Long, _
+    ByVal nIndex As Long) As Long
+Public Const BITSPIXEL As Long = 12
+
+Public Sub GoGrey(ByRef aForm As Form)
+
+    Dim ControlCount As Integer
+    Dim CurrentControl As Control
+    Dim Index As Integer
+    Dim ControlType As String
+    
+    DoForm aForm  'change the form colours
+    ControlCount = aForm.Controls.Count 'need to know how many controls are on the form
+    
+    For Index = 0 To (ControlCount - 1) Step 1  'go thru all the controls on the form
+            
+        Set CurrentControl = aForm.Controls(Index) 'isolate the current control we are working with
+        ControlType = TypeName(CurrentControl) 'find out what type of control it is
+        
+        'we probably want to make different control types different colours
+        Select Case ControlType
+            'text boxes
+            Case "TextBox"
+                DoTextbox CurrentControl
+            'command buttons
+            Case "CommandButton"
+                DoCommandButton CurrentControl
+            'frames
+            Case "Frame"
+                DoFrame CurrentControl
+            'labels
+            Case "Label"
+                DoLabel CurrentControl
+            'checkboxes
+            Case "CheckBox"
+                DoCheckBox CurrentControl
+            'option buttons
+            Case "OptionButton"
+                DoOptionButton CurrentControl
+            'list boxes
+            Case "ListBox"
+                DoListBox CurrentControl
+            'combo boxes
+            Case "ComboBox"
+                DoComboBox CurrentControl
+            'flex grids
+            Case "VSFlexGrid"
+                DoFlexGrid CurrentControl
+            'anything else we might have missed
+            Case Else
+                DoDefault CurrentControl
+        End Select
+
+        'release that control
+        Set CurrentControl = Nothing
+    'go to the next one in the list
+    Next Index
+
+End Sub
+
+Private Sub DoForm(ByRef aForm As Form)
+    'change the form colours here
+    aForm.BackColor = &H80000016 '&H8000000C
+End Sub
+
+Private Sub DoTextbox(ByRef aTextBox As TextBox)
+    'change colours of textboxes here
+    aTextBox.BackColor = &H80000005
+    aTextBox.ForeColor = &H80000008
+End Sub
+
+Private Sub DoCommandButton(ByRef aCommandButton As CommandButton)
+    'change colours of command buttons here
+    aCommandButton.BackColor = &H80000008
+End Sub
+
+Private Sub DoLabel(ByRef aLabel As Label)
+    'change colours of labels here
+    aLabel.BackColor = &H80000016
+    aLabel.ForeColor = &H80000008
+End Sub
+
+Private Sub DoFrame(ByRef aFrame As Frame)
+    'change colours of frames here
+    aFrame.BackColor = &H80000016
+    aFrame.ForeColor = &H80000008
+End Sub
+
+Private Sub DoOptionButton(ByRef aOptionButton As OptionButton)
+    'change optionbutton colours here
+    aOptionButton.BackColor = &H80000016
+    aOptionButton.ForeColor = &H80000008
+End Sub
+
+Private Sub DoCheckBox(ByRef aCheckBox As CheckBox)
+    'change checkbox colours here
+    aCheckBox.BackColor = &H80000016
+    aCheckBox.ForeColor = &H80000008
+End Sub
+
+Private Sub DoListBox(ByRef aListBox As ListBox)
+    'change the listboxes
+    aListBox.BackColor = &H80000005
+    aListBox.ForeColor = &H80000008
+End Sub
+
+Private Sub DoComboBox(ByRef aComboBox As ComboBox)
+    'change the comboboxes
+    aComboBox.BackColor = &H80000005
+    aComboBox.ForeColor = &H80000008
+End Sub
+
+Private Sub DoFlexGrid(ByRef aFlexGrid As VSFlexGrid)
+    'change the grids
+    aFlexGrid.BackColorBkg = &H80000016
+'    aFlexGrid.BackColor = &H80000016
+'    aFlexGrid.ForeColor = &H80000008
+End Sub
+
+
+Private Sub DoDefault(ByRef aControl As Control)
+    'change colours of anyting not specifically addressed here
+On Error GoTo skip 'error 438 will be raised if methods do not exist
+    'if they dont exist, we'll just skip over it all
+
+    aControl.BackColor = &H80000016
+    aControl.ForeColor = &H80000008
+    
+skip:
+    
+End Sub
+
+

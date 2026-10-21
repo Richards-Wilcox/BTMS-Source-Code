@@ -1,0 +1,110 @@
+Option Explicit
+Const cstrModuleName As String = "MDIForm"
+
+Private Sub MDIForm_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MDIForm_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    Me.WindowState = vbMaximized
+    Me.Caption = "Bulk Thermatite Management System"
+    Me.Caption = Me.Caption & " - Version: " & App.Major
+    Me.Caption = Me.Caption & "." & App.Minor
+    Me.Caption = Me.Caption & "." & App.Revision
+    
+    If IsTaskRunning(App.Path & "\RWConverter.exe") = False Then Call ShellExecute(Me.hwnd, "open", App.Path & "\RWConverter.exe", vbNullString, vbNullString, SW_MINIMIZE)
+    frmMainMenu.Show
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub MDIForm_QueryUnload(Cancel As Integer, UnloadMode As Integer)
+If UnloadMode = 0 Then
+    If MsgBox("Are you sure you want to exit the application?" & vbCrLf & _
+            "All unsaved data will be lost.", vbExclamation + vbApplicationModal + vbYesNo, "Exit") = vbNo Then
+        Cancel = 1
+    End If
+End If
+End Sub
+
+Private Sub MDIForm_Unload(Cancel As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MDIForm_Unload()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    Dim lstrSQLQuery As String
+    Dim lobjADORS As ADODB.Recordset
+    Call KillProcess("RWConverter.exe")
+    
+    If Not CnnBTMS Is Nothing Then
+        lstrSQLQuery = " SELECT DistFiscalYear, distytdcleared FROM Distributor"
+        Set lobjADORS = CnnBTMS.Execute(lstrSQLQuery, 0, adCmdText)
+        If Not lobjADORS Is Nothing Then
+            lobjADORS.ActiveConnection = Nothing
+            If lobjADORS.EOF = False Then
+                lobjADORS.MoveFirst
+                Dim strDate As String, larrData
+                If IsNull(lobjADORS.Fields("DistFiscalYear").Value) Then
+                    lstrSQLQuery = "update customerinformation set custytd=0"
+                    Call CnnBTMS.Execute(lstrSQLQuery, 0, adCmdText)
+                End If
+            End If
+            lobjADORS.Close
+        End If
+        Set lobjADORS = Nothing
+    End If
+
+    Dim linti As Integer
+    For linti = Forms.Count - 1 To 0 Step -1
+        Unload Forms(linti)
+    Next
+
+    If Not CnnBTMS Is Nothing Then
+        Call DeleteTempBOM
+        If CnnBTMS.State = adStateOpen Then CnnBTMS.Close
+    End If
+    
+    Set CnnBTMS = Nothing
+    Set objFrmB = Nothing
+    Set aCon = Nothing     ' Converter object
+    aCryp.EndCrypKey
+    Set aCryp = Nothing     ' CrypKey object
+    
+    Erase varDoorData.arrSections
+    Erase varDoorData.arrSpringSolution
+    Erase varDoorData.arrSelectedSolution
+    Erase varSpItem
+    
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsLoaded = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+            gobjAgent.UnLoadActor
+        End If
+    End If
+    
+    Set gobjAgent = Nothing
+    Set aReg = Nothing
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub

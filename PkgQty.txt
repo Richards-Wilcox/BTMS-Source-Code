@@ -1,0 +1,357 @@
+Option Explicit
+Public mlngPOID As Long
+Const cstrModuleName As String = "frmPkgQty"
+
+''''''''''Change in .NET''''''''''''''''
+'startupposition changed to center screen.
+''''''''''END Change in .NET
+
+Private Sub cmdAccept_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAccept_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Dim lstrSQL As String, i As Integer, lstrUM As String, ldblQty As Double
+    Dim lobjPORS As ADODB.Recordset
+    Dim lobjINVRS As ADODB.Recordset
+    Set lobjPORS = New ADODB.Recordset
+    CnnBTMS.BeginTrans
+    lstrSQL = "select * from PODetails where POID=" & mlngPOID
+    lobjPORS.Open lstrSQL, CnnBTMS, adOpenForwardOnly, adLockOptimistic
+    If Not lobjPORS Is Nothing Then
+        If Not (lobjPORS.EOF And lobjPORS.BOF) Then
+            For i = 1 To GrdData.Rows - 1
+                If GrdData.Cell(flexcpChecked, i, 5) = flexChecked = True Then
+                    lobjPORS.MoveFirst
+                    lobjPORS.Find "POPtNum=" & SQLString(GrdData.TextMatrix(i, 0))
+                    If lobjPORS.EOF = False And lobjPORS.BOF = False Then
+                        'first decrease the OnPOs in Inventory by the old qty, then
+                        'increase by the new qty, and then set the new qty on a PO.
+                        'If IsInvMaint = 1 And CheckPORunInventory(mlngPOID) = True Then
+                            lstrSQL = "select InvUM from Inventory where PartNum=" & SQLString(GrdData.TextMatrix(i, 0))
+                            Set lobjINVRS = CnnBTMS.Execute(lstrSQL, 0, adCmdText)
+                            If Not lobjINVRS Is Nothing Then
+                                If Not (lobjINVRS.BOF = True And lobjINVRS.EOF = True) Then
+                                    lstrUM = lobjINVRS.Fields("InvUM").Value
+                                End If
+                            End If
+                            If lobjPORS.Fields("POPtUM").Value = "EACH" And lstrUM = "EACH" Then
+                                ldblQty = DBLValue(lobjPORS.Fields("POPtQtyOrd").Value)
+                                Call UpdateOnPOsForPN(GrdData.TextMatrix(i, 0), 0 - ldblQty)
+                                Call UpdateOnPOsForPN(GrdData.TextMatrix(i, 0), DBLValue(GrdData.TextMatrix(i, 4)))
+                                'lobjPORS.Fields("POPtQtyOrd").Value = DBLValue(grdData.TextMatrix(i, 4))
+                            ElseIf lobjPORS.Fields("POPtUM").Value = "EACH" And lstrUM = "INCHES" Then
+                                ldblQty = DBLValue(lobjPORS.Fields("POPtQtyOrd").Value) * GetLengthFromMain(lobjPORS.Fields("POPtNum").Value)
+                                Call UpdateOnPOsForPN(GrdData.TextMatrix(i, 0), 0 - ldblQty)
+                                Call UpdateOnPOsForPN(GrdData.TextMatrix(i, 0), DBLValue(GrdData.TextMatrix(i, 4)) * GetLengthFromMain(lobjPORS.Fields("POPtNum").Value))
+                                'lobjPORS.Fields("POPtQtyOrd").Value = DBLValue(grdData.TextMatrix(i, 4)) * GetLengthFromMain(lobjPORS.Fields("POPtNum").Value)
+                            ElseIf lobjPORS.Fields("POPtUM").Value = "LFT" And lstrUM = "INCHES" Then
+                                ldblQty = DBLValue(lobjPORS.Fields("POPtQtyOrd").Value) * 12
+                                Call UpdateOnPOsForPN(GrdData.TextMatrix(i, 0), 0 - ldblQty)
+                                Call UpdateOnPOsForPN(GrdData.TextMatrix(i, 0), DBLValue(GrdData.TextMatrix(i, 4)) * 12)
+                                'lobjPORS.Fields("POPtQtyOrd").Value = DBLValue(grdData.TextMatrix(i, 4)) * 12
+                            End If
+                        'End If
+                        lobjPORS.Fields("POPtQtyOrd").Value = DBLValue(GrdData.TextMatrix(i, 4))
+                        lobjPORS.Fields("POPtQtyBO").Value = DBLValue(lobjPORS.Fields("POPtQtyOrd").Value)
+                        lobjPORS.Update
+                    End If
+                End If
+            Next
+        End If
+    End If
+    lobjPORS.Close
+    Set lobjPORS = Nothing
+    CnnBTMS.CommitTrans
+    Unload Me
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    CnnBTMS.RollbackTrans
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Unload Me
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdUnSelectAll_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdUnSelectAll_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    GrdData.Col = 5
+    If GrdData.Visible = True Then
+        For i = 1 To Me.GrdData.Rows - 1
+            If GrdData.TextMatrix(i, 0) <> "" Then 'PN
+                GrdData.Cell(flexcpChecked, i, 5) = flexUnchecked
+            End If
+        Next
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lobjPODetRS As ADODB.Recordset
+    Dim llngAffected As Long
+    Dim i As Integer, X As Integer
+    Dim ldblPkgQty As Double, ldblOrdQty As Double
+    Dim ldblPkgQtyNew As Double
+    
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+    Label1.Caption = "Put a check mark in the " & Chr(34) & "Selected" & Chr(34) & " column beside the items you wish to upgrade to package quantity." & vbCrLf & _
+            "To select all items click on the " & Chr(34) & "Select All" & Chr(34) & " button."
+    
+    lstrSQL = "select P.POPtNum, M.DescImp, M.UM,  P.POPtQtyOrd, M.pkgqty , 0 from POdetails P"
+    lstrSQL = lstrSQL & " Left join Main M on P.POPtNum = M.PartNum where P.POID = " & mlngPOID & " And M.PkgQty > 0 and M.PkgQty <> P.POPtQtyOrd order by P.POPtNum"
+    Set lobjPODetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjPODetRS Is Nothing Then
+        lobjPODetRS.ActiveConnection = Nothing
+        If Not (lobjPODetRS.BOF And lobjPODetRS.EOF) Then
+            
+            GrdData.VirtualData = False
+            GrdData.DataMode = flexDMFree
+            Set GrdData.DataSource = lobjPODetRS
+            
+            GrdData.Row = 1
+            For X = 1 To GrdData.Rows - 1 'set the pkg qty to greater than the ordered qty
+                ldblPkgQty = DBLValue(GrdData.TextMatrix(X, 4))
+                ldblOrdQty = DBLValue(GrdData.TextMatrix(X, 3))
+                ldblPkgQtyNew = ldblPkgQty
+                Do While ldblPkgQtyNew < ldblOrdQty
+                    ldblPkgQtyNew = ldblPkgQtyNew + ldblPkgQty
+                Loop
+                GrdData.TextMatrix(X, 4) = ldblPkgQtyNew
+                    
+            Next
+            i = 1
+            Do Until i = -1 Or GrdData.Rows < 2 'remove the rows where pkgqty = ordered qty
+
+''''''''''Change in .NET''''''''''''''''
+'                GrdData.Row = i
+                If GrdData.Rows > i Then
+                    GrdData.Row = i
+                Else
+                    Exit Do
+                End If
+''''''''''END Change in .NET
+                If DBLValue(GrdData.TextMatrix(i, 4)) = DBLValue(GrdData.TextMatrix(i, 3)) Then
+                    GrdData.RemoveItem (i)
+                Else
+                    If i < GrdData.Rows - 1 Then
+                        i = i + 1
+                    Else
+                        i = -1
+                    End If
+                End If
+            Loop
+            If GrdData.Rows < 2 Then
+                Label1.Caption = "All items on this Purchase Order are already upgraded to package quantities."
+                Frame2.Visible = False
+                Frame1.Top = Frame2.Top
+                Me.Height = (Frame3.Height + Frame1.Height) * 1.5
+                cmdAccept.Enabled = False
+                cmdSelectAll.Enabled = False
+                cmdUnSelectAll.Enabled = False
+            End If
+        Else
+            Label1.Caption = "All items on this Purchase Order are already upgraded to package quantities."
+            Frame2.Visible = False
+            Frame1.Top = Frame2.Top
+            Me.Height = (Frame3.Height + Frame1.Height) * 1.5
+            cmdAccept.Enabled = False
+            cmdSelectAll.Enabled = False
+            cmdUnSelectAll.Enabled = False
+        End If
+    End If
+    
+    If GrdData.Rows >= 2 Then Call SetGridTitles
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdSelectAll_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSelectAll_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    GrdData.Col = 5
+    If GrdData.Visible = True Then
+        For i = 1 To Me.GrdData.Rows - 1
+            If GrdData.TextMatrix(i, 0) <> "" Then 'PN
+                GrdData.Cell(flexcpChecked, i, 5) = flexChecked
+            Else
+                GrdData.Cell(flexcpChecked, i, 5) = flexUnchecked
+            End If
+        Next
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub SetGridTitles()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetGridTitles()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    GrdData.TextMatrix(0, 0) = "Part Number"
+    GrdData.TextMatrix(0, 1) = "Description"
+    GrdData.TextMatrix(0, 2) = "UM"
+    GrdData.TextMatrix(0, 3) = "Qty Ordered"
+    GrdData.TextMatrix(0, 4) = "Pkg Qty"
+    GrdData.TextMatrix(0, 5) = "Selected"
+    GrdData.ColDataType(5) = flexDTBoolean
+    
+    GrdData.ColWidth(0) = GrdData.Width * 0.15
+    GrdData.ColWidth(1) = GrdData.Width * 0.3
+    GrdData.ColWidth(2) = GrdData.Width * 0.1
+    GrdData.ColWidth(3) = GrdData.Width * 0.15
+    GrdData.ColWidth(4) = GrdData.Width * 0.15
+    GrdData.ColWidth(5) = GrdData.Width * 0.1
+    
+    Dim llngRow As Long
+    GrdData.Redraw = flexRDNone
+    GrdData.Col = 5
+    For llngRow = 1 To GrdData.Rows - 1
+        GrdData.Row = llngRow
+        If Not (Trim(GrdData.TextMatrix(llngRow, 0)) = "") Then
+            GrdData.CellChecked = flexChecked
+        End If
+    Next llngRow
+    
+    GrdData.Row = 1
+    GrdData.Col = 0
+    GrdData.Redraw = flexRDDirect
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub grdData_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".grdData1_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If GrdData.RowSel > 0 And GrdData.ColSel = 5 Then
+        GrdData.EditCell
+    End If
+    
+    Exit Sub
+    
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub GrdData_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GrdData_MouseMove()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    GrdData.ToolTipText = GrdData.Cell(flexcpTextDisplay, GrdData.MouseRow, GrdData.MouseCol)
+    
+    Exit Sub
+
+Error_Handler:
+Exit Sub 'sometimes this routine produced unexpected errors if
+'mouse is over the boundaries of the grid. Generating an error
+'screen is not necessary
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub

@@ -1,0 +1,702 @@
+Option Explicit
+Const cstrModuleName As String = "frmPrint"
+
+Public mlngPN As Long
+Public mlngdec As Long
+Public mlngIDValue As Long
+Public mlngDescOpt As Long
+Public mlngColShow As Long
+Public mlngShowPrice As Long
+Public mlngPaperSize As Long
+Public mstrReportName As String
+Public mstrTitle As String
+Public mstrBTMSID As String
+Public mstrComputerID As String
+Public mstrvaluename1 As String
+Public mstrvaluename2 As String
+Public mstrvaluename3 As String
+Public mstrvaluename4 As String
+Public mstrSubCat As String
+Public mblnMultiPrice As Boolean
+Public mblnPNValue As Boolean
+Public mblnDefaultDescr As Boolean
+Public mblnBelowMin As Boolean
+Public mblnInStock As Boolean
+
+''''''''''Change in .NET''''''''''''''''
+Public mblnPrintZeroStock As Boolean 'if true all items will be printed.
+'                                    if false, only those which have instock > 0
+''''''''''END Change in .NET
+Dim CRApp As craxdrt.Application
+Dim connectioninfo As craxdrt.ConnectionProperties  'Declare a connectionInfo object for embeded reports
+Dim SprgSolRpt As New CrystalReport1
+Dim BOMRpt As New CrystalReport2
+Dim HWPickListRpt As New CrystalReport3
+Dim Report As New craxdrt.Report
+'Dim CRApp As New craxdrt.Application
+
+Private Sub Form_Activate()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Activate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Long
+                
+    mlngDescOpt = IIf(mblnDefaultDescr = True, 1, 0)    ' 1 - Default Desc.(Metric or Imperial),   0 - Local Desc.
+    mlngdec = IIf(DecimU = 1, 1, 0)                     ' 1 - DecimalPoint  0 - comma
+    mlngColShow = IIf(CheckShowPrices = True, IIf(mlngShowPrice = 1, 1, 0), 0)      '1 - show col : sales rep only      0 - don't show col : cutomers only
+    aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada", True 'opens or creates key
+    mlngPaperSize = CLng(aReg.ReadValue("PaperSize"))         '1=Letter   9=A4
+    aReg.CloseKey
+    
+    Select Case mstrReportName
+    Case "Bom.rpt", "Fabrication.rpt"
+                
+        Dim llnglblQTY As Long
+        Dim llngtxtQTY As Long
+        
+        'Set the connectionInfo to connection properties of the table object (do this for each embeded report)
+        If mstrReportName = "Bom.rpt" Then
+'            Set connectioninfo = BOMRpt.Database.Tables(1).ConnectionProperties
+            Set connectioninfo = BOMRpt.Database.Tables(1).ConnectionProperties
+
+        ElseIf mstrReportName = "Fabrication.rpt" Then
+            Set connectioninfo = HWPickListRpt.Database.Tables(1).ConnectionProperties
+        End If
+        
+        'Set the OLE DB provider
+        connectioninfo.Item("Provider") = "Microsoft.Jet.OLEDB.4.0"
+        
+        'Set the path and the name of the Access database file
+        connectioninfo.Item("Data Source") = App.Path & "\RWlocal.mdb"
+        
+        'access the database protected by a password
+        connectioninfo.Item("Jet Database Password") = "r4Z73dQ2imE"
+        
+'        Call BOMRpt.DiscardSavedData
+'        Call HWPickListRpt.DiscardSavedData
+                
+        Screen.MousePointer = vbHourglass
+        mlngPN = IIf(mblnPNValue = True, 1, 0)  ' for BoM / PickList reports
+        Select Case mstrReportName
+                    
+            Case "Bom.rpt"  'embedded report
+                
+                Call BOMRpt.ParameterFields(1).AddCurrentValue(mlngIDValue)
+                Call BOMRpt.ParameterFields(2).AddCurrentValue(mstrBTMSID)
+                Call BOMRpt.ParameterFields(3).AddCurrentValue(mlngDescOpt)
+                Call BOMRpt.ParameterFields(4).AddCurrentValue(mstrComputerID)
+                Call BOMRpt.ParameterFields(5).AddCurrentValue(mlngdec)
+                Call BOMRpt.ParameterFields(6).AddCurrentValue(mlngColShow)
+                Call BOMRpt.ParameterFields(7).AddCurrentValue(mlngPN)
+                
+                If mlngColShow = 0 Then
+                    If mlngPaperSize = 9 Then 'No prices but PaperSize = A4
+                        
+                        BOMRpt.PaperSize = 9
+                        BOMRpt.Box8.Right = BOMRpt.Box8.Right * 1.07
+                        BOMRpt.Line3.Right = BOMRpt.Box8.Right
+                        BOMRpt.Line26.Right = BOMRpt.Box8.Right
+                        BOMRpt.Line21.Right = BOMRpt.Box8.Right
+                        BOMRpt.Line7.Right = BOMRpt.Box8.Right
+                     
+                        '4-ctrls are set their dim's according to line 6 dim's
+                        'Page header and Details section
+                        BOMRpt.Line17.Left = BOMRpt.Line6.Left
+                        BOMRpt.Line14.Left = BOMRpt.Line6.Left
+                        
+                        'Qty
+                        llnglblQTY = (BOMRpt.Box8.Right - BOMRpt.QTYOnBOM1.Width)
+                        llngtxtQTY = llnglblQTY - ((llnglblQTY - BOMRpt.Line6.Left) / 2)
+                        BOMRpt.Text15.Left = llngtxtQTY + (BOMRpt.QTYOnBOM1.Width / 2) + 180
+                        BOMRpt.QTYOnBOM1.Left = llngtxtQTY + 100
+                   
+                        'detail section
+                        BOMRpt.Line8.Suppress = True
+                        BOMRpt.Line22.Suppress = True
+                        BOMRpt.Line24.Suppress = True
+                     
+                        'page header section
+                        BOMRpt.Line2.Suppress = True
+                        BOMRpt.Line15.Suppress = True
+                        BOMRpt.Line9.Suppress = True
+                     
+                       'report header b section
+                        BOMRpt.Box1.Right = BOMRpt.Box8.Right
+                        BOMRpt.Line13.Left = BOMRpt.Line16.Left    'line b/w Weight (lb/kg) and cost($)
+                        BOMRpt.Line12.Left = BOMRpt.Line20.Left    'line b/w Torsion springs and Weight (lb/kg)
+                       
+                       'cost ($)
+                        BOMRpt.Subreport4.Left = (BOMRpt.Box8.Right - BOMRpt.Subreport4.Width)
+                        BOMRpt.Subreport4.Left = BOMRpt.Subreport4.Left - ((BOMRpt.Subreport4.Left - BOMRpt.Line16.Left) / 2)
+                        BOMRpt.Text6.Left = (BOMRpt.Box1.Right - BOMRpt.Text6.Width)
+                        BOMRpt.Text6.Left = BOMRpt.Text6.Left - ((BOMRpt.Text6.Left - BOMRpt.Line16.Left) / 2)
+    
+                       'weight (Lb/Kg)
+                        BOMRpt.Subreport1.Left = (BOMRpt.Line16.Right - BOMRpt.Subreport1.Width)
+                        BOMRpt.Subreport1.Left = BOMRpt.Subreport1.Left - ((BOMRpt.Subreport1.Left - BOMRpt.Line20.Left) / 2)
+                        BOMRpt.Text2.Left = (BOMRpt.Line16.Right - BOMRpt.Text2.Width)
+                        BOMRpt.Text2.Left = BOMRpt.Text2.Left - ((BOMRpt.Text2.Left - BOMRpt.Line20.Left) / 2)
+                       
+                       'Torsion Springs
+                        BOMRpt.Text7.Left = (BOMRpt.Line20.Right - BOMRpt.Text7.Width)
+                        BOMRpt.Text7.Left = BOMRpt.Text7.Left - ((BOMRpt.Text7.Left - BOMRpt.Box1.Left) / 2)
+                        BOMRpt.Subreport3.Left = (BOMRpt.Line20.Right - BOMRpt.Subreport3.Width)
+                        BOMRpt.Subreport3.Left = BOMRpt.Subreport3.Left - ((BOMRpt.Subreport3.Left - BOMRpt.Box1.Left) / 2)
+                    
+                    Else    'No prices but Papersize = Letter
+                        BOMRpt.PaperSize = 1
+                        BOMRpt.PaperOrientation = crLandscape
+                        
+                        BOMRpt.Line2.Suppress = True
+                        BOMRpt.Line8.Suppress = True
+                        BOMRpt.Line9.Suppress = True
+                        BOMRpt.Line24.Suppress = True
+                        BOMRpt.Line15.Suppress = True
+                        BOMRpt.Line22.Suppress = True
+                                            
+                        'Page header section
+                        BOMRpt.Text15.Left = BOMRpt.Text43.Left + 170
+                        'Detail section
+                        BOMRpt.LPrice1.Suppress = True
+                        
+                        BOMRpt.QTYOnBOM1.Left = BOMRpt.LPrice1.Left + 100
+                    End If
+                Else    'Price AND PaperSize = A4
+                    If mlngPaperSize = 9 Then
+                        BOMRpt.PaperSize = 9
+                        BOMRpt.Box8.Right = BOMRpt.Box8.Right * 1.07
+                        BOMRpt.Line3.Right = BOMRpt.Box8.Right
+                        BOMRpt.Line26.Right = BOMRpt.Box8.Right
+                        BOMRpt.Line21.Right = BOMRpt.Box8.Right
+                        BOMRpt.Line7.Right = BOMRpt.Box8.Right
+                         
+                        '4-ctrls are set their dim's according to line 6 dim's
+                        'Page header and Details section
+                        BOMRpt.Line2.Left = BOMRpt.Line28.Left
+                        BOMRpt.Line8.Left = BOMRpt.Line28.Left
+                        
+                        BOMRpt.Line9.Left = BOMRpt.Line25.Left
+                        BOMRpt.Line24.Left = BOMRpt.Line25.Left
+                        
+                        BOMRpt.Line15.Left = BOMRpt.Line27.Left
+                        BOMRpt.Line22.Left = BOMRpt.Line27.Left
+                        
+                        BOMRpt.Line14.Left = BOMRpt.Line6.Left
+                        BOMRpt.Line17.Left = BOMRpt.Line6.Left
+                                       
+                        'Qty
+                        BOMRpt.QTYOnBOM1.Left = (BOMRpt.Line25.Left - BOMRpt.QTYOnBOM1.Width)
+                        BOMRpt.QTYOnBOM1.Left = BOMRpt.QTYOnBOM1.Left - ((BOMRpt.QTYOnBOM1.Left - BOMRpt.Line28.Left) / 2)
+                        BOMRpt.Text15.Left = BOMRpt.QTYOnBOM1.Left + (BOMRpt.QTYOnBOM1.Width / 2) + 100
+                        
+                        'Discount
+                        BOMRpt.Discount1.Left = (BOMRpt.Line27.Left - BOMRpt.Text24.Width)
+                        BOMRpt.Discount1.Left = BOMRpt.Discount1.Left - ((BOMRpt.Discount1.Left - BOMRpt.Line25.Left) / 2)
+                        BOMRpt.Text24.Left = BOMRpt.Discount1.Left
+                        
+                        'Price
+                        BOMRpt.PtPrice1.Left = (BOMRpt.Line6.Left - BOMRpt.PtPrice1.Width)
+                        BOMRpt.PtPrice1.Left = BOMRpt.PtPrice1.Left - ((BOMRpt.PtPrice1.Left - BOMRpt.Line27.Left) / 2)
+                        BOMRpt.Text23.Left = BOMRpt.PtPrice1.Left + (BOMRpt.PtPrice1.Width / 2) + 30
+                        
+                        'Line Price
+                        BOMRpt.LPrice1.Left = (BOMRpt.Box8.Right - BOMRpt.LPrice1.Width)
+                        BOMRpt.LPrice1.Left = BOMRpt.LPrice1.Left - ((BOMRpt.LPrice1.Left - BOMRpt.Line6.Left) / 2)
+                        BOMRpt.Text43.Left = BOMRpt.LPrice1.Left + (BOMRpt.LPrice1.Width / 2) - 100
+                        
+                        BOMRpt.Box1.Right = BOMRpt.Box8.Right
+                        BOMRpt.Line13.Left = BOMRpt.Line16.Left
+                        BOMRpt.Line12.Left = BOMRpt.Line20.Left
+                        
+                        'Torsion Springs
+                        BOMRpt.Text7.Left = (BOMRpt.Line20.Right - BOMRpt.Text7.Width)
+                        BOMRpt.Text7.Left = BOMRpt.Text7.Left - ((BOMRpt.Text7.Left - BOMRpt.Box1.Left) / 2)
+                        BOMRpt.Subreport3.Left = (BOMRpt.Line20.Right - BOMRpt.Subreport3.Width)
+                        BOMRpt.Subreport3.Left = BOMRpt.Subreport3.Left - ((BOMRpt.Subreport3.Left - BOMRpt.Box1.Left) / 2)
+                        
+                        'weight (Lb/Kg)
+                        BOMRpt.Subreport1.Left = (BOMRpt.Line16.Right - BOMRpt.Subreport1.Width)
+                        BOMRpt.Subreport1.Left = BOMRpt.Subreport1.Left - ((BOMRpt.Subreport1.Left - BOMRpt.Line20.Left) / 2)
+                        BOMRpt.Text2.Left = (BOMRpt.Line16.Right - BOMRpt.Text2.Width)
+                        BOMRpt.Text2.Left = BOMRpt.Text2.Left - ((BOMRpt.Text2.Left - BOMRpt.Line20.Left) / 2)
+                        
+                        'Cost ($)
+                        BOMRpt.Subreport4.Left = (BOMRpt.Box8.Right - BOMRpt.Subreport4.Width)
+                        BOMRpt.Subreport4.Left = BOMRpt.Subreport4.Left - ((BOMRpt.Subreport4.Left - BOMRpt.Line16.Left) / 2)
+                        BOMRpt.Text6.Left = (BOMRpt.Box1.Right - BOMRpt.Text6.Width)
+                        BOMRpt.Text6.Left = BOMRpt.Text6.Left - ((BOMRpt.Text6.Left - BOMRpt.Line16.Left) / 2)
+                    Else
+                        BOMRpt.PaperSize = 1    'Price AND PaperSize = Letter
+                    End If
+                End If
+                
+                BOMRpt.PaperOrientation = crLandscape
+                CrystalActiveXReportViewer1.ReportSource = BOMRpt
+                'CRViewer91.ReportSource = BOMRpt
+                
+
+                
+            Case "Fabrication.rpt"  'embedded report
+            
+                Call HWPickListRpt.ParameterFields(1).AddCurrentValue(mlngIDValue)
+                Call HWPickListRpt.ParameterFields(2).AddCurrentValue(mstrBTMSID)
+                Call HWPickListRpt.ParameterFields(3).AddCurrentValue(mlngDescOpt)
+                Call HWPickListRpt.ParameterFields(4).AddCurrentValue(mstrComputerID)
+                Call HWPickListRpt.ParameterFields(5).AddCurrentValue(mlngdec)
+                Call HWPickListRpt.ParameterFields(6).AddCurrentValue(mlngPaperSize)
+                Call HWPickListRpt.ParameterFields(7).AddCurrentValue(mlngPN)
+                
+                         
+                If mlngPaperSize = 9 Then 'PaperSize = A4
+                    HWPickListRpt.PaperSize = 9
+                    
+                    HWPickListRpt.Box1.Right = HWPickListRpt.Box1.Right * 1.09
+                    HWPickListRpt.Line4.Right = HWPickListRpt.Box1.Right
+                    HWPickListRpt.Line6.Right = HWPickListRpt.Box1.Right
+                    HWPickListRpt.Line1.Right = HWPickListRpt.Box1.Right
+                    HWPickListRpt.Line2.Right = HWPickListRpt.Box1.Right
+                        
+                    'line b/w Part desc. and QTY
+                    HWPickListRpt.Line18.Left = HWPickListRpt.Line7.Left
+                    
+                    ''''''''''Change in .NET''''''''''''''''
+                    HWPickListRpt.Line9.Left = HWPickListRpt.Line10.Left
+                    ''''''''''END Change in .NET
+                    
+                    'Total QTY
+                    HWPickListRpt.QTYOnPL1.Left = (HWPickListRpt.Box1.Right - HWPickListRpt.QTYOnPL1.Width)
+                    HWPickListRpt.QTYOnPL1.Left = HWPickListRpt.QTYOnPL1.Left - ((HWPickListRpt.QTYOnPL1.Left - HWPickListRpt.Line7.Left) / 2) + 100
+                    HWPickListRpt.Text15.Left = HWPickListRpt.QTYOnPL1.Left '+ (HWPickListRpt.QTYOnPL1.Width / 2) + 120
+
+                    ''''''''''Change in .NET''''''''''''''''
+                    'Qty
+                    HWPickListRpt.Text20.Left = (HWPickListRpt.Line18.Right - HWPickListRpt.Text20.Width)
+                    HWPickListRpt.Text20.Left = HWPickListRpt.Text20.Left - ((HWPickListRpt.Text20.Left - HWPickListRpt.Line10.Left) / 2) + 100
+                    HWPickListRpt.QTYPerDr1.Left = HWPickListRpt.Text20.Left - 80
+                    HWPickListRpt.Text20.Left = HWPickListRpt.QTYPerDr1.Left
+                    ''''''''''END Change in .NET
+                    
+                    'report Footer b section
+                    HWPickListRpt.Line11.Right = HWPickListRpt.Box1.Right  'line underneath of Torsion & Weight (Lb/Kg)
+                    HWPickListRpt.Line8.Left = HWPickListRpt.Line13.Left
+                    
+                    'weight (Lb/Kg)
+                    HWPickListRpt.Subreport1.Left = (HWPickListRpt.Box1.Right - HWPickListRpt.Subreport1.Width)
+                    HWPickListRpt.Subreport1.Left = HWPickListRpt.Subreport1.Left - ((HWPickListRpt.Subreport1.Left - HWPickListRpt.Line13.Left) / 2)
+                    HWPickListRpt.Text2.Left = (HWPickListRpt.Box1.Right - HWPickListRpt.Text2.Width)
+                    HWPickListRpt.Text2.Left = HWPickListRpt.Text2.Left - ((HWPickListRpt.Text2.Left - HWPickListRpt.Line13.Left) / 2)
+                    
+                    'Torsion Springs
+                    HWPickListRpt.Text7.Left = (HWPickListRpt.Line13.Right - HWPickListRpt.Text7.Width)
+                    HWPickListRpt.Text7.Left = HWPickListRpt.Text7.Left - ((HWPickListRpt.Text7.Left - HWPickListRpt.Box1.Left) / 2)
+                    HWPickListRpt.Subreport2.Left = (HWPickListRpt.Line13.Right - HWPickListRpt.Subreport2.Width)
+                    HWPickListRpt.Subreport2.Left = HWPickListRpt.Subreport2.Left - ((HWPickListRpt.Subreport2.Left - HWPickListRpt.Box1.Left) / 2)
+                Else
+                    HWPickListRpt.PaperSize = 1    'PaperSize = Letter
+                End If
+                
+                HWPickListRpt.PaperOrientation = crLandscape
+                CrystalActiveXReportViewer1.ReportSource = HWPickListRpt
+
+               'CRViewer91.ReportSource = HWPickListRpt
+            End Select
+    
+    
+    Case "YTDSales.rpt", "Quote Listing.rpt", "Customer Listing.rpt", "Stock Count.rpt", _
+          "RecvdToDate.rpt", "Quote.rpt", "PO.rpt", "Bom Listing.rpt", "Reminder.rpt", "PO Listing.rpt", _
+          "Inventory Listing.rpt"
+                        
+            Screen.MousePointer = vbHourglass       ' Set the mouse pointer to an hour glass
+            Set CRApp = CreateObject("CrystalRuntime.Application.11")
+            'Set CRApp = New CRAXDRT.Application                'early binding .......commented out after upgrading to CR XI R2- because it was generating error "invalid TLV records"
+            Set Report = CRApp.OpenReport(App.Path & "\Reports\" & Trim(mstrReportName))
+            Report.DiscardSavedData                 ' Clear all saved changes and refresh report
+            
+'            Dim DbName As craxdrt.Database
+'            Dim DbTables As craxdrt.DatabaseTables
+'            Dim DbTable As craxdrt.DatabaseTable
+
+
+'            Set DbName = Report.Database
+'            Set DbTables = DbName.Tables
+'            For i = 1 To DbTables.Count
+'                Set DbTable = DbTables.Item(i)
+'                DbTable.SetLogOnInfo App.Path & "\RWlocal.mdb", "", "", ""
+'            Next i
+            
+            
+            Set connectioninfo = Report.Database.Tables(1).ConnectionProperties
+            connectioninfo.Item("Provider") = "Microsoft.Jet.OLEDB.4.0"
+            connectioninfo.Item("Data Source") = App.Path & "\RWlocal.mdb"
+            connectioninfo.Item("Jet Database Password") = "r4Z73dQ2imE"
+            
+            If Report.ParameterFields.Count > 0 Then
+            
+                Select Case mstrReportName
+                
+                Case "YTDSales.rpt", "Quote Listing.rpt", "Customer Listing.rpt"
+                    Call Report.ParameterFields(1).AddCurrentValue(mlngdec)
+                    
+                Case "Inventory Listing.rpt"
+                    mlngPN = IIf(mblnPNValue = True, 1, 0)
+                    Call Report.ParameterFields(1).AddCurrentValue(mlngPN)
+                    Call Report.ParameterFields(2).AddCurrentValue(CDbl(MeasU))
+                    Call Report.ParameterFields(3).AddCurrentValue(mlngDescOpt)
+                
+                Case "Stock Count.rpt"
+                    mlngPN = IIf(mblnPNValue = True, 1, 0)
+                    Call Report.ParameterFields(1).AddCurrentValue(mlngPN)
+                    Call Report.ParameterFields(2).AddCurrentValue(mlngDescOpt)
+                    Call Report.ParameterFields(3).AddCurrentValue(CDbl(MeasU))
+                    For i = 0 To UBound(gstrArraySubCat())
+                        Call Report.ParameterFields(4).AddCurrentValue(gstrArraySubCat(i))
+                    Next i
+                     
+                Case "RecvdToDate.rpt"
+                    Call Report.ParameterFields(1).AddCurrentValue(mlngIDValue)
+                
+                Case "Quote.rpt"
+                
+                    Call Report.ParameterFields(1).AddCurrentValue(mlngIDValue)
+                    Call Report.ParameterFields(2).AddCurrentValue(mstrvaluename1)
+                    Call Report.ParameterFields(3).AddCurrentValue(mstrvaluename2)
+                    Call Report.ParameterFields(4).AddCurrentValue(mstrvaluename3)
+                    Call Report.ParameterFields(5).AddCurrentValue(mstrvaluename4)
+                    Call Report.ParameterFields(6).AddCurrentValue(mlngdec)
+                
+                Case "PO.rpt"
+                
+                    Call Report.ParameterFields(1).AddCurrentValue(mlngIDValue)
+                    Call Report.ParameterFields(2).AddCurrentValue(mstrBTMSID)
+                    Call Report.ParameterFields(3).AddCurrentValue(mlngDescOpt)
+                    Call Report.ParameterFields(4).AddCurrentValue(mstrComputerID)
+                    mblnMultiPrice = IIf(UBound(PriceArr) > 1, True, False)
+                    Call Report.ParameterFields(5).AddCurrentValue(mblnMultiPrice)
+                    Call Report.ParameterFields(6).AddCurrentValue(mlngdec)
+     
+                End Select
+            End If
+            
+            'set the report print-layout - 1=Letter   9=A4
+            If mlngPaperSize = 9 Then
+                Report.PaperSize = 9
+               
+            ElseIf mlngPaperSize = 1 Then
+                Report.PaperSize = 1
+            End If
+            
+            'few reports need to be in portrait and few need to be in landscape orientation
+            If mstrReportName = "Quote.rpt" Or mstrReportName = "Customer Listing.rpt" Or _
+                mstrReportName = "YTDSales.rpt" Then
+                Report.PaperOrientation = crPortrait
+            Else
+                Report.PaperOrientation = crLandscape
+            End If
+                
+            CrystalActiveXReportViewer1.ReportSource = Report
+            'CRViewer91.ReportSource = Report
+            
+            If mstrReportName = "PO.rpt" Then
+                CrystalActiveXReportViewer1.EnableExportButton = True      ' only for BoM/PickList/PO
+                'CRViewer91.EnableExportButton = True
+            Else
+                CrystalActiveXReportViewer1.EnableExportButton = False     ' Otherwise - No Enable the option to export the report
+                'CRViewer91.EnableExportButton = False
+            End If
+            CrystalActiveXReportViewer1.DisplayTabs = False
+            'CRViewer91.DisplayTabs = False
+    
+    Case "SpringingSolutions.rpt"
+        Dim cnt As Integer
+        Dim strExt As String
+        Dim prevString1, prevString2, prevString15 As String
+        
+        Dim CRXParamDefs As craxdrt.ParameterFieldDefinitions
+        Dim CRXParamDef As craxdrt.ParameterFieldDefinition
+        
+        Call SprgSolRpt.DiscardSavedData
+        
+        Set CRXParamDefs = SprgSolRpt.ParameterFields
+        
+        For Each CRXParamDef In CRXParamDefs
+            With CRXParamDef
+                Select Case .ParameterFieldName
+                
+                Case "BoMName"
+                    .AddCurrentValue (frmGrid.txtBomName.Text)
+                
+                Case "ProductType"
+                    .AddCurrentValue (ProdType)
+                    
+                Case "Liftstyle"
+                    .AddCurrentValue (LiftType)
+                    
+                Case "HWsize"
+                     If MeasU = 1 Then
+                        Select Case HWType
+                        Case 2: .AddCurrentValue ("2" & Chr(34))
+                        Case 3: .AddCurrentValue ("3" & Chr(34))
+                        Case 3.25: .AddCurrentValue ("Super 3" & Chr(34))
+                        End Select
+                    Else
+                        Select Case HWType
+                        Case 2: .AddCurrentValue ("51 mm")
+                        Case 3: .AddCurrentValue ("76 mm")
+                        Case 3.25: .AddCurrentValue ("Super 3")
+                        End Select
+                    End If
+                    
+                Case "Width"
+                    If MeasU = 1 Then
+                        .AddCurrentValue (GetImpString(DrWidth))
+                    Else
+                        aCon.Inch = DrWidth
+                        aCon.mmcalc
+                        .AddCurrentValue (Round(aCon.mm, 0) & " mm")
+                    End If
+                    
+                Case "height"
+                    If MeasU = 1 Then
+                        .AddCurrentValue (GetImpString(DrHgt))
+                    Else
+                        aCon.Inch = DrHgt
+                        aCon.mmcalc
+                        .AddCurrentValue (Round(aCon.mm, 0) & " mm")
+                    End If
+                
+                Case "Drum"
+                    .AddCurrentValue (varDoorData.aDrum.strStamping)
+                    
+                Case "Doorweight"
+                    If DrWgt > 0 Then
+                        If MeasU = 1 Then
+                            .AddCurrentValue (Format(DrWgt, "Fixed") & " lb")
+                        Else
+                            ClearConObj
+                            aCon.LB = DrWgt
+                            aCon.KGcalc
+                            .AddCurrentValue (Format(aCon.KG, "Fixed") & " kg")
+                        End If
+                    End If
+                End Select
+            End With
+        Next
+        
+        If frmSprSolutions.cmdMismatch.Caption = "&Standard" Then   'mismatch
+            For cnt = 1 To frmSprSolutions.Grid2.Rows - 1
+                strExt = "_" & CStr(cnt)
+                For Each CRXParamDef In CRXParamDefs
+                    With CRXParamDef
+                        Select Case .ParameterFieldName
+                        
+                        Case "WireSize"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid2.TextMatrix(cnt, 1)) & strExt
+                        
+                        Case "Qty"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid2.TextMatrix(cnt, 2)) & strExt
+                            
+                        Case "CL"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid2.TextMatrix(cnt, 3)) & strExt
+                            
+                        Case "CoilID"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid2.TextMatrix(cnt, 4)) & strExt
+    
+                        Case "Length"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid2.TextMatrix(cnt, 5)) & strExt
+                        
+                        Case "Wt per"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid2.TextMatrix(cnt, 6)) & strExt
+                        
+                        Case "Turns"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid2.TextMatrix(cnt, 7)) & strExt
+    
+                        Case "IPPT"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid2.TextMatrix(cnt, 8)) & strExt
+                        
+                        Case "WL"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid2.TextMatrix(cnt, 12)) & strExt
+                            
+                        Case "Type"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid2.TextMatrix(cnt, 13)) & strExt
+                        
+                        Case "Price"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid2.TextMatrix(cnt, 14)) & strExt
+                            
+                        Case "blnMismatch"
+                            .AddCurrentValue (True)
+                        End Select
+                    End With
+'                    SprgSolRpt.DetailSection1.AddLineObject SprgSolRpt.Box1.Left, SprgSolRpt.Line3.Top, SprgSolRpt.Box1.Right, SprgSolRpt.Line3.Bottom 'report creation API License
+                    
+                Next
+            Next
+            
+        Else        'standard
+            For cnt = 1 To frmSprSolutions.Grid1.Rows - 1
+                strExt = "_" & CStr(cnt)
+                For Each CRXParamDef In CRXParamDefs
+                    With CRXParamDef
+                        Select Case .ParameterFieldName
+                        Case "WireSize"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid1.TextMatrix(cnt, 1)) & strExt
+    
+                        Case "Qty"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid1.TextMatrix(cnt, 2)) & strExt
+                        
+                        Case "CL"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid1.TextMatrix(cnt, 3)) & strExt
+                            
+                        Case "CoilID"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid1.TextMatrix(cnt, 4)) & strExt
+    
+                        Case "Length"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid1.TextMatrix(cnt, 5)) & strExt
+                        
+                        Case "Wt per"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid1.TextMatrix(cnt, 6)) & strExt
+                        
+                        Case "Turns"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid1.TextMatrix(cnt, 7)) & strExt
+    
+                        Case "IPPT"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid1.TextMatrix(cnt, 8)) & strExt
+                        
+                        Case "WL"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid1.TextMatrix(cnt, 12)) & strExt
+                            
+                        Case "Type"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid1.TextMatrix(cnt, 13)) & strExt
+                        
+                        Case "Price"
+                            .EnableMultipleValues = True
+                            .AddCurrentValue (frmSprSolutions.Grid1.TextMatrix(cnt, 14)) & strExt
+                            
+                        Case "blnMismatch"
+                            .AddCurrentValue (False)
+                        End Select
+                    End With
+                Next
+            Next
+        End If
+        
+        SprgSolRpt.PaperOrientation = crLandscape
+        CrystalActiveXReportViewer1.ReportSource = SprgSolRpt
+        'CRViewer91.ReportSource = SprgSolRpt
+        
+    End Select
+    
+    '2.0.19 commented out
+'    If mstrReportName = "Bom Listing.rpt" Or mstrReportName = "Reminder.rpt" Or mstrReportName = "PO Listing.rpt" Then
+'        'CrystalActiveXReportViewer1.ReportSource = Report '''''''''
+'        'CRViewer91.ReportSource = Report
+'        CrystalActiveXReportViewer1.EnableExportButton = False     ' No Enable option available to export these report
+'        'CRViewer91.EnableExportButton = False
+'        CrystalActiveXReportViewer1.DisplayTabs = False
+'        'CRViewer91.DisplayTabs = False
+'    End If
+      
+    
+    CrystalActiveXReportViewer1.ViewReport
+    'CRViewer91.ViewReport
+
+    Screen.MousePointer = vbDefault
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+                    
+    Me.Move (Screen.Width / 2 - Me.Width / 2) * 0.5, (Screen.Height / 2 - Me.Height / 2), Screen.Width, Screen.Height * 0.96
+    Me.Caption = "BTMS Print Preview - " & mstrTitle
+    
+    Me.Move Screen.Width / 2 - Me.Width / 2, 0
+    CrystalActiveXReportViewer1.Height = Me.Height * 0.95
+'CRViewer91.Height = Me.Height * 0.95
+    CrystalActiveXReportViewer1.Width = Me.Width * 0.99
+'CRViewer91.Width = Me.Width * 0.99
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Screen.MousePointer = vbNormal          ' Set the mouse pointer back to normal
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Unload()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+       
+    Set BOMRpt = Nothing
+    Set HWPickListRpt = Nothing
+    Set Report = Nothing
+    Set connectioninfo = Nothing
+    Set CRApp = Nothing
+
+    ReDim gstrArraySubCat(0)
+    Erase gstrArraySubCat
+    
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+

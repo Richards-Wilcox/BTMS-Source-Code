@@ -1,0 +1,204 @@
+Option Explicit
+Const cstrModuleName As String = "frmPusherSpring"
+Dim mstrPSPN As String
+
+Private Sub cmdAccept_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAccept_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    'frmTrackEntry.chkPSpring.Caption = cboPSpring.Text
+    addItems_PusherSpring
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub cmdReject_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdReject_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    frmTrackEntry.chkPSpring.Value = 0
+    frmTrackEntry.chkPSpring.Caption = "Pusher Spring"
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    
+    cboPSpring.Clear
+'    cboPSpring.AddItem "RW Pusher Spring Package" 'Mod 2.0.21
+'
+'    cboPSpring.AddItem "Pusher Springs Only"
+'    cboPSpring.ItemData(cboPSpring.NewIndex) = 1
+'
+'    cboPSpring.AddItem "Pusher Spring Assy Package"
+'    cboPSpring.ItemData(cboPSpring.NewIndex) = 2
+'    cboPSpring.ListIndex = 0
+'
+
+
+'''''''''''''''''''''''''''''''''''''
+
+'    cboPSpring.AddItem "RW Pusher Spring Package" 'Mod 2.0.21
+    
+        cboPSpring.AddItem "Pusher Spring Assy Package"
+        cboPSpring.ItemData(cboPSpring.NewIndex) = 1
+
+    
+    
+    cboPSpring.AddItem "Pusher Springs Only"
+    cboPSpring.ItemData(cboPSpring.NewIndex) = 2
+    
+    
+    
+    cboPSpring.ListIndex = 0
+
+
+
+
+
+
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+Private Sub addItems_PusherSpring()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".addItems_PusherSpring()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim PusherSpringQTY As Integer
+    Dim i As Integer
+    Dim ReturnIndexPS As Integer
+    
+    Select Case cboPSpring.ItemData(cboPSpring.ListIndex)
+'        Case 1
+        Case 2
+ 
+        ' bef Mod 2.021
+         ' mstrPSPN = "7-3141"
+         
+         'After Mod 2.0.21
+            mstrPSPN = "322-314"  'Pusher spring only
+            PusherSpringQTY = 1
+'        Case 2
+        Case 1
+
+            mstrPSPN = "7-3142"  'Pusher AsslyPkg.
+            PusherSpringQTY = 1
+        End Select
+        'populates golobal var to display in summary form
+    frmTrackEntry.ReturnIndexPS = cboPSpring.ItemData(cboPSpring.ListIndex)
+    
+    For i = frmTrackEntry.Grid2.Row To frmTrackEntry.Grid2.Rows - 1
+        If frmTrackEntry.Grid2.Text = mstrPSPN Then
+            Exit Sub
+        Else
+            Call SetTrackOptionsGrid(mstrPSPN, PusherSpringQTY, "Track", GetSubCategory(mstrPSPN), 0)
+            Exit Sub
+        End If
+    Next
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+'Private Sub TrackGrid(PN As String, QTY As Integer, Group As String, SubGroup As String, Optional Var)
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".TrackGrid()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    If frmTrackEntry.Grid2.Text = "" And frmTrackEntry.Grid2.Row < 2 Then
+'        gintRow = 1
+'    End If
+'
+'    frmTrackEntry.Grid2.Row = gintRow
+'    frmTrackEntry.Grid2.Col = 0
+'    frmTrackEntry.Grid2.Text = PN
+'    frmTrackEntry.Grid2.Col = 1
+'    frmTrackEntry.Grid2.Text = QTY
+'    frmTrackEntry.Grid2.Col = 2
+'    frmTrackEntry.Grid2.Text = Group
+'    frmTrackEntry.Grid2.Col = 3
+'    frmTrackEntry.Grid2.Text = SubGroup
+'
+'    frmTrackEntry.Grid2.Col = 4
+'
+'    frmTrackEntry.Grid2.Rows = frmTrackEntry.Grid2.Rows + 1
+'    frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1
+'    gintRow = frmTrackEntry.Grid2.Row
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'
+'  End Sub

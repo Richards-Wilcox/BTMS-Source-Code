@@ -1,0 +1,243 @@
+Option Explicit
+Const cstrModuleName As String = "frmSort"
+
+Private Sub cboSort1_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboSort1_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    cboSort2.Clear
+    cboSort2.AddItem ""
+    cboSort2.ItemData(cboSort2.NewIndex) = 0
+'    cboSort2.AddItem "Wire Size"
+'    cboSort2.ItemData(cboSort2.NewIndex) = 1
+    If cboSort1.ItemData(cboSort1.ListIndex) <= 1 Then
+        cboSort2.AddItem "Qty"
+        cboSort2.ItemData(cboSort2.NewIndex) = 2
+    End If
+    If cboSort1.ItemData(cboSort1.ListIndex) <= 2 Then
+        cboSort2.AddItem "Cycle Life"
+        cboSort2.ItemData(cboSort2.NewIndex) = 3
+    End If
+    If cboSort1.ItemData(cboSort1.ListIndex) <= 3 Then
+        cboSort2.AddItem "Coil ID"
+        cboSort2.ItemData(cboSort2.NewIndex) = 4
+    End If
+    If cboSort1.ItemData(cboSort1.ListIndex) <= 4 Then
+        cboSort2.AddItem "Length"
+        cboSort2.ItemData(cboSort2.NewIndex) = 5
+    End If
+    If cboSort1.ItemData(cboSort1.ListIndex) <= 5 Then
+        cboSort2.AddItem "Turns"
+        cboSort2.ItemData(cboSort2.NewIndex) = 6
+    End If
+    If cboSort1.ItemData(cboSort1.ListIndex) <= 6 Then
+        cboSort2.AddItem "IPPT"
+        cboSort2.ItemData(cboSort2.NewIndex) = 7
+    End If
+'    If cboSort1.ItemData(cboSort1.ListIndex) <= 7 Then
+'        cboSort2.AddItem "Active Coils"
+'        cboSort2.ItemData(cboSort2.NewIndex) = 8
+'    End If
+'    If cboSort1.ItemData(cboSort1.ListIndex) <= 8 Then
+'        cboSort2.AddItem "Dead Coils"
+'        cboSort2.ItemData(cboSort2.NewIndex) = 9
+'    End If
+'    If cboSort1.ItemData(cboSort1.ListIndex) <= 9 Then
+'        cboSort2.AddItem "Torten"
+'        cboSort2.ItemData(cboSort2.NewIndex) = 10
+'    End If
+    If cboSort1.ItemData(cboSort1.ListIndex) <= 10 Then
+        cboSort2.AddItem "Wire Type"
+        cboSort2.ItemData(cboSort2.NewIndex) = 11
+    End If
+    If cboSort1.ItemData(cboSort1.ListIndex) <= 11 Then
+        cboSort2.AddItem "Price"
+        cboSort2.ItemData(cboSort2.NewIndex) = 12
+    End If
+    cboSort2.ListIndex = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdAccept_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAccept_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    frmSprSolutions.Grid1.ColSort(cboSort1.ItemData(cboSort1.ListIndex)) = IIf(optAscending1.Value = True, flexSortGenericAscending, flexSortGenericDescending)
+    If cboSort2.ItemData(cboSort2.ListIndex) > cboSort1.ItemData(cboSort1.ListIndex) Then
+        frmSprSolutions.Grid1.ColSort(cboSort2.ItemData(cboSort2.ListIndex)) = IIf(optAscending2.Value = True, flexSortGenericAscending, flexSortGenericDescending)
+        frmSprSolutions.Grid1.Select 1, cboSort1.ItemData(cboSort1.ListIndex), 1, cboSort2.ItemData(cboSort2.ListIndex)
+    Else
+        frmSprSolutions.Grid1.Select 1, cboSort1.ItemData(cboSort1.ListIndex) ', 1, cboSort2.ItemData(cboSort2.ListIndex)
+    End If
+    
+    frmSprSolutions.Grid1.Sort = flexSortUseColSort
+    Unload Me
+    frmSprSolutions.Show
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Unload Me
+    frmSprSolutions.Show
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+
+''''''''''Change in .NET''''''''''''''''
+Me.Move (Screen.Width - Me.Width) / 2, (Screen.Height - Me.Height) / 2
+''''''''''END Change in .NET
+    
+    cboSort1.AddItem "Wire Size"
+    cboSort1.ItemData(cboSort1.NewIndex) = 1
+    cboSort1.AddItem "Qty"
+    cboSort1.ItemData(cboSort1.NewIndex) = 2
+    cboSort1.AddItem "Cycle Life"
+    cboSort1.ItemData(cboSort1.NewIndex) = 3
+    cboSort1.AddItem "Coil ID"
+    cboSort1.ItemData(cboSort1.NewIndex) = 4
+    cboSort1.AddItem "Length"
+    cboSort1.ItemData(cboSort1.NewIndex) = 5
+    cboSort1.AddItem "Turns"
+    cboSort1.ItemData(cboSort1.NewIndex) = 6
+    cboSort1.AddItem "IPPT"
+    cboSort1.ItemData(cboSort1.NewIndex) = 7
+'    cboSort1.AddItem "Active Coils"
+'    cboSort1.ItemData(cboSort1.NewIndex) = 8
+'    cboSort1.AddItem "Dead Coils"
+'    cboSort1.ItemData(cboSort1.NewIndex) = 9
+'    cboSort1.AddItem "Torten"
+'    cboSort1.ItemData(cboSort1.NewIndex) = 10
+    cboSort1.AddItem "Wire Type"
+    cboSort1.ItemData(cboSort1.NewIndex) = 11
+    cboSort1.AddItem "Price"
+    cboSort1.ItemData(cboSort1.NewIndex) = 12
+    
+    cboSort1.ListIndex = 0
+
+    optAscending1.Value = True
+    optAscending2.Value = True
+    LoadHelpText Me
+    MousePos1.Init Me
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub

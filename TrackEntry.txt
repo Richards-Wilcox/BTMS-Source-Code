@@ -1,0 +1,3993 @@
+'KN
+Option Explicit
+Const cstrModuleName As String = "frmTrackEntry"
+Private mstrMountType As String
+Private mstrFGPN_RH As String
+Private mstrFGPN_LH As String
+Private mstrHA_PN As String
+Private mstrIS_PN As String
+Public ReturnIndexPS As Integer
+Public ReturnIndexBS As Integer
+Public ReturnIndexPchainPkg As Integer
+Private mblnInFocus As Boolean
+Public mblnTag_PS As Boolean   'True - represent cancel button clicking
+Public mblnTag_BS As Boolean
+Public mblnTag_PC As Boolean
+Public mdblOpChange As Double
+Private mblnDeadEndMsg As Boolean
+
+Private Sub cboShafts_Click()
+
+' Sets SFD for S.S & Keyed T.S.
+' Sets Coupler for S.S
+' Sets Aux Shaft for S.S
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SubName()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    chkFlangeBearing.Value = 0
+    chkSpringFailure.Enabled = True
+       chkSpringFailure.Value = 0  ' 2.0.21
+            
+    ' If Solid Shaft
+    If Not (cboShafts.Text = "Tube Shaft") And Not (cboShafts.Text = "Galvanized Tube Shaft") And Not (cboShafts.Text = "Keyed Tube Shaft") Then
+            chkCoupler.Enabled = True
+            If CECompliant = 1 Then
+                If DrType = "T45" Or DrType = "T35" Then
+                    chkSpringFailure.Value = 1
+                    chkSpringFailure.Enabled = False
+                End If
+            End If
+            
+            If cboShafts.ItemData(cboShafts.ListIndex) = 5 Then chkFlangeBearing.Value = 1  ' 1-1/4 S.S
+        
+        
+    ElseIf cboShafts.Text = "Keyed Tube Shaft" Then  ' 2.0.21 -  enable sfd
+      
+        chkCoupler.Value = 0
+        chkCoupler.Enabled = False
+'        chkSpringFailure.Value = 0
+        chkSpringFailure.Enabled = True
+        
+        
+        
+    Else  ' Tube Shafts other than Keyed T.S
+        chkCoupler.Value = 0
+        chkCoupler.Enabled = False
+        chkSpringFailure.Value = 0
+        chkSpringFailure.Enabled = False
+    End If
+    
+    
+    
+    
+    If DrWidth >= 207 And Not (cboShafts.Text = "Tube Shaft") And Not (cboShafts.Text = "Galvanized Tube Shaft") And Not (cboShafts.Text = "Keyed Tube Shaft") Then
+            chkCoupler.Value = 1   'by default, cut shaft
+            chkCoupler.Enabled = False
+    Else
+        chkCoupler.Enabled = True
+        chkCoupler.Value = 0
+    End If
+    
+    If cboShafts.Text = "Keyed Tube Shaft" Then
+        chkCoupler.Value = 0
+        chkCoupler.Enabled = False
+    End If
+    
+    'Auxillary shaft
+    ' Enables for S.S
+    
+    If (cboShafts.Text = "Tube Shaft") Or (cboShafts.Text = "Galvanized Tube Shaft") Or (cboShafts.Text = "Keyed Tube Shaft") Then
+        ChkAuxShaft.Enabled = False
+    Else
+        ChkAuxShaft.Enabled = True
+    End If
+    
+    
+'    chkSpringFailure.Enabled = True
+'    If CECompliant = 1 Then
+'        If DrType = "T45" Then
+'            chkSpringFailure.Value = 1
+'            chkSpringFailure.Enabled = False
+'        End If
+'    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub ChkAuxShaft_Click()
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ChkAuxShaft_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+   
+   
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub chkCenterPickup_Click()
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkCenterPickup_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    ChkAuxShaft.Value = 1
+    If chkCenterPickup.Value = 0 Then ChkAuxShaft.Value = 0
+   
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+'Private Sub chkCableFailure_Click()
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkCableFailure_Click()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    If chkCableFailure.Value = 1 And chkChainPkg.Value = 1 Then
+'        MsgBox "Please un-check Pull Chain Package option when adding Cable Failure Device.", vbExclamation + vbOKOnly + vbApplicationModal, "Cable Failure Device"
+'        chkCableFailure.Value = 0
+'    End If
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+'
+'End Sub
+
+
+Private Sub chkSpringFailure_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkSpringFailure_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Integer
+    Dim shaftSize As String
+'    shaftSize = ""
+    
+'    aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\Spring", True
+'    shaftSize = aReg.ReadValue("UseSolidShaft")
+'    aReg.CloseKey
+            
+'    cboShafts.Clear
+'
+'    If chkSpringFailure.Value = 1 Then
+'        If DrWgt <= 675 Then '<1000
+'            cboShafts.AddItem "Keyed Tube Shaft"
+'            cboShafts.ItemData(cboShafts.NewIndex) = 3
+'
+'            If MeasU = 1 Then
+'                cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft"
+'            Else
+'                cboShafts.AddItem "25mm Solid Shaft"
+'            End If
+'            cboShafts.ItemData(cboShafts.NewIndex) = 4
+'
+'            If HWType = 3 Or HWType = 3.25 Then
+''                If Not cboMount.ItemData(cboMount.ListIndex) = 3 Then 'With EU: 3" HW is acceptable
+'                    If MeasU = 1 Then
+'                        cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+'                    Else
+'                        cboShafts.AddItem "31.75mm Solid Shaft"
+'                    End If
+'                    cboShafts.ItemData(cboShafts.NewIndex) = 5
+''                End If
+'            End If
+'
+''            If shaftSize = "4" Then
+''                If HWType = 2 Then
+''                    cboShafts.ListIndex = 1        'need w/ keyed tube shaft
+''                Else
+''                    cboShafts.ListIndex = 2
+''                End If
+''            Else
+''               cboShafts.ListIndex = 0
+''            End If
+'        ElseIf DrWgt > 675 And DrWgt < 1000 Then
+'            If MeasU = 1 Then
+'                cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft"
+'            Else
+'                cboShafts.AddItem "25mm Solid Shaft"
+'            End If
+'            cboShafts.ItemData(cboShafts.NewIndex) = 4
+'
+'            If HWType = 3 Or HWType = 3.25 Then
+'                If MeasU = 1 Then
+'                    cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+'                Else
+'                    cboShafts.AddItem "31.75mm Solid Shaft"
+'                End If
+'                cboShafts.ItemData(cboShafts.NewIndex) = 5
+'            End If
+'
+''            If shaftSize = "4" Then
+''                If HWType = 2 Then
+''                    cboShafts.ListIndex = 0
+''                Else
+''                    cboShafts.ListIndex = 1
+''                End If
+''            Else
+''               cboShafts.ListIndex = 0
+''            End If
+'
+'        ElseIf DrWgt >= 1000 Then
+'            If Not cboMount.ItemData(cboMount.ListIndex) = 3 Then
+'                If MeasU = 1 Then
+'                    cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+'                Else
+'                    cboShafts.AddItem "31.75mm Solid Shaft"
+'                End If
+'                cboShafts.ItemData(cboShafts.NewIndex) = 5
+'            Else
+'                cboShafts.AddItem ""
+'                cboShafts.ItemData(cboShafts.NewIndex) = 0
+'                cboShafts.Enabled = False
+'            End If
+'            cboShafts.ListIndex = 0
+'        End If
+'    Else    'no spring failure device
+'        If DrWgt <= 675 Then '<1000
+'            If (varDoorData.OperatorType = 0) Or (varDoorData.OperatorType = 1) Or _
+'                (varDoorData.OperatorType = 7 Or varDoorData.OperatorType = 8) Then
+'                cboShafts.AddItem "Tube Shaft"
+'                cboShafts.ItemData(cboShafts.NewIndex) = 1
+'
+'                cboShafts.AddItem "Galvanized Tube Shaft"
+'                cboShafts.ItemData(cboShafts.NewIndex) = 2
+'            End If
+'            cboShafts.AddItem "Keyed Tube Shaft"
+'            cboShafts.ItemData(cboShafts.NewIndex) = 3
+'
+'            If MeasU = 1 Then
+'                cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft"
+'            Else
+'                cboShafts.AddItem "25mm Solid Shaft"
+'            End If
+'            cboShafts.ItemData(cboShafts.NewIndex) = 4
+'
+'            If HWType = 3 Or HWType = 3.25 Then
+'                If Not cboMount.ItemData(cboMount.ListIndex) = 3 Then
+'                    If MeasU = 1 Then
+'                        cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+'                    Else
+'                        cboShafts.AddItem "31.75mm Solid Shaft"
+'                    End If
+'                    cboShafts.ItemData(cboShafts.NewIndex) = 5
+'                End If
+'            End If
+''            If (varDoorData.OperatorType = 0) Or (varDoorData.OperatorType = 1) Or _
+''                (varDoorData.OperatorType = 7 Or varDoorData.OperatorType = 8) Then
+''                If shaftSize = "1" Then
+''                    cboShafts.ListIndex = 0
+''                ElseIf shaftSize = "2" Or shaftSize = "0" Then
+''                    cboShafts.ListIndex = 1
+''                ElseIf shaftSize = "3" Then
+''                    cboShafts.ListIndex = 2
+''                ElseIf shaftSize = "4" Then
+''                    If HWType = 2 Then
+''                        cboShafts.ListIndex = 3    'need w/ keyed tube shaft
+''                    Else
+''                        cboShafts.ListIndex = 4
+''                    End If
+''                End If
+''            Else
+''                If shaftSize = "4" Then
+''                    If HWType = 2 Then
+''                        cboShafts.ListIndex = 1    'need w/ keyed tube shaft
+''                    Else
+''                        cboShafts.ListIndex = 2
+''                    End If
+''                Else
+''                    cboShafts.ListIndex = 0
+''                End If
+''            End If
+'
+'        ElseIf DrWgt > 675 And DrWgt < 1000 Then
+'            If MeasU = 1 Then
+'                cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft"
+'            Else
+'                cboShafts.AddItem "25mm Solid Shaft"
+'            End If
+'            cboShafts.ItemData(cboShafts.NewIndex) = 4
+'
+'            If HWType = 3 Or HWType = 3.25 Then
+'                If MeasU = 1 Then
+'                    cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+'                Else
+'                    cboShafts.AddItem "31.75mm Solid Shaft"
+'                End If
+'                cboShafts.ItemData(cboShafts.NewIndex) = 5
+'            End If
+'            cboShafts.ListIndex = 0
+'
+'        ElseIf DrWgt >= 1000 Then
+'            If Not cboMount.ItemData(cboMount.ListIndex) = 3 Then
+'                If MeasU = 1 Then
+'                    cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+'                Else
+'                    cboShafts.AddItem "31.75mm Solid Shaft"
+'                End If
+'                cboShafts.ItemData(cboShafts.NewIndex) = 5
+'            Else
+'                cboShafts.AddItem ""
+'                cboShafts.ItemData(cboShafts.NewIndex) = 0
+'                cboShafts.Enabled = False
+'            End If
+'            cboShafts.ListIndex = 0
+'        End If
+'    End If
+'
+'
+'                                Dim s As String
+'
+'           For i = 0 To cboShafts.ListCount - 1
+'                 s = cboShafts.List(i)
+'
+'                If shaftSize = cboShafts.ItemData(i) Then
+'
+'
+''                    cboShafts.ListIndex = cboShafts.ItemData(i)
+'
+'                     cboShafts.ListIndex = i
+'
+'                    Exit For
+'
+'                End If
+'
+'           Next
+'
+'
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Initialize()
+
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Initialize()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    mblnDeadEndMsg = False
+   
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Resize()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Resize()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    'NOTE: It's best to put code here becuase any msg box in paint event execute twice if you move the msgbox around.
+    Me.Move (Screen.Width - Me.Width) / 2, (Screen.Height - Me.Height) / 2
+    
+    If mblnDeadEndMsg = True Then MsgBox "The weight of the door has exceeded the maximum door weight capacity limitation (1000 lbs or 453.5 KG." & vbNewLine & _
+                                "Please choose 3-inch hardware or consult with Richards-Wilcox Canada for further assistance.", vbApplicationModal + vbInformation, "Invalid Shaft"
+'    mblnDeadEndMsg = False  'set back to its default
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Or mblnInFocus = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+'Private Sub cboDiameter_Click()
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboDiameter_Click()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+
+'    If cboDiameter.ItemData(cboDiameter.ListIndex) = 2 Then
+'        chkFlangeBearing.Value = 1
+'    Else
+'        chkFlangeBearing.Value = 0
+'    End If
+       
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+'
+'End Sub
+
+Private Sub cboMount_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboMount_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    mblnDeadEndMsg = False
+    
+    'marked commented for 2.0.14 release - CE requlations control the safety factor
+    
+'    chkCableFailure.Enabled = False
+'    varDoorData.Track.strMountType = frmTrackEntry.cboMount.List(cboMount.ListIndex)
+'    If varDoorData.Track.strMountType = "EU ADCA" Then
+'        If DrWgt <= 1980 Then   '1000
+''            If varDoorData.OperatorType <> 1 Then
+''                If varDoorData.DblEndHinges = False Then
+'                    If LiftType = "Standard Lift" Or LiftType = "High Lift" Or LiftType = "Vertical Lift" Or _
+'                        LiftType = "Low Headroom Vertical Lift" Or LiftType = "Low Headroom Front Mount" Or _
+'                        LiftType = "Low Headroom Rear Mount" Then
+''                        If HWType = 2 Then
+'
+'                            If CECompliant = 1 Then
+'                                If DrType = "T45" Then
+'                                    chkCableFailure.Enabled = True
+''                                    chkCableFailure.Value = 1      'not required for CE compliance - made changed for 2.0.14
+''                                    chkCableFailure.Enabled = False
+'                                End If
+'                            Else
+'                                If Not LiftType = "Low Headroom Rear Mount" Then
+'                                    chkCableFailure.Enabled = True
+'                                End If
+'                            End If
+'
+''                        End If
+'                    End If
+''                End If
+''            End If
+'        End If
+'    ElseIf varDoorData.Track.strMountType = "ADCA" Or varDoorData.Track.strMountType = "Clip angle" Then
+'        If DrWgt <= 1000 Then
+''            If varDoorData.DblEndHinges = False Then
+'                If LiftType = "Standard Lift" Or LiftType = "High Lift" Or LiftType = "Vertical Lift" Or LiftType = "Low Headroom Front Mount" Then
+'                    chkCableFailure.Enabled = True
+'                End If
+''            End If
+'        End If
+'    End If
+      
+    'reads the reg value, compares w/ defaults and then loads W/S list
+    aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\BTMS", True
+    Dim lstrMountType As String
+    lstrMountType = aReg.ReadValue("MountType")
+    aReg.CloseKey
+       
+    If lstrMountType = cboMount.ItemData(cboMount.ListIndex) Then
+        'weather strip
+        cboWS.Clear
+        cboWS.AddItem "None"
+        cboWS.ItemData(cboWS.NewIndex) = 1
+        cboWS.AddItem "Complete Aluminum black vinyl"
+        cboWS.ItemData(cboWS.NewIndex) = 2
+        cboWS.AddItem "Vertical Aluminum black vinyl"
+        cboWS.ItemData(cboWS.NewIndex) = 3
+        cboWS.AddItem "Complete steel white vinyl"
+        cboWS.ItemData(cboWS.NewIndex) = 4
+        cboWS.AddItem "Vertical steel white vinyl"
+        cboWS.ItemData(cboWS.NewIndex) = 5
+
+''''''''''Change in .NET''''''''''''''''
+'        'add item to the weatherstrip combo box only for ADCA or EU ADCA
+'        If cboMount.List(cboMount.ListIndex) = "ADCA" Then
+'            cboWS.AddItem "ADCA Mount Jamb Weather Seal"
+'            cboWS.ItemData(cboWS.NewIndex) = 6
+'        ElseIf cboMount.List(cboMount.ListIndex) = "EU ADCA" Then
+'            If HWType = 2 Then
+'                cboWS.AddItem "EU Jamb Weather Seal" ' EU ADCA only available in 2" HW
+'                cboWS.ItemData(cboWS.NewIndex) = 6
+'            End If
+'        End If
+
+        'add item to the weatherstrip combo box only for ADCA or EU ADCA
+        If cboMount.List(cboMount.ListIndex) = "ADCA" Or cboMount.List(cboMount.ListIndex) = "Clip angle" Then
+            cboWS.AddItem "ADCA Mount Jamb Weather Seal"
+            cboWS.ItemData(cboWS.NewIndex) = 6
+        ElseIf cboMount.List(cboMount.ListIndex) = "EU ADCA" Then
+'            If HWType = 2 Then
+                cboWS.AddItem "EU Jamb Weather Seal" ' EU ADCA only available in 2" HW
+                cboWS.ItemData(cboWS.NewIndex) = 6
+                
+                cboWS.AddItem "ADCA Mount Jamb Weather Seal"
+                cboWS.ItemData(cboWS.NewIndex) = 7
+'            End If
+        End If
+''''''''''END Change in .NET
+        
+        'set weatherstrip listIndex according to the registry value
+        aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\BTMS", True
+        Dim lstrWS As String
+        lstrWS = aReg.ReadValue("WeatherStrip")
+        aReg.CloseKey
+                
+        If lstrWS = "0" Then
+            cboWS.ListIndex = 0
+        ElseIf lstrWS = "1" Then
+            cboWS.ListIndex = 1
+        ElseIf lstrWS = "2" Then
+            cboWS.ListIndex = 2
+        ElseIf lstrWS = "3" Then
+            cboWS.ListIndex = 3
+        ElseIf lstrWS = "4" Then
+            cboWS.ListIndex = 4
+        ElseIf lstrWS = "5" Then
+            cboWS.ListIndex = 5
+
+''''''''''Change in .NET''''''''''''''''
+        ElseIf lstrWS = "6" Then
+             cboWS.ListIndex = 6
+''''''''''END Change in .NET
+        Else
+            cboWS.ListIndex = 0
+        End If
+    Else    'loads W/S list according to the click item
+        Select Case cboMount.List(cboMount.ListIndex)
+        Case "Bracket Mount", "Clip angle", "ADCA", "EU ADCA"
+            cboWS.Clear
+            cboWS.AddItem "None"
+            cboWS.ItemData(cboWS.NewIndex) = 1
+            cboWS.AddItem "Complete Aluminum black vinyl"
+            cboWS.ItemData(cboWS.NewIndex) = 2
+            cboWS.AddItem "Vertical Aluminum black vinyl"
+            cboWS.ItemData(cboWS.NewIndex) = 3
+            cboWS.AddItem "Complete steel white vinyl"
+            cboWS.ItemData(cboWS.NewIndex) = 4
+            cboWS.AddItem "Vertical steel white vinyl"
+            cboWS.ItemData(cboWS.NewIndex) = 5
+            cboWS.ListIndex = 1
+            
+
+''''''''''Change in .NET''''''''''''''''
+'            If cboMount.List(cboMount.ListIndex) = "ADCA" Then
+'                cboWS.AddItem "ADCA Mount Jamb Weather Seal"
+'                cboWS.ItemData(cboWS.NewIndex) = 6
+'                cboWS.ListIndex = 1
+'            ElseIf cboMount.List(cboMount.ListIndex) = "EU ADCA" Then
+'                If HWType = 2 Then
+'                    cboWS.AddItem "EU Jamb Weather Seal" ' EU ADCA only available in 2" HW
+'                    cboWS.ItemData(cboWS.NewIndex) = 6
+'                    cboWS.ListIndex = 5
+'                Else
+'                    cboWS.ListIndex = 1
+'                End If
+'            End If
+
+            If cboMount.List(cboMount.ListIndex) = "ADCA" Or cboMount.List(cboMount.ListIndex) = "Clip angle" Then
+                cboWS.AddItem "ADCA Mount Jamb Weather Seal"
+                cboWS.ItemData(cboWS.NewIndex) = 6
+                cboWS.ListIndex = 1
+            ElseIf cboMount.List(cboMount.ListIndex) = "EU ADCA" Then
+'                If HWType = 2 Then
+                    cboWS.AddItem "EU Jamb Weather Seal" ' EU ADCA only available in 2" HW
+                    cboWS.ItemData(cboWS.NewIndex) = 6
+                    
+                    cboWS.AddItem "ADCA Mount Jamb Weather Seal"
+                    cboWS.ItemData(cboWS.NewIndex) = 7
+                    
+                    cboWS.ListIndex = 5
+'                Else
+'                    cboWS.ListIndex = 1
+'                End If
+            End If
+            
+''''''''''END Change in .NET
+            
+        End Select
+    End If
+    
+    If CECompliant = 1 Then
+        If DrType = "T45" Or DrType = "T35" Then
+            If cboMount.Text = "EU ADCA" Then
+                cboWS.Clear
+                cboWS.AddItem "EU Jamb Weather Seal"
+                cboWS.ItemData(cboWS.NewIndex) = 6
+                cboWS.ListIndex = 0
+                cboWS.Enabled = False
+            End If
+        End If
+    End If
+    
+    If chkChainPkg.Value = 1 Then chkChainPkg.Value = 0
+    
+    If cboMount.List(cboMount.ListIndex) = "EU ADCA" Then
+        If LiftType = "Standard Lift" Then
+            If CECompliant = 1 Then
+                If DrType = "T45" Or DrType = "T35" Then
+                    chkFLHAngle.Enabled = True
+                    chkFLHAngle.Value = 1
+                    chkFLHAngle.Enabled = False
+                End If
+            Else
+                chkFLHAngle.Value = 0
+                chkFLHAngle.Enabled = False
+            End If
+            
+            cboRadius.Clear
+            If HWType = 2 Then
+                cboRadius.AddItem "12" & Chr(34)
+                cboRadius.ItemData(cboRadius.NewIndex) = 1
+                cboRadius.AddItem "16" & Chr(34)
+                cboRadius.ItemData(cboRadius.NewIndex) = 2
+                cboRadius.ListIndex = 1
+            Else
+                cboRadius.AddItem "16" & Chr(34)
+                cboRadius.ItemData(cboRadius.NewIndex) = 2
+                cboRadius.ListIndex = 0
+                cboRadius.Enabled = False
+            End If
+                
+        ElseIf LiftType = "High Lift" Then
+            
+            chkFLHAngle.Enabled = True
+            
+        ''''''''''Change in .NET''''''''''''''''
+            If CECompliant = 1 Then
+                If DrType = "T45" Or DrType = "T35" Then
+                    chkFLHAngle.Value = 1
+                    chkFLHAngle.Enabled = False
+                End If
+            Else
+                aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\BTMS", True
+                If aReg.ReadValue("FullHorizontalAngle") = "1" Then chkFLHAngle.Value = 1
+                aReg.CloseKey
+            End If
+        ''''''''''END Change in .NET
+            
+            cboRadius.Clear
+            cboRadius.AddItem "16" & Chr(34)
+            cboRadius.ItemData(cboRadius.NewIndex) = 2
+            
+            cboRadius.ListIndex = 0
+            cboRadius.Enabled = False
+            
+        ElseIf LiftType = "Vertical Lift" Or LiftType = "Low Headroom Vertical Lift" Then
+            cboRadius.Clear
+            cboRadius.Enabled = False
+
+            ''''''''''Change in .NET''''''''''''''''
+            chkFLHAngle.Enabled = False
+            ''''''''''END Change in .NET
+            
+        ElseIf LiftType = "Low Headroom Rear Mount" Or LiftType = "Low Headroom Front Mount" Then
+             cboRadius.Clear
+             cboRadius.AddItem "12" & Chr(34)
+             cboRadius.ItemData(cboRadius.NewIndex) = 1
+            
+             cboRadius.ListIndex = 0
+             cboRadius.Enabled = False
+             
+            ''''''''''Change in .NET''''''''''''''''
+            chkFLHAngle.Enabled = False
+            ''''''''''END Change in .NET
+        End If
+    Else 'ADCA
+        ''''''''''Change in .NET''''''''''''''''
+'       chkFLHAngle.Enabled = True
+        Select Case LiftType
+        Case "Standard Lift", "High Lift"
+            chkFLHAngle.Enabled = True
+                        
+            aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\BTMS", True
+            If aReg.ReadValue("FullHorizontalAngle") = "1" Then chkFLHAngle.Value = 1
+            aReg.CloseKey
+            
+        Case Else
+            chkFLHAngle.Enabled = False
+        End Select
+        ''''''''''END Change in .NET
+    End If
+
+    ''''''''''Change in .NET''''''''''''''''
+    
+    '    If chkWStrips.Value = 1 Then chkWStrips.Value = 0
+    '    Load frmWeatherStrip
+    
+    ''''''''''END Change in .NET
+    Dim shaft_type As String
+    Dim lByteOpType As Byte
+    
+    cboShafts.Enabled = True    'initial value
+    
+    aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\Spring", True
+    shaft_type = aReg.ReadValue("UseSolidShaft")
+    aReg.CloseKey
+        
+    lByteOpType = varDoorData.OperatorType
+    cboShafts.Clear
+    If Not (lByteOpType = 0) And Not (lByteOpType = 1) And _
+        Not (lByteOpType = 7) And Not (lByteOpType = 8) Then 'electrical operators excluding manual and drawbar
+        If DrWgt < 450 Or (DrWgt >= 450 And DrWgt < 675) Then
+            If HWType = 2 Then
+                
+                cboShafts.AddItem "Keyed Tube Shaft"
+                cboShafts.ItemData(cboShafts.NewIndex) = 3
+                
+                If MeasU = 1 Then
+                    cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft "
+                Else
+                    cboShafts.AddItem "25mm Solid Shaft"
+                End If
+                
+                cboShafts.ItemData(cboShafts.NewIndex) = 4
+           
+            Else
+                cboShafts.AddItem "Keyed Tube Shaft"
+                cboShafts.ItemData(cboShafts.NewIndex) = 3
+
+                If MeasU = 1 Then
+                    cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft"
+                Else
+                    cboShafts.AddItem "25mm Solid Shaft"
+                End If
+                cboShafts.ItemData(cboShafts.NewIndex) = 4
+                
+'                If Not cboMount.ItemData(cboMount.ListIndex) = 3 Then 'with EU: 3" HW is acceptable
+                If (LiftType <> "Low Headroom Rear Mount") And _
+                    (LiftType <> "Low Headroom Front Mount") Then
+                    If MeasU = 1 Then
+                        cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+                    Else
+                        cboShafts.AddItem "31.75mm Solid Shaft"
+                    End If
+                    cboShafts.ItemData(cboShafts.NewIndex) = 5
+'                End If
+                End If
+            End If
+                
+            If shaft_type = "4" Then ' 1 in S.S
+'                If HWType = 2 Then
+                    cboShafts.ListIndex = 1        'pre-set shaft to 1" Solid at all times regardless of the hardware size
+'                Else
+'                    cboShafts.ListIndex = 2
+'                End If
+            Else
+                cboShafts.ListIndex = 0
+            End If
+                
+        ElseIf (DrWgt >= 675 And DrWgt < 1000) Then
+            If HWType = 2 Then
+
+                If MeasU = 1 Then
+                    cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft "
+                Else
+                    cboShafts.AddItem "25mm Solid Shaft"
+                End If
+
+                cboShafts.ItemData(cboShafts.NewIndex) = 4
+                cboShafts.ListIndex = 0
+            Else
+                If MeasU = 1 Then
+                    cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft"
+                Else
+                    cboShafts.AddItem "25mm Solid Shaft"
+                End If
+                cboShafts.ItemData(cboShafts.NewIndex) = 4
+                
+                If (LiftType <> "Low Headroom Rear Mount") And _
+                    (LiftType <> "Low Headroom Front Mount") Then
+                    
+                    If MeasU = 1 Then
+                        cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+                    Else
+                        cboShafts.AddItem "31.75mm Solid Shaft"
+                    End If
+                    cboShafts.ItemData(cboShafts.NewIndex) = 5
+                End If
+'                cboShafts.ListIndex = 1
+                cboShafts.ListIndex = 0     'pre-set shaft to 1" Solid at all times regardless of the hardware size
+            End If
+                
+        ElseIf DrWgt >= 1000 Then
+            cboShafts.Clear
+'            If Not cboMount.ItemData(cboMount.ListIndex) = 3 And Not (HWType = 2) Then
+            If Not (HWType = 2) Then
+                If (LiftType <> "Low Headroom Rear Mount") And _
+                    (LiftType <> "Low Headroom Front Mount") Then
+                    If MeasU = 1 Then
+                        cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+                    Else
+                        cboShafts.AddItem "31.75mm Solid Shaft"
+                    End If
+                    cboShafts.ItemData(cboShafts.NewIndex) = 5
+                    cboShafts.ListIndex = 0
+                Else
+                    cboShafts.AddItem ""
+                    cboShafts.ItemData(cboShafts.NewIndex) = 0
+                    cboShafts.Enabled = False
+                    mblnDeadEndMsg = True
+                End If
+            Else
+                cboShafts.AddItem ""
+                cboShafts.ItemData(cboShafts.NewIndex) = 0
+                cboShafts.Enabled = False
+                mblnDeadEndMsg = True
+            End If
+        End If
+    Else    'manual operator + drawbar operator
+    
+        If DrWgt >= 450 And DrWgt < 675 Then
+            If HWType = 2 Then
+                cboShafts.AddItem "Keyed Tube Shaft"
+                cboShafts.ItemData(cboShafts.NewIndex) = 3
+
+                If MeasU = 1 Then
+                    cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft"
+                Else
+                    cboShafts.AddItem "25mm Solid Shaft"
+                End If
+                cboShafts.ItemData(cboShafts.NewIndex) = 4
+            Else
+                cboShafts.AddItem "Keyed Tube Shaft"
+                cboShafts.ItemData(cboShafts.NewIndex) = 3
+
+                If MeasU = 1 Then
+                    cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft"
+                Else
+                    cboShafts.AddItem "25mm Solid Shaft"
+                End If
+                cboShafts.ItemData(cboShafts.NewIndex) = 4
+                
+                If (LiftType <> "Low Headroom Rear Mount") And _
+                    (LiftType <> "Low Headroom Front Mount") Then
+                    If MeasU = 1 Then
+                        cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+                    Else
+                        cboShafts.AddItem "31.75mm Solid Shaft"
+                    End If
+                    cboShafts.ItemData(cboShafts.NewIndex) = 5
+                End If
+            End If
+
+            If shaft_type = "4" Then
+'                If HWType = 2 Then
+                    cboShafts.ListIndex = 1     'pre-set shaft to 1" Solid at all times regardless of the hardware size
+'                Else
+'                    cboShafts.ListIndex = 2
+'                End If
+            Else
+                cboShafts.ListIndex = 0
+            End If
+            
+        ElseIf DrWgt >= 675 And DrWgt < 1000 Then
+            If HWType = 2 Then
+
+                If MeasU = 1 Then
+                    cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft "
+                Else
+                    cboShafts.AddItem "25mm Solid Shaft"
+                End If
+
+                cboShafts.ItemData(cboShafts.NewIndex) = 4
+                cboShafts.ListIndex = 0
+            Else
+                cboShafts.Clear
+
+                If MeasU = 1 Then
+                    cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft"
+                Else
+                    cboShafts.AddItem "25mm Solid Shaft"
+                End If
+                cboShafts.ItemData(cboShafts.NewIndex) = 4
+                
+                If (LiftType <> "Low Headroom Rear Mount") And _
+                    (LiftType <> "Low Headroom Front Mount") Then
+                    If MeasU = 1 Then
+                        cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+                    Else
+                        cboShafts.AddItem "31.75mm Solid Shaft"
+                    End If
+                    cboShafts.ItemData(cboShafts.NewIndex) = 5
+                End If
+                'cboShafts.ListIndex = 1
+                cboShafts.ListIndex = 0     'pre-set shaft to 1" Solid at all times regardless of the hardware size
+            End If
+            
+        ElseIf DrWgt >= 1000 Then
+            cboShafts.Clear
+'            If Not cboMount.ItemData(cboMount.ListIndex) = 3 And
+            If Not (HWType = 2) Then
+                If (LiftType <> "Low Headroom Rear Mount") And _
+                    (LiftType <> "Low Headroom Front Mount") Then
+                    If MeasU = 1 Then
+                        cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+                    Else
+                        cboShafts.AddItem "31.75mm Solid Shaft"
+                    End If
+                    cboShafts.ItemData(cboShafts.NewIndex) = 5
+                    cboShafts.ListIndex = 0
+                Else
+                    cboShafts.AddItem ""
+                    cboShafts.ItemData(cboShafts.NewIndex) = 0
+                    cboShafts.Enabled = False
+                    mblnDeadEndMsg = True
+                End If
+            Else
+                cboShafts.AddItem ""
+                cboShafts.ItemData(cboShafts.NewIndex) = 0
+                cboShafts.Enabled = False
+                mblnDeadEndMsg = True
+            End If
+            
+        ElseIf DrWgt < 450 Then
+            
+            If Not CECompliant = 1 Then
+                If Not DrWidth > 252 Then
+                    cboShafts.AddItem "Tube Shaft"
+                    cboShafts.ItemData(cboShafts.NewIndex) = 1
+            
+                    cboShafts.AddItem "Galvanized Tube Shaft"
+                    cboShafts.ItemData(cboShafts.NewIndex) = 2
+                End If
+            End If
+            
+            cboShafts.AddItem "Keyed Tube Shaft"
+            cboShafts.ItemData(cboShafts.NewIndex) = 3
+            
+            If MeasU = 1 Then
+                cboShafts.AddItem "1" & Chr(34) & Chr(32) & "Solid Shaft"
+            Else
+                cboShafts.AddItem "25mm Solid Shaft"
+            End If
+            cboShafts.ItemData(cboShafts.NewIndex) = 4
+            
+            If HWType = 3 Or HWType = 3.25 Then
+                If (LiftType <> "Low Headroom Rear Mount") And _
+                    (LiftType <> "Low Headroom Front Mount") Then
+'                If Not cboMount.ItemData(cboMount.ListIndex) = 3 Then 'with EU: 3" HW is acceptable
+                    If MeasU = 1 Then
+                        cboShafts.AddItem "1-1/4" & Chr(34) & Chr(32) & "Solid Shaft"
+                    Else
+                        cboShafts.AddItem "31.75mm Solid Shaft"
+                    End If
+                    cboShafts.ItemData(cboShafts.NewIndex) = 5
+'                End If
+                End If
+            End If
+
+            If CECompliant = 1 Then
+                If shaft_type = "4" Then
+'                    If HWType = 2 Then
+                        cboShafts.ListIndex = 1    'pre-set shaft to 1" Solid at all times regardless of the hardware size
+'                    Else
+'                        cboShafts.ListIndex = 2
+'                    End If
+                Else
+                    cboShafts.ListIndex = 0
+                End If
+            Else
+                If shaft_type = "1" Then
+                    cboShafts.ListIndex = 0
+                ElseIf shaft_type = "2" Or shaft_type = "0" Then
+                    cboShafts.ListIndex = 1
+                ElseIf shaft_type = "3" Then
+                    cboShafts.ListIndex = 2
+                ElseIf shaft_type = "4" Then
+'                    If HWType = 2 Then
+                    If cboShafts.ListCount = 5 Then
+                        cboShafts.ListIndex = 3
+                    Else
+                       cboShafts.ListIndex = DBLValue(cboShafts.ListCount) - 1   'pre-set shaft to 1" Solid at all times regardless of the hardware size
+                    End If
+'                    Else
+'                        cboShafts.ListIndex = 4
+'                    End If
+                End If
+            End If
+        End If
+    End If
+       
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub chkBSpring_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkBSpring_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+   
+    If chkBSpring.Value = 1 Then
+        mblnInFocus = False
+        frmBumperSpring.Show vbModal
+        mblnInFocus = True
+    Else
+        chkBSpring.Caption = "Bumper Spring"
+'        If frmBumperSpring.cmdCancel = True Then Exit Sub
+        If mblnTag_BS = True Then Exit Sub
+        removeItem_BumperSpring
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+  
+End Sub
+
+Private Sub chkChainPkg_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkChainPkg_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lstrOperatorType As Byte
+    Dim lstrMountType As String
+    
+'    If chkCableFailure.Value = 1 And chkChainPkg.Value = 1 Then
+    If varDoorData.gblnCableFailure = True And chkChainPkg.Value = 1 Then
+        MsgBox "Please un-check Cable Failure Device option when adding Pull Chain Package.", vbExclamation + vbOKOnly + vbApplicationModal, "Pull Chain Package"
+        chkChainPkg.Value = 0
+    End If
+    
+    lstrOperatorType = varDoorData.OperatorType
+    mstrMountType = cboMount.Text  'global MountType
+
+    If chkChainPkg.Value = 1 Then
+        mblnInFocus = False
+        frmPullChainPackage.Show vbModal
+        mblnInFocus = True
+    Else
+        chkChainPkg.Caption = "Pull Chain Package"
+'        If frmPullChainPackage.cmdNo = True Then Exit Sub
+        If mblnTag_PC = True Then Exit Sub
+        removeItem_ChainPkg
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkFGuard_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkFGuard_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If chkFGuard.Value = 1 Then
+        lblFGuard.Visible = True
+        lblFGuard.Caption = 2
+        addItems_FenderGuard
+    Else
+        lblFGuard.Visible = False
+        removeItem_FenderGuard
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkHAngle_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkHAngle_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If chkHAngle.Value = 1 Then
+        addItems_HAngle
+    Else
+        txtHAngles.Visible = False
+        removeItem_HAngle
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkISwitch_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkISwitch_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If chkISwitch.Value = 1 Then
+        addItems_ISwitch
+    Else
+        removeItem_ISwitch
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkPSpring_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkPSpring_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If chkPSpring.Value = 1 Then
+        mblnInFocus = False
+        frmPusherSpring.Show vbModal
+        mblnInFocus = True
+    Else
+        chkPSpring.Caption = "Pusher Spring"
+'        If frmPusherSpring.cmdReject = True Then Exit Sub
+        If mblnTag_PS = True Then Exit Sub
+        removeItem_PusherSpring
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub chkWStrips_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkWStrips_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+'    If chkWStrips.Value = 1 Then
+'         frmWeatherStrip.Show vbModal
+'    Else
+'        chkWStrips.Caption = "Weather Strip"
+'        If frmWeatherStrip.cmdReject = True Then Exit Sub
+'        removeItem_WStrips
+'    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub cmd_continue_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmd_continue_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+'    If cboMount.Text = "EU ADCA" Then
+'
+'        MsgBox "Cannot use EU ADCA with 3" & " (76mm) hardware." & vbNewLine & _
+'               "Please use other mount types from the list.", vbApplicationModal + vbInformation, "Invalid Shaft"
+'
+'        Exit Sub
+'    End If
+    
+    
+    If mblnDeadEndMsg = True Then
+        MsgBox "There are no available shafts that can be used with a door of this weight." & vbNewLine & _
+               "Please consult with Richards-Wilcox Canada for further assistance.", vbApplicationModal + vbInformation, "Invalid Shaft"
+                                    
+        Exit Sub
+    End If
+    
+    If DrWidth > 196.5 Then
+        If cboShafts.Text = "Keyed Tube Shaft" Then
+             MsgBox "Cannnot use Keyed Tube Shaft. Maximum door width for Keyed Tube Shaft should be <= 16" & "'" & "-4 1/2." & Chr(34) & vbNewLine & _
+               "Please consult with Richards-Wilcox Canada for further assistance.", vbApplicationModal + vbInformation, "Invalid Shaft"
+               
+            Exit Sub
+        End If
+    End If
+    
+        
+    If OptionSlop.Value = True Then
+        If (DBLValue(txtRise.Text) > 0 And Not DBLValue(txtRun.Text) > 0) Or _
+            (DBLValue(txtRun.Text) > 0 And Not DBLValue(txtRise.Text) > 0) Then
+            MsgBox "Please enter rise over run ratio.", vbApplicationModal + vbInformation + vbOKOnly, "Invalid Rise/Run"
+            txtRise.SetFocus
+            Exit Sub
+        End If
+    End If
+         
+    If OptionDegree.Value = True And Not IsNumeric(txtDegree.Text) Then
+       MsgBox "Please enter angle in degrees.", vbOKOnly, "Invalid Angle"
+       txtDegree.SetFocus
+       Exit Sub
+    End If
+    
+    If varPassDoor.strPN <> "" Then ' manaul = drawbar that's why op. type 7 & 8 NOT included
+        If varDoorData.OperatorType > 5 And Not (varDoorData.OperatorType = 7 Or varDoorData.OperatorType = 8) And Not (varDoorData.OperatorType = 11) Then
+            If chkISwitch.Value = 0 Then
+                MsgBox "Richards Wilcox recommends using Interlock Switch with Pass Door and electrical operator.", vbInformation + vbApplicationModal, "Interlock Switch"
+            End If
+        End If
+    End If
+    
+    If SaveVariables = False Then Exit Sub
+        
+    Me.Hide
+    If ProdType = "Alumatite" Then
+        frmWeightSummary.Show
+        Exit Sub
+    End If
+    
+    'auxiliary shaft
+    If varDoorData.AuxillaryShaft = True Then
+        DrWgt = DrWgt / 2
+    Else
+        DrWgt = DrWgt
+    End If
+           
+    Call LoadSprings
+  
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+End Sub
+
+Private Sub cmdAddNotes_Click()
+ On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAddNotes_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim frmN As frmNotes
+    Set frmN = New frmNotes
+    Set frmN.objParent = Me
+    frmN.Caption = "Track Notes"
+    
+    frmN.BackTag = Me.Name
+    mblnInFocus = False
+    frmN.Show vbModal
+    mblnInFocus = True
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdClear_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdClear_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtRise.Text = ""
+    txtRun.Text = ""
+    txtDegree.Text = ""
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+End Sub
+
+Private Sub cboLSplice_KeyDown(KeyCode As Integer, Shift As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboLSplice_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    KeyCode = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+
+End Sub
+
+Private Sub cboLSplice_KeyPress(KeyAscii As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboLSplice_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    Beep
+    KeyAscii = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+
+End Sub
+
+Private Sub cboRadius_KeyDown(KeyCode As Integer, Shift As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboRadius_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    KeyCode = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+
+End Sub
+
+Private Sub cboRadius_KeyPress(KeyAscii As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboRadius_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    Beep
+    KeyAscii = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+End Sub
+
+Private Sub cboJamb_KeyDown(KeyCode As Integer, Shift As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboJamb_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    KeyCode = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+End Sub
+
+Private Sub cboJamb_KeyPress(KeyAscii As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboJamb_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    Beep
+    KeyAscii = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+End Sub
+
+Private Sub cboMount_KeyDown(KeyCode As Integer, Shift As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboMount_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    KeyCode = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+End Sub
+
+Private Sub cboMount_KeyPress(KeyAscii As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboMount_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    Beep
+    KeyAscii = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+End Sub
+
+Private Sub cmdBack_Click() 'Back
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdBack_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    Dim lstrMsg As String, lintBut As Integer, lintRep As Integer
+    
+    lstrMsg = "Are you sure you want to return to the previous screen?" & vbCrLf & _
+        "Your selections made on this screen might be lost."
+    lintBut = 4 '(yes,no)
+    
+    If frmGrid.txtTrackNotes.Text <> "" Then
+        lstrMsg = "By returning to the previous screen you might loose the selections made on this screen." & vbCrLf & _
+            "Do you wish to clear the Track Notes?"
+        lintBut = 3 '(yes,no,cancel)
+    End If
+    
+    lintRep = MsgBox(lstrMsg, vbApplicationModal + vbInformation + lintBut, "Return to the Previous Screen.")
+    
+    If lintRep = vbCancel Then Exit Sub
+    
+    If lintRep = vbYes Or (lintBut = 3 And lintRep = vbNo) Then
+        
+        If lintRep = vbYes Then frmGrid.txtTrackNotes.Text = ""
+        Dim lblnRoll As Boolean
+        varDoorData.Track.strJambType = ""
+        varDoorData.Track.strMountType = ""
+        varDoorData.Track.strPusherSpring = ""
+        varDoorData.Track.strBumperSpring = ""
+        varDoorData.Track.strInterlockSwitches = ""
+        varDoorData.Track.strPullChainPkg = ""
+        varDoorData.Track.strFenderGuard = ""
+        varDoorData.Track.strHaningAngle = ""
+        varDoorData.Track.FullHorzAngle = 0
+        varDoorData.Track.ShaftsInList = 0
+        varDoorData.ShaftDia = 0
+        varDoorData.ShaftTube = False
+        varDoorData.GlavanizedTubeShaft = False
+        varDoorData.KeyedTubeShaft = False
+        varDoorData.AuxillaryShaft = False
+        varDoorData.CenterPickup = False
+    
+        varDoorData.gblnCableFailure = False
+        varDoorData.gblnSpringFailure = False
+        
+        frmGrid.txtSecWgt.Text = ""
+        frmGrid.txtLiteWgt.Text = ""
+        frmGrid.txtPassDoorWgt.Text = ""
+        frmGrid.txtHWWgt.Text = ""
+        frmGrid.txtExtraWgt.Text = ""
+        frmGrid.txtTrussWgt.Text = ""
+        frmGrid.txtTotalWgt.Text = ""
+        SecWgtOld = 0
+        LiteWgtOld = 0
+        varPassDoor.sngWgtOld = 0
+        HWWgtOld = 0
+        MRSBWgtOld = 0
+        TrussWgtOld = 0
+        mblnDeadEndMsg = False
+    
+        lblnRoll = RollBack("Sections", True)
+        frmSectionsOptions.Show
+        Unload Me
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+End Sub
+
+Private Sub cmdMM_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdMM_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If MsgBox("Are you sure you want to return to the Main Menu?" & vbCrLf & "Your selection will be lost.", vbYesNo + vbApplicationModal + vbQuestion, "Return to the Main Menu") = vbYes Then
+        Call ClearInfo
+        ' Close all Open Forms
+        Dim linti As Integer
+        For linti = Forms.Count - 1 To 0 Step -1
+            If Not Forms(linti).Name = "MDIForm1" Then Unload Forms(linti)
+        Next
+    
+        frmMainMenu.Show
+        Unload Me
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdWgtSummary_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdWgtSummary_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    frmWeightSummary.Show
+    Me.Hide
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Activate()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Activate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+'    Call LoadData
+'    If OptSolid.Value = True Then
+'        chkCoupler.Enabled = True
+'        Call addSolidShaft
+'    Else
+'        chkCoupler.Enabled = False
+'        Call addTubeShaft
+'    End If
+    mblnInFocus = True
+    varDoorData.Track.ShaftsInList = 0
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+    Me.Move Screen.Width / 2 - Me.Width / 2, (Screen.Height - Me.Height) * 0.4
+    If ProdType = "Alumatite" Then cmdWgtSummary.Enabled = False
+    
+            If aCryp.GetOption(16, 6) = CKOptionOn Then  'Unrestricted/Inhouse
+            
+                ChkAuxShaft.Visible = True
+                chkCenterPickup.Visible = True
+            Else
+                ChkAuxShaft.Visible = False
+                chkCenterPickup.Visible = False
+            End If
+
+    
+    Call LoadData
+    
+'    Call LoadShaft
+'    If OptSolid.Value = True Then
+'        chkCoupler.Enabled = True
+'        Call addSolidShaft
+'    Else
+'        chkCoupler.Enabled = False
+'        Call addTubeShaft
+'    End If
+    
+    LoadHelpText Me
+    MousePos1.Init Me
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, lstrErrDescr, Err.Source & vbCrLf & cstrErrorSource)
+
+End Sub
+
+Private Sub removeItem_BumperSpring()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".removeItem_BumperSpring()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    
+    Grid2.Col = 3
+    Grid2.Row = 1
+    
+    For i = Grid2.Row To Grid2.Rows - 1
+        
+        If frmTrackEntry.Grid2.TextMatrix(i, 3) = "Bumper Spring" Then
+            If frmTrackEntry.Grid2.Rows > 2 Then
+                frmTrackEntry.Grid2.RemoveItem
+            Else
+                frmTrackEntry.Grid2.Clear
+            End If
+'            'gintRow = gintRow - 1
+            Exit Sub
+        'End If
+        Else
+            If frmTrackEntry.Grid2.TextMatrix(i, 0) = "" Then Exit Sub
+            'frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1  'added condition below to fix the run-time error
+            If frmTrackEntry.Grid2.Row < frmTrackEntry.Grid2.Rows - 1 Then
+                frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1
+            Else
+                Exit For
+            End If
+        End If
+        
+    Next
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub removeItem_PusherSpring()
+ 
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".removeItem_PusherSpring()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    
+    Grid2.Col = 3
+    Grid2.Row = 1
+    
+    For i = Grid2.Row To Grid2.Rows - 1
+
+        If frmTrackEntry.Grid2.TextMatrix(i, 3) = "Pusher" Then
+            If frmTrackEntry.Grid2.Rows > 2 Then
+                frmTrackEntry.Grid2.RemoveItem
+            Else
+                frmTrackEntry.Grid2.Clear
+            End If
+'            'gintRow = gintRow - 1
+            Exit Sub
+        'End If
+        Else
+            If frmTrackEntry.Grid2.TextMatrix(i, 0) = "" Then Exit Sub
+            'frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1
+            If frmTrackEntry.Grid2.Row < frmTrackEntry.Grid2.Rows - 1 Then
+                frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1
+            Else
+                Exit For
+            End If
+        End If
+    Next
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub addItems_FenderGuard()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".addItems_FenderGuard()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim FenderGuardQTY As Integer
+    Dim i As Integer
+    If chkFGuard.Value = 1 Then
+    
+        
+        If Left(DrType, 4) = "T300" Then
+        
+            mstrFGPN_RH = "432-0026"
+            mstrFGPN_LH = "432-0027"
+
+        
+        Else
+        
+            mstrFGPN_RH = "432-0021"
+            mstrFGPN_LH = "432-0022"
+            
+        End If
+            
+        FenderGuardQTY = 1
+       
+        For i = Grid2.Row To Grid2.Rows - 1
+            If frmTrackEntry.Grid2.Text = mstrFGPN_RH Or frmTrackEntry.Grid2.Text = mstrFGPN_LH Then
+                Exit Sub
+            Else
+                Call SetTrackOptionsGrid(mstrFGPN_RH, FenderGuardQTY, "Track", GetSubCategory(mstrFGPN_RH), 0)
+                Call SetTrackOptionsGrid(mstrFGPN_LH, FenderGuardQTY, "Track", GetSubCategory(mstrFGPN_LH), 0)
+                Exit Sub
+            End If
+        Next
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub removeItem_FenderGuard()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".removeItem_FenderGuard()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    
+    Grid2.Col = 0
+    Grid2.Row = 1
+    
+    For i = frmTrackEntry.Grid2.Row To frmTrackEntry.Grid2.Rows - 1
+        If frmTrackEntry.Grid2.TextMatrix(i, 0) = mstrFGPN_RH Or frmTrackEntry.Grid2.TextMatrix(i, 0) = mstrFGPN_LH Then
+            If frmTrackEntry.Grid2.Rows > 2 Then
+                frmTrackEntry.Grid2.RemoveItem          'RH part
+                If frmTrackEntry.Grid2.Rows = 2 Then
+                    frmTrackEntry.Grid2.Clear
+                Else
+                    frmTrackEntry.Grid2.RemoveItem      'LH part
+                End If
+            Else
+                frmTrackEntry.Grid2.Clear
+            End If
+            Exit Sub
+        Else
+            If frmTrackEntry.Grid2.TextMatrix(i, 0) = "" Then Exit Sub
+            frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1
+        End If
+    Next
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub addItems_HAngle()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".addItems_HAngle()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim NoHAnglesQTY As Integer
+    Dim i As Integer
+    Dim lstrNoHA As String
+    Dim X As Double
+    
+    lstrNoHA = InputBox("Please enter no. of Hanger Angle(s)", "BTMS 2.0", 0)
+    
+    If lstrNoHA <> "" Then
+        If DBLValue(lstrNoHA) = 0 Or DBLValue(lstrNoHA) > 100000 Then
+            MsgBox "Invalid number of H/A.", vbOKOnly + vbExclamation + vbApplicationModal, "Required H/A"
+            chkHAngle.Value = False
+            Exit Sub
+        End If
+        txtHAngles.Visible = True
+        X = DBLValue(lstrNoHA)
+        NoHAnglesQTY = Int(X)
+        txtHAngles.Text = Str(NoHAnglesQTY)
+        
+        mstrHA_PN = "421-0069"
+    
+        For i = Grid2.Row To Grid2.Rows - 1
+            If frmTrackEntry.Grid2.Text = mstrHA_PN Then
+                Exit Sub
+            Else
+               Call SetTrackOptionsGrid(mstrHA_PN, NoHAnglesQTY, "Track", GetSubCategory(mstrHA_PN), 0)
+               Exit Sub
+            End If
+        Next
+    Else
+        chkHAngle.Value = 0
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub removeItem_HAngle()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".removeItem_HAngle()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    
+    Grid2.Col = 0
+    Grid2.Row = 1
+    
+    For i = frmTrackEntry.Grid2.Row To frmTrackEntry.Grid2.Rows - 1
+        If frmTrackEntry.Grid2.TextMatrix(i, 0) = mstrHA_PN Then
+'            If frmTrackEntry.Grid2.Text = "" Then Exit Sub
+            If frmTrackEntry.Grid2.Rows > 2 Then
+                frmTrackEntry.Grid2.RemoveItem
+            Else
+                frmTrackEntry.Grid2.Clear
+            End If
+            'gintRow = gintRow - 1
+            Exit Sub
+        Else
+            If frmTrackEntry.Grid2.TextMatrix(i, 0) = "" Then Exit Sub
+            If frmTrackEntry.Grid2.Row < frmTrackEntry.Grid2.Rows - 1 Then
+                frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1
+            Else
+                Exit For
+            End If
+        End If
+    Next
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub removeItem_WStrips()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".removeItem_WStrips()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    
+    Grid2.Col = 3
+    Grid2.Row = 1
+    
+    For i = frmTrackEntry.Grid2.Row To frmTrackEntry.Grid2.Rows - 1
+        If frmTrackEntry.Grid2.TextMatrix(i, 0) = "" Then Exit Sub
+        If frmTrackEntry.Grid2.TextMatrix(i, 3) = "Jamb Weather Seal" Then
+            If frmTrackEntry.Grid2.Rows > 2 Then
+                frmTrackEntry.Grid2.RemoveItem
+            Else
+                frmTrackEntry.Grid2.Clear
+            End If
+            'gintRow = gintRow - 1
+            Exit Sub
+        Else
+            frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1
+        End If
+    Next
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub addItems_ISwitch()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".addItems_ISwitch()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim ISwitchQTY As Integer
+    Dim i As Integer
+    
+    mstrIS_PN = "7-2328"
+    ISwitchQTY = 1
+    
+    For i = frmTrackEntry.Grid2.Row To frmTrackEntry.Grid2.Rows - 1
+        If frmTrackEntry.Grid2.Text = mstrIS_PN Then
+            Exit Sub
+        Else
+           Call SetTrackOptionsGrid(mstrIS_PN, ISwitchQTY, "Track", GetSubCategory(mstrIS_PN), 0)
+           Exit Sub
+        End If
+    Next
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub removeItem_ISwitch()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".removeItem_ISwitch()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    
+    Grid2.Col = 0
+    Grid2.Row = 1
+    
+    For i = Grid2.Row To Grid2.Rows - 1
+        If frmTrackEntry.Grid2.Text = mstrIS_PN Then
+            If frmTrackEntry.Grid2.Rows > 2 Then
+                frmTrackEntry.Grid2.RemoveItem
+            Else
+                frmTrackEntry.Grid2.Clear
+            End If
+            'gintRow = gintRow - 1
+            Exit Sub
+        Else
+            If frmTrackEntry.Grid2.TextMatrix(i, 0) = "" Then Exit Sub
+            frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1
+        End If
+    Next
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+Private Function SaveVariables() As Boolean
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SaveVariables()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Integer
+    Dim tang As Double
+    Dim lbyteCordPkg As Byte
+    Dim rs As Single, Rr As Single
+    Dim Rise As Double, Run As Double
+    Dim lblnRoll As Boolean
+    
+    If OptionDegree.Value = True Then
+        SlopHAng = DBLValue(txtDegree.Text) 'global angle
+        Else
+        If MeasU = 1 Then
+            If IsNumeric(txtRise.Text) And IsNumeric(txtRun.Text) Then
+                Rise = DBLValue(txtRise.Text)
+                Run = DBLValue(txtRun.Text)
+                If Rise > 0 And Run > 0 Then
+                    tang = Rise / Run
+                    SlopHAng = Atn(tang) * 180 / 3.14159265358979
+                End If
+            Else
+                SlopHAng = 0
+            End If
+        Else
+            If IsNumeric(txtRise.Text) And IsNumeric(txtRun.Text) Then
+                Call ClearConObj
+                aCon.mm = txtRise.Text
+                aCon.Inchcalc
+                rs = aCon.Inch
+                
+                Call ClearConObj
+                aCon.mm = txtRun.Text
+                aCon.Inchcalc
+                Rr = aCon.Inch
+                tang = rs / Rr
+                SlopHAng = Atn(tang) * 180 / 3.14159265358979 'global angle
+            Else
+                SlopHAng = 0
+            End If
+        End If
+    End If
+    
+    Select Case LiftType
+        Case "Standard Lift", "High Lift", "Low Headroom Front Mount", "Low Headroom Rear Mount"
+            HRadius = 8 + (4 * DBLValue(cboRadius.ItemData(cboRadius.ListIndex)))
+        End Select
+
+    If cboLSplice.ItemData(cboLSplice.ListIndex) = 1 Then
+        varDoorData.Track.strLowerSplice = "w/ Upper Wall Angle"
+    ElseIf cboLSplice.ItemData(cboLSplice.ListIndex) = 2 Then
+        varDoorData.Track.strLowerSplice = "w/ Upper Bracket Mount"
+    End If
+    
+    If cboJamb.ItemData(cboJamb.ListIndex) = 1 Then
+        varDoorData.Track.strJambType = "Wood"
+    ElseIf cboJamb.ItemData(cboJamb.ListIndex) = 2 Then
+        varDoorData.Track.strJambType = "Steel"
+
+    ''''''''''Change in .NET''''''''''''''''
+    ElseIf cboJamb.ItemData(cboJamb.ListIndex) = 3 Then
+        varDoorData.Track.strJambType = "Masonry"
+    ''''''''''END Change in .NET
+    
+    End If
+    
+    If cboMount.ItemData(cboMount.ListIndex) = 1 Then
+        varDoorData.Track.strMountType = "Bracket Mount"
+    ElseIf cboMount.ItemData(cboMount.ListIndex) = 2 Then
+        varDoorData.Track.strMountType = "ADCA"
+    ElseIf cboMount.ItemData(cboMount.ListIndex) = 3 Then
+        varDoorData.Track.strMountType = "EU ADCA"
+    ElseIf cboMount.ItemData(cboMount.ListIndex) = 4 Then
+        varDoorData.Track.strMountType = "Clip angle"
+    End If
+    
+    If chkOnePieceHorTrack.Value = 1 Then
+        varDoorData.Track.blnOnePieceHT = True
+    Else
+        varDoorData.Track.blnOnePieceHT = False
+    End If
+    
+    ' for 20' high door our limits are:
+    Select Case LiftType
+        Case "Standard Lift"
+            If HRadius = 12 Then
+                If HWType = 2 And DrHgt > 168 Then
+                    If chkOnePieceHorTrack.Value = 1 Then
+                        If MeasU = 1 Then
+                            MsgBox "For doors over 14' high with 12" & Chr(34) & Chr(32) & " radius, you must use a seperate curve horizontal track.", vbApplicationModal + vbInformation + vbOKOnly, "Limits for 20'door"
+                        Else
+                            MsgBox "For doors over 4267 high with 305mm" & Chr(32) & "radius, you must use a seperate curve horizontal track.", vbApplicationModal + vbInformation + vbOKOnly, "Limits for 6096mm door"
+                        End If
+                        chkOnePieceHorTrack.Value = 0
+                        SaveVariables = False
+                        
+                        Exit Function
+                    End If
+                End If
+            ElseIf HRadius = 16 Then
+                If HWType = 2 And DrHgt > 192 Then
+                    If chkOnePieceHorTrack.Value = 1 Then
+                        If MeasU = 1 Then
+                            MsgBox "For doors over 16' high with 16" & Chr(34) & Chr(32) & " radius, you must use a seperate curve horizontal track.", vbApplicationModal + vbCritical + vbOKOnly, "Limits for 20' door"
+                        Else
+                            MsgBox "For doors over 4877mm high with 406mm" & Chr(32) & " radius, you must use a seperate curve horizontal track.", vbApplicationModal + vbCritical + vbOKOnly, "Limits for 6096mm door"
+                        End If
+                        chkOnePieceHorTrack.Value = 0
+                        SaveVariables = False
+                        
+                        Exit Function
+                    End If
+                End If
+             End If
+
+        Case "High Lift"
+            If HWType = 2 And (DrHgt - HILIFT) > 192 Then
+                If chkOnePieceHorTrack.Value = 1 Then
+                    If MeasU = 1 Then
+                        MsgBox "Due to entered Door Height and HILIFT, you are unable to select 1-Piece Horizontal Track.", vbApplicationModal + vbCritical + vbOKOnly, "Limits for 20' door"
+                    Else
+                        MsgBox "Due to entered Door Height and HILIFT, you are unable to select 1-Piece Horizontal Track.", vbApplicationModal + vbCritical + vbOKOnly, "Limits for 6096mm door"
+                    End If
+                    chkOnePieceHorTrack.Value = 0
+                    SaveVariables = False
+                    
+                    Exit Function
+                End If
+            End If
+    End Select
+                    
+    If chkFLHAngle.Value = 1 Then
+        varDoorData.Track.FullHorzAngle = 1
+    Else
+        varDoorData.Track.FullHorzAngle = 0
+    End If
+    
+'    If chkWStrips.Value = 1 Then varDoorData.Track.blnWeatherStrip = True
+    varDoorData.Track.strWeatherStrip = cboWS.List(cboWS.ListIndex)
+
+    ''''''''''Change in .NET''''''''''''''''
+    If varDoorData.Track.strWeatherStrip = "ADCA Mount Jamb Weather Seal" Or _
+       varDoorData.Track.strWeatherStrip = "EU Jamb Weather Seal" Then
+           varDoorData.Track.blnWeatherStrip = True
+    End If
+                
+    ''''''''''END Change in .NET
+    
+    Dim wsIndex As Integer
+    For i = 0 To cboWS.ListCount - 1
+        If cboWS.ListIndex = i Then wsIndex = cboWS.ItemData(cboWS.ListIndex)
+    Next
+    'weather strip - Vertical and Horizontal Aluminum stops
+    '1 = "None"
+    If wsIndex <= 5 And wsIndex > 1 Then Call addItem_WeatherStrip(wsIndex)
+    
+    lbyteCordPkg = varDoorData.OperatorType
+    
+    ' 2.0.21 -- YS- No Pull card for Drawbar 'JackSaft
+'    If lbyteCordPkg = 1 Or lbyteCordPkg = 7 Or lbyteCordPkg = 8 Then    ' only if PullChainPkg unchecked with Manual or drawbar Operator
+      If lbyteCordPkg = 1 Then '  Or lbyteCordPkg = 7 Or lbyteCordPkg = 8 Then     'only if PullChainPkg unchecked with Manual or drawbar Operator
+    
+        
+        If chkChainPkg.Value = 0 And varDoorData.Track.strMountType = "ADCA" Then
+            Call addItems_CordPkg
+        ElseIf chkChainPkg.Value = 0 And (varDoorData.Track.strMountType = "Bracket Mount" Or _
+                                          varDoorData.Track.strMountType = "Clip Angle") Then
+            Call addItems_CordPkg
+        End If
+    End If
+    
+    'handles msgs for Dyna-Hoist operator & jackshaft operator
+    If varDoorData.OperatorType = 6 Or varDoorData.OperatorType = 10 Then
+        
+        If (LiftType = "Standard Lift") Or (LiftType = "High Lift" And HILIFT <= 24) Or _
+           (LiftType = "Vertical Lift") Or LiftType = "Low Headroom Vertical LIft" Then
+                
+                If varDoorData.OperatorType = 10 Then
+                    If chkPSpring.Value <> 1 And chkBSpring.Value <> 1 Then
+                        If MsgBox("Richard-Wilcox recommends using of Pusher or Bumper Springs for " & LiftType & " doors with Jackshaft operator." & vbCrLf & _
+                                "Do you wish to select Pusher or Bumper Springs?", _
+                                 vbApplicationModal + vbYesNo + vbExclamation, "Pusher Springs") = vbYes Then
+                                    
+                                 SaveVariables = False
+                                 Call ClearTrackGrid
+                                 lblnRoll = RollBack("Track", True)
+                                 Exit Function
+                                'chkPSpring.Value = 1
+                        End If
+                    End If
+                ElseIf varDoorData.OperatorType = 6 Then
+                    If chkPSpring.Value <> 1 And chkBSpring.Value <> 1 Then
+                        If MsgBox("Richard-Wilcox recommends using of Pusher or Bumper Springs for " & LiftType & " doors with Dyna-Hoist operator." & vbCrLf & _
+                                "Do you wish to select Pusher or Bumper Springs?", _
+                                vbApplicationModal + vbYesNo + vbExclamation, "Pusher Springs") = vbYes Then
+                                
+                                SaveVariables = False
+                                Call ClearTrackGrid
+                                
+                                If varPassDoor.strPN <> "" Then    'once clear track grid, it must keep the interlock switch checked w/dyna-hoist- it's eng. requirement
+                                     If varDoorData.OperatorType > 5 And Not (varDoorData.OperatorType = 7 Or varDoorData.OperatorType = 8) And Not (varDoorData.OperatorType = 11) Then
+                                         chkISwitch.Value = 1
+                                         addItems_ISwitch
+                                     End If
+                                 End If
+                                lblnRoll = RollBack("Track", True)
+                                Exit Function
+                                'chkPSpring.Value = 1
+                        End If
+                    End If
+                End If
+        End If
+        
+        If chkFlangeBearing.Value <> 1 Then
+            
+            If varDoorData.OperatorType = 10 Then
+                If MsgBox("Richard-Wilcox recommends using of self-aligning flange bearings with Jackshaft operator. Do you wish to select Flange Bearings?", vbApplicationModal + vbYesNo + vbExclamation, "Flange Bearings") = vbYes Then
+                    varDoorData.FlangeBearing = True
+                    chkFlangeBearing.Value = 1
+                Else
+                    varDoorData.FlangeBearing = False
+                    'chkFlangeBearing.Value = 0
+                End If
+            ElseIf varDoorData.OperatorType = 6 Then
+            
+                If MsgBox("Richard-Wilcox recommends self-aligning flange bearings with Dyna-Hoist operator. Do you wish to select Flange Bearings?", vbApplicationModal + vbYesNo + vbExclamation, "Flange Bearings") = vbYes Then
+                        chkFlangeBearing.Value = 1
+                        varDoorData.FlangeBearing = True
+                Else
+                        varDoorData.FlangeBearing = False
+                        'chkFlangeBearing.Value = 0
+                End If
+            End If
+        End If
+    End If
+    
+    varDoorData.Track.ShaftsInList = 0
+    If cboShafts.ListCount > 1 Then
+        varDoorData.Track.ShaftsInList = cboShafts.ListCount
+    End If
+    
+    '1-1/4" does not go with Dyan-Hoist, 200 Direct drive
+        
+    If cboShafts.ItemData(cboShafts.ListIndex) = 0 Then
+        MsgBox "There are no available shafts that can be used with a door of this weight." & vbNewLine & _
+            "Please consult with Richards-Wilcox Canada for further assistance.", vbApplicationModal + vbInformation, "Invalid Shaft"
+            
+            SaveVariables = False
+            lblnRoll = RollBack("Track", True)
+            Exit Function
+    
+    ElseIf cboShafts.ItemData(cboShafts.ListIndex) = 5 Then
+        If (varDoorData.OperatorType = 9 Or _
+            varDoorData.OperatorType = 6) Then
+
+            mdblOpChange = 0
+            Dim frm As frmOperatorShaftOptions
+            Set frm = New frmOperatorShaftOptions
+            Set frm.mobjParent = Me
+            frm.Show vbModal
+            If mdblOpChange = -1 Then    're-select operator go to sections screen
+                Call clearTrackSectionsOption
+                Dim linti As Integer
+                For linti = Forms.Count - 1 To 0 Step -1
+                    If Forms(linti).Name = "frmSectionsEntry" Then
+                       Exit For
+                    Else
+                        Unload Forms(linti)
+                    End If
+                Next
+                frmSectionsEntry.Show
+                Exit Function
+                
+            ElseIf mdblOpChange = 1 Then    're-select shaft stay on track screen
+                SaveVariables = False
+                lblnRoll = RollBack("Track", True)
+                Exit Function
+            ElseIf mdblOpChange = 2 Then    'delete operator + goto next screen
+                
+                'update the operator on the track screen
+                lblOperatorType.Caption = Chr(32) & GetOperatorType(varDoorData.OperatorType)
+                
+                'put back PullChainPkg with manual operator
+                If chkChainPkg.Value = 0 And varDoorData.Track.strMountType = "ADCA" Then
+                    Call addItems_CordPkg
+                ElseIf chkChainPkg.Value = 0 And (varDoorData.Track.strMountType = "Bracket Mount" Or _
+                        varDoorData.Track.strMountType = "Clip Angle") Then
+                    Call addItems_CordPkg
+                End If
+                
+                SaveVariables = False
+                lblnRoll = RollBack("Track", True)
+                Exit Function
+            
+            ElseIf mdblOpChange = 3 Then        ' upgrade operator
+                'goto next screen
+            End If
+            
+        End If
+    End If
+       
+    If chkCoupler.Value = 1 Then
+        CouplNum = 1
+    Else
+        CouplNum = 0
+    End If
+    
+    If cboShafts.ItemData(cboShafts.ListIndex) = 5 Then
+        varDoorData.ShaftDia = 1.25 '1 1/4 solid shaft"
+        varDoorData.ShaftTube = False
+        varDoorData.KeyedTubeShaft = False
+        varDoorData.GlavanizedTubeShaft = False
+        
+    ElseIf cboShafts.ItemData(cboShafts.ListIndex) = 4 Then
+        varDoorData.ShaftDia = 1    '1 solid shaft"
+        varDoorData.ShaftTube = False
+        varDoorData.KeyedTubeShaft = False
+        varDoorData.GlavanizedTubeShaft = False
+        
+    ElseIf cboShafts.ItemData(cboShafts.ListIndex) = 3 Then    'need w/keyed tube shaft
+        varDoorData.ShaftDia = 1    '1" keyed tube shaft
+        varDoorData.ShaftTube = False
+        varDoorData.KeyedTubeShaft = True
+        varDoorData.GlavanizedTubeShaft = False
+    ElseIf cboShafts.ItemData(cboShafts.ListIndex) = 2 Then
+        varDoorData.ShaftDia = 1    '1" Glav. tube shaft
+        varDoorData.ShaftTube = True
+        varDoorData.GlavanizedTubeShaft = True
+        varDoorData.KeyedTubeShaft = True                      'need w/keyed tube shaft
+    ElseIf cboShafts.ItemData(cboShafts.ListIndex) = 1 Then
+        varDoorData.ShaftDia = 1    '1" tube shaft
+        varDoorData.ShaftTube = True
+        varDoorData.GlavanizedTubeShaft = False
+        varDoorData.KeyedTubeShaft = True                       'need w/keyed tube shaft
+    End If
+    
+    'Auxillary shaft
+    If ChkAuxShaft.Value = 1 Then
+        varDoorData.AuxillaryShaft = True
+    Else
+        varDoorData.AuxillaryShaft = False
+    End If
+    
+    'Center Pickup
+    If chkCenterPickup.Value = 1 Then
+        varDoorData.CenterPickup = True
+    Else
+        varDoorData.CenterPickup = False
+        
+    End If
+        
+'    If cboDiameter.ItemData(cboDiameter.ListIndex) = 2 Then
+'        varDoorData.ShaftDia = 1.25
+'        varDoorData.ShaftTube = False
+'
+'    ElseIf cboDiameter.ItemData(cboDiameter.ListIndex) = 1 Then
+'        varDoorData.ShaftDia = 1
+'        If OptSolid.Value = False Then
+'            varDoorData.ShaftTube = True
+'        Else
+'            varDoorData.ShaftTube = False
+'        End If
+'    End If
+'
+'    ''''''''''Change in .NET''''''''''''''''
+'    '14 ga Galvanized tube shaft
+'    varDoorData.GlavanizedTubeShaft = IIf(chk14GaTube.Value = 1, True, False)
+'    ''''''''''END Change in .NET
+'
+'
+'''''''''''Change in .NET''''''''''''''''
+
+'    Select Case varDoorData.OperatorType
+'    Case 2  'chain hoist RW-GHC
+'        If varDoorData.ShaftDia = 1.25 Then
+'            If RollBack("Sections", True, "7-2340") = True Then Call FillSummaryGrid("7-2342", 1, "Sections", GetSubCategory("7-2342"), 0)
+'        End If
+'    End Select
+''''''''''END Change in .NET
+    
+'    varDoorData.gblnCableFailure = IIf(chkCableFailure.Value = 1, True, False) 'move to sections option screen
+    varDoorData.gblnSpringFailure = IIf(chkSpringFailure.Value = 1, True, False)
+    
+    If varDoorData.gblnCableFailure = True Then
+        If varDoorData.Track.strMountType = "ADCA" Or varDoorData.Track.strMountType = "Clip angle" Then
+            Call RollBack("Sections", True, "436-0049")
+            Call RollBack("Sections", True, "436-0048")
+            Call RollBack("Sections", True, "7-2362")
+            Call RollBack("Sections", True, "7-2361")
+            Call RollBack("Sections", True, "7-3304")
+            Call RollBack("Sections", True, "7-3305")
+            Call RollBack("Sections", True, "7-2360")
+            Call RollBack("Sections", True, "7-2359")
+            
+            ' 2.0.19 - the 7-3321/22 or 7-3323/24 cam style safety bottom brackets require a 4-0032 package
+            'Call RollBack("Sections", True, "4-0032")
+            
+            If varDoorData.DblEndHinges = True Then
+                Call RollBack("Sections", True, "7-2387")
+                Call RollBack("Sections", True, "7-2343")
+            End If
+        
+            If HWType = 2 Then
+                'delete (2) shortest of the rollers due to extra
+                If varDoorData.DblEndHinges = False Then
+                    If varDoorData.gblnNylonRollers = True Then
+                        UpdateRollerQty ("322-101")
+                    Else
+                        UpdateRollerQty ("322-102")
+                    End If
+                Else
+                    If varDoorData.gblnNylonRollers = True Then
+                        UpdateRollerQty ("322-110")
+                    Else
+                        UpdateRollerQty ("322-104")
+                    End If
+                End If
+'                Call FillSummaryGrid("7-3321", 1, "Sections", GetSubCategory("7-3321"), 0) 'move to sections option screen
+'                Call FillSummaryGrid("7-3322", 1, "Sections", GetSubCategory("7-3322"), 0)
+            ElseIf HWType = 3 Then
+                'delete (2) shortest of the rollers due to extra
+                If varDoorData.DblEndHinges = False Then
+                    If varDoorData.gblnNylonRollers = True Then
+                        UpdateRollerQty ("950-097")
+                    Else
+                        UpdateRollerQty ("950-094")
+                    End If
+                Else
+                    If varDoorData.gblnNylonRollers = True Then
+                        UpdateRollerQty ("950-097")
+                    Else
+                        'MsgBox "before"
+                        UpdateRollerQty ("950-096")
+                        'MsgBox "after"
+                    End If
+                End If
+                
+'                Call FillSummaryGrid("7-3323", 1, "Sections", GetSubCategory("7-3323"), 0) 'move to sections option screen
+'                Call FillSummaryGrid("7-3324", 1, "Sections", GetSubCategory("7-3324"), 0)
+            Else
+                'delete (2) shortest of the rollers due to extra
+                If varDoorData.DblEndHinges = False Then
+                    UpdateRollerQty ("7-2239")
+                Else
+                    UpdateRollerQty ("7-2240")
+                End If
+            End If
+        ElseIf varDoorData.Track.strMountType = "EU ADCA" Then
+'            If RollBack("Sections", True, "436-0049") = True Then Call FillSummaryGrid("950-169", 1, "Sections", GetSubCategory("950-169"), 0) 'EU CSBB pn move to sections option
+'            If RollBack("Sections", True, "436-0048") = True Then Call FillSummaryGrid("950-168", 1, "Sections", GetSubCategory("950-168"), 0)
+            
+            Call RollBack("Sections", True, "436-0049")
+            Call RollBack("Sections", True, "436-0048")
+            Call RollBack("Sections", True, "7-2362")
+            Call RollBack("Sections", True, "7-2361")
+            Call RollBack("Sections", True, "7-3304")
+            Call RollBack("Sections", True, "7-3305")
+            Call RollBack("Sections", True, "7-2360")
+            Call RollBack("Sections", True, "7-2359")
+            Call RollBack("Sections", True, "4-0032")
+            
+            'no need to add again. We are already picking in GetBottomRollbracket_NonCE routine
+'            If varDoorData.DblEndHinges = True Then
+'                If HWType = 2 Then
+'                    Call FillSummaryGrid("7-2387", 2, "Sections", GetSubCategory("7-2387"), 0)
+'                Else
+'                    Call FillSummaryGrid("7-2343", 2, "Sections", GetSubCategory("7-2343"), 0)
+'                End If
+'            End If
+            'adding of "441-806" , "441-807" is done in Get_Cable_Length (depends on cable pn selection)
+        End If
+    End If
+    
+    'Pusher spring
+    If chkPSpring.Value = 1 Then
+        If ReturnIndexPS = 1 Then
+'            varDoorData.Track.strPusherSpring = "Pusher Spring Package"
+            varDoorData.Track.strPusherSpring = "Pusher Spring Only"  ' Mod 2.0.21
+
+        Else
+            varDoorData.Track.strPusherSpring = "Pusher Spring Assy Package"
+        End If
+    End If
+    
+    'Bumper Spring
+    If chkBSpring.Value = 1 Then
+9
+    'Bef Mod 2.0.21
+'        If ReturnIndexBS = 1 Then
+'            varDoorData.Track.strBumperSpring = "Bumper Leaf Spring Package"
+'        Else
+'            varDoorData.Track.strBumperSpring = "Bumper Spring Assy Package"
+'        End If
+        
+        
+        'After Mod 2.0.21
+        If ReturnIndexBS = 1 Then
+            varDoorData.Track.strBumperSpring = "Bumper Leaf Spring Package"
+        ElseIf ReturnIndexBS = 2 Then
+            varDoorData.Track.strBumperSpring = "Bumper Spring Assy Package"
+        ElseIf ReturnIndexBS = 3 Then
+            varDoorData.Track.strBumperSpring = "Bumper Spring Only"
+        End If
+        
+    End If
+    
+    'Interlock Switch
+    If chkISwitch.Value = 1 Then
+        varDoorData.Track.strInterlockSwitches = "Interlock Switch and Assy Pkg"
+    End If
+    
+    'Pull Chain Pkg
+    If chkChainPkg.Value = 1 Then
+        If ReturnIndexPchainPkg = 1 Then
+            varDoorData.Track.strPullChainPkg = "Pull Chain Package c/w Spring"
+        ElseIf ReturnIndexPchainPkg = 2 Then
+             varDoorData.Track.strPullChainPkg = "Pull Chain Package w/o Spring"
+        End If
+    End If
+    
+    'fender guard
+    If chkFGuard.Value = 1 Then
+        varDoorData.Track.strFenderGuard = "Notched Fender Guard"
+    End If
+    
+    'hanging angle
+    If chkHAngle.Value = 1 Then
+       varDoorData.Track.strHaningAngle = "Track Hanger"
+    End If
+    
+    'Full Length Horz. angle
+    If chkFLHAngle.Value = 1 Then
+        varDoorData.Track.strFullLengthHA = "Full Length Horizontal Angle"
+    End If
+    
+    '
+    Grid2.Row = 1
+    
+    For i = 1 To Grid2.Rows - 1  'transfer invisible Grid2 contents to Grid1
+        If Grid2.TextMatrix(i, 0) <> "" Then
+            FillSummaryGrid Grid2.TextMatrix(i, 0), _
+                             DBLValue(Grid2.TextMatrix(i, 1)), _
+                             Grid2.TextMatrix(i, 2), _
+                             Grid2.TextMatrix(i, 3), 0
+        End If
+    Next
+    
+    SaveVariables = True
+'    Grid2.Clear
+'    Grid2.Rows = 2
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Function
+
+Public Sub LoadData()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lblnCSBB As Boolean
+    lblnCSBB = False
+       
+    If varPassDoor.strPN <> "" Then
+        If varDoorData.OperatorType > 5 And Not (varDoorData.OperatorType = 7 Or varDoorData.OperatorType = 8) And Not (varDoorData.OperatorType = 11) Then
+            chkISwitch.Enabled = True
+            chkISwitch.Value = 1
+        End If
+    End If
+    
+    lblLiftType.Caption = Chr$(32) & LiftType
+       
+    'default value for 1 Piece HT check option
+    If LiftType = "Low Headroom Front Mount" Or LiftType = "Low Headroom Rear Mount" Then
+        chkOnePieceHorTrack.Value = 0
+        chkOnePieceHorTrack.Enabled = False
+    ElseIf LiftType = "Standard Lift" Then
+        If HWType = 2 And DrHgt > 192 Then
+            chkOnePieceHorTrack.Value = 0
+        Else
+            chkOnePieceHorTrack.Value = 1
+            chkOnePieceHorTrack.Enabled = True
+        End If
+    ElseIf LiftType = "High Lift" Then
+        If HWType = 2 And (DrHgt - HILIFT) > 192 Then
+            chkOnePieceHorTrack.Value = 0
+        Else
+            chkOnePieceHorTrack.Value = 1
+            chkOnePieceHorTrack.Enabled = True
+        End If
+    Else
+        chkOnePieceHorTrack.Enabled = False
+    End If
+     'radius
+    Call LoadMeasUValues
+    
+    'greyed out the slop option on VL except for unrestricted users
+    If aCryp.GetOption(16, 6) = CKOptionOn Then
+        'no change required
+    Else
+        If LiftType = "Vertical Lift" Or LiftType = "Low Headroom Vertical Lift" Then
+            OptionSlop.Value = False
+            OptionSlop.Enabled = False
+            txtRun.Text = ""
+            txtRun.BackColor = &HE0E0E0
+            txtRun.Enabled = False
+            txtRise.Text = ""
+            txtRise.BackColor = &HE0E0E0
+            txtRise.Enabled = False
+            OptionDegree.Value = False
+            OptionDegree.Enabled = False
+            txtDegree.Text = ""
+            txtDegree.BackColor = &HE0E0E0
+            txtDegree.Enabled = False
+            fraInclinedTrack.Enabled = False
+        Else
+            OptionSlop.Enabled = True
+            OptionSlop.Value = True
+            txtRun.Enabled = True
+            txtRun.Text = ""
+            txtRun.BackColor = &HFFFFFF
+            txtRise.Enabled = True
+            txtRise.Text = ""
+            txtRise.BackColor = &HFFFFFF
+            OptionDegree.Enabled = True
+            txtDegree.Enabled = True
+            txtDegree.Text = ""
+            txtDegree.BackColor = &HFFFFFF
+            fraInclinedTrack.Enabled = True
+        End If
+    End If
+    
+    If LiftType = "High Lift" Or LiftType = "Vertical Lift" Or LiftType = "Low Headroom Vertical Lift" Then
+        cboLSplice.Enabled = True
+    Else
+        cboLSplice.List(0) = ""
+        cboLSplice.Enabled = False
+    End If
+    
+    'jamb type
+    cboJamb.Clear
+
+    cboJamb.AddItem "Wood"
+    cboJamb.ItemData(cboJamb.NewIndex) = 1
+    cboJamb.AddItem "Steel"
+    cboJamb.ItemData(cboJamb.NewIndex) = 2
+
+    ''''''''''Change in .NET''''''''''''''''
+    cboJamb.AddItem "Masonry"
+    cboJamb.ItemData(cboJamb.NewIndex) = 3
+    ''''''''''END Change in .NET
+    
+    cboJamb.ListIndex = 1
+    
+    If CECompliant = 1 Then
+        If DrType = "T45" Or DrType = "T35" Then
+            cboMount.Clear
+            cboMount.AddItem "EU ADCA"
+            cboMount.ItemData(cboMount.NewIndex) = 3
+            cboMount.ListIndex = 0
+            cboMount.Enabled = False
+        End If
+    Else
+        
+        cboMount.Clear
+        'ADCA & Bracket Mount available for DH >= 18' with 2" hardware
+        If HWType = 2 And DrHgt > 216 Then      'verified from Bill
+            If varDoorData.gblnCableFailure = True Then
+                If varDoorData.CSBB = "ADCA" Then
+                    cboMount.AddItem "ADCA"
+                    cboMount.ItemData(cboMount.NewIndex) = 2
+                    lblnCSBB = True
+                    cboMount.ListIndex = 0
+                    cboMount.Enabled = False
+                ElseIf varDoorData.CSBB = "EU ADCA" Then
+                    cboMount.AddItem "EU ADCA"
+                    cboMount.ItemData(cboMount.NewIndex) = 3
+                    lblnCSBB = True
+                    cboMount.ListIndex = 0
+                    cboMount.Enabled = False
+                End If
+                
+            Else
+                cboMount.AddItem "Bracket Mount"
+                cboMount.ItemData(cboMount.NewIndex) = 1
+                cboMount.AddItem "ADCA"
+                cboMount.ItemData(cboMount.NewIndex) = 2
+                If CECompliant = 0 And DrWgt >= 1000 Then
+                    'do not add EU ADCA
+                Else
+                    cboMount.AddItem "EU ADCA"
+                    cboMount.ItemData(cboMount.NewIndex) = 3
+                End If
+            End If
+            
+        Else        'HW = 2", 3", 3.25"
+            
+            If varDoorData.gblnCableFailure = True Then
+                If varDoorData.CSBB = "ADCA" Then
+                    cboMount.AddItem "ADCA"
+                    cboMount.ItemData(cboMount.NewIndex) = 2
+                    lblnCSBB = True
+                    cboMount.ListIndex = 0
+                    cboMount.Enabled = False
+                ElseIf varDoorData.CSBB = "EU ADCA" Then
+                    cboMount.AddItem "EU ADCA"
+                    cboMount.ItemData(cboMount.NewIndex) = 3
+                    lblnCSBB = True
+                    cboMount.ListIndex = 0
+                    cboMount.Enabled = False
+                End If
+                
+            Else
+                cboMount.AddItem "Bracket Mount"
+                cboMount.ItemData(cboMount.NewIndex) = 1
+                cboMount.AddItem "ADCA"
+                cboMount.ItemData(cboMount.NewIndex) = 2
+                
+                If CECompliant = 0 And DrWgt >= 1000 Then
+                    'do not add EU ADCA
+                Else
+                    cboMount.AddItem "EU ADCA"
+                    cboMount.ItemData(cboMount.NewIndex) = 3
+                End If
+                
+                cboMount.AddItem "Clip angle"
+                cboMount.ItemData(cboMount.NewIndex) = 4
+            End If
+        End If
+    
+        'non CSBB only
+        If lblnCSBB = False Then
+            aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\BTMS", True
+            Dim lstrMountType As String
+            lstrMountType = aReg.ReadValue("MountType")
+            aReg.CloseKey
+                    
+            If lstrMountType = "1" Then 'reads & set default from admin program
+                cboMount.ListIndex = 0
+            ElseIf lstrMountType = "2" Then
+                cboMount.ListIndex = 1
+            ElseIf lstrMountType = "3" Then
+'                If HWType = 2 Then 'ADCA
+                    cboMount.ListIndex = 1  'EU ADCA is only for 2"HW
+'                Else
+'                    cboMount.ListIndex = 1  'other mount list item
+'                End If
+            ElseIf lstrMountType = "4" Then
+                cboMount.ListIndex = 1
+                
+'                If HWType = 2 And DrHgt < 216 Then
+'                    cboMount.ListIndex = 3  'other mount list item
+'                Else
+'                    cboMount.ListIndex = 2
+'                End If
+            Else
+                cboMount.ListIndex = 0
+            End If
+        End If
+    End If
+      
+    cboLSplice.AddItem "w/ Upper Wall Angle"
+    cboLSplice.ItemData(cboLSplice.NewIndex) = 1
+    cboLSplice.AddItem "w/ Upper Bracket Mount"
+    cboLSplice.ItemData(cboLSplice.NewIndex) = 2
+    cboLSplice.ListIndex = 0
+    
+    chkBSpring.Caption = "Bumper Spring"
+    chkPSpring.Caption = "Pusher Spring"
+    chkWStrips.Caption = "Weather Strip"
+
+    lblFGuard.Visible = False
+    txtHAngles.Visible = False
+        
+    lblOperatorType.Caption = Chr(32) & GetOperatorType(varDoorData.OperatorType)
+    
+    Grid2.ColWidth(0) = Grid2.Width * 0.15
+    Grid2.ColWidth(1) = Grid2.Width * 0.15
+    Grid2.ColWidth(2) = Grid2.Width * 0.2
+    Grid2.ColWidth(3) = Grid2.Width * 0.4
+    Grid2.ColWidth(4) = Grid2.Width / 4
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub OptionSlop_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".OptionSlop_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If OptionSlop.Value = True Then
+        txtRise.Enabled = True
+        txtRun.Enabled = True
+        txtDegree.Enabled = False
+        txtDegree.Text = ""
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub OptionDegree_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".OptionDegree_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If OptionDegree.Value = True Then
+        txtRise.Enabled = False
+        txtRun.Enabled = False
+        txtDegree.Enabled = True
+        txtRise.Text = ""
+        txtRun.Text = ""
+        txtDegree.SetFocus
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub LoadMeasUValues()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadMeasUValues()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+     
+     
+    If MeasU = 0 Then   'Meteric
+        Call ClearConObj
+        If LiftType = "High Lift" Then
+            If HILIFT > 0 Then  'hi lift
+                aCon.Inch = HILIFT
+                aCon.mmcalc
+                lblHiLift.Caption = Chr$(32) & Round(aCon.mm, 0)
+                lblHL_HR.Caption = "High Lift"
+            Else                ' head room
+                aCon.Inch = varDoorData.sngHeadroom
+                aCon.mmcalc
+                lblHiLift.Caption = Chr$(32) & Round(aCon.mm, 0)
+                lblHL_HR.Caption = "Headroom"
+            End If
+        Else
+            lblHiLift.Caption = Chr$(32) & "N/A"
+            lblHL_HR.Caption = "High Lift"
+        End If
+        
+        Call ClearConObj
+        If (HWType = 2) Or (HWType = 3) Then
+            aCon.Inch = HWType
+            aCon.mmcalc
+            lblHWSize.Caption = Chr$(32) & Round(aCon.mm, 0)
+        Else
+            lblHWSize.Caption = Chr$(32) & "Super 3"
+        End If
+        
+        
+        lblmm1.Visible = True
+        lblmm2.Visible = True
+        lblInche1.Visible = False
+        lblInche2.Visible = False
+    Else                'Imperial
+        If LiftType = "High Lift" Then
+            If HILIFT > 0 Then
+                lblHiLift.Caption = Chr$(32) & HILIFT
+                lblHL_HR.Caption = "High Lift"
+            Else
+                lblHiLift.Caption = Chr$(32) & varDoorData.sngHeadroom
+                lblHL_HR.Caption = "Headroom"
+            End If
+        Else
+            lblHiLift.Caption = Chr$(32) & "N/A"
+            lblHL_HR.Caption = "High Lift"
+        End If
+        
+        If (HWType = 2) Or (HWType = 3) Then
+            lblHWSize.Caption = Chr$(32) & HWType
+        Else
+            lblHWSize.Caption = Chr$(32) & "Super 3"
+        End If
+        
+        lblInche1.Visible = True
+        lblInche2.Visible = True
+        lblmm1.Visible = False
+        lblmm1.Visible = False
+        
+    End If
+    
+    If MeasU = 1 Then 'Imperial
+        Select Case HWType
+            Case 2
+                Select Case LiftType
+                    Case "High Lift"
+                        cboRadius.Clear
+                        cboRadius.AddItem "16" & Chr(34)
+                        cboRadius.ItemData(cboRadius.NewIndex) = 2
+                        
+                        cboRadius.ListIndex = 0
+                        cboRadius.Enabled = False
+                
+                    Case "Standard Lift"
+                    'DH over 14' - 12" Rad could be used w/ a sep. curve
+'                        Select Case DrHgt
+'                            Case Is <= 168  'verifed from Bill
+                                cboRadius.Clear
+                                cboRadius.AddItem "12" & Chr(34)
+                                cboRadius.ItemData(cboRadius.NewIndex) = 1
+                                cboRadius.AddItem "16" & Chr(34)
+                                cboRadius.ItemData(cboRadius.NewIndex) = 2
+                                cboRadius.ListIndex = 1
+'                            Case Else
+'                                cboRadius.AddItem "16" & Chr(34)
+'                                cboRadius.ItemData(cboRadius.NewIndex) = 2
+'                                cboRadius.ListIndex = 0
+'                                cboRadius.Enabled = False
+'                        End Select
+                        
+                    Case "Low Headroom Front Mount", "Low Headroom Rear Mount"
+                        cboRadius.Clear
+                        cboRadius.AddItem "12" & Chr(34)
+                        cboRadius.ItemData(cboRadius.NewIndex) = 1
+                        
+                        cboRadius.ListIndex = 0
+                        cboRadius.Enabled = False
+                    
+                    Case "Vertical Lift", "Low Headroom Vertical Lift"
+                       cboRadius.Clear
+                       cboRadius.Enabled = False
+                    End Select
+            
+            Case 3, 3.25
+                Select Case LiftType
+                    Case "High Lift", "Standard Lift"
+                        cboRadius.Clear
+                        cboRadius.AddItem "16" & Chr(34)
+                        cboRadius.ItemData(cboRadius.NewIndex) = 2
+                        
+                        cboRadius.ListIndex = 0
+                         cboRadius.Enabled = False
+                
+                    Case "Vertical Lift", "Low Headroom Vertical Lift"
+                        cboRadius.Clear
+                        cboRadius.Enabled = False
+                        
+                    Case "Low Headroom Front Mount", "Low Headroom Rear Mount"
+                        cboRadius.Clear
+                        cboRadius.AddItem "16" & Chr(34)
+                        cboRadius.ItemData(cboRadius.NewIndex) = 2
+                        
+                        cboRadius.ListIndex = 0
+                         cboRadius.Enabled = False
+                        
+                    End Select
+            End Select
+    
+    Dim lintIndex As Integer
+    Else 'meteric
+        lintIndex = frmSectionsEntry.cboHWSize.ItemData(frmSectionsEntry.cboHWSize.ListIndex)
+        Select Case lintIndex
+            Case 2
+                Select Case LiftType
+                    Case "High Lift"
+                        cboRadius.Clear
+                        cboRadius.AddItem DBLValue(406) & " mm"
+                        cboRadius.ItemData(cboRadius.NewIndex) = 2
+                        cboRadius.ListIndex = 0
+            
+                    Case "Standard Lift"
+                        cboRadius.Clear
+                        cboRadius.AddItem DBLValue(305) & " mm"
+                        cboRadius.ItemData(cboRadius.NewIndex) = 1
+                        cboRadius.AddItem DBLValue(406) & " mm"
+                        cboRadius.ItemData(cboRadius.NewIndex) = 2
+                        cboRadius.ListIndex = 1
+                
+                    Case "Low Headroom Front Mount", "Low Headroom Rear Mount"
+                        cboRadius.Clear
+                        cboRadius.AddItem DBLValue(305) & " mm"
+                        cboRadius.ItemData(cboRadius.NewIndex) = 1
+                        cboRadius.ListIndex = 0
+                     
+                    Case "Vertical Lift", "Low Headroom Vertical Lift"
+                        cboRadius.Clear
+                        cboRadius.Enabled = False
+                    End Select
+                
+            Case 3, 4
+                Select Case LiftType
+                    Case "High Lift", "Standard Lift"
+                        cboRadius.Clear
+                        cboRadius.AddItem DBLValue(406) & " mm"
+                        cboRadius.ItemData(cboRadius.NewIndex) = 2
+                        cboRadius.ListIndex = 0
+                
+                    Case "Vertical Lift", "Low Headroom Vertical Lift"
+                        cboRadius.Clear
+                        cboRadius.Enabled = False
+                        
+                    Case "Low Headroom Front Mount", "Low Headroom Rear Mount"
+                        cboRadius.AddItem DBLValue(406) & " mm"
+                        cboRadius.ItemData(cboRadius.NewIndex) = 2
+                        cboRadius.ListIndex = 0
+                        
+                    End Select
+            End Select
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub addItems_CordPkg()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".addItems_CordPkg()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Select Case varDoorData.Track.strMountType
+    Case "ADCA"
+        Call FillSummaryGrid("7-2325", 1, "Track", GetSubCategory("7-2325"), 0)
+    Case "Bracket Mount", "Cip Angle"
+        Call FillSummaryGrid("7-2326", 1, "Track", GetSubCategory("7-2326"), 0)
+    End Select
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+
+End Sub
+
+Private Sub removeItem_ChainPkg()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".removeItem_ChainPkg()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    
+    Grid2.Col = 3
+    Grid2.Row = 1
+    
+    For i = frmTrackEntry.Grid2.Row To frmTrackEntry.Grid2.Rows - 1
+    
+        If frmTrackEntry.Grid2.TextMatrix(i, 3) = "Handles and Pulls" Then
+            If frmTrackEntry.Grid2.Rows > 2 Then
+                frmTrackEntry.Grid2.RemoveItem
+            Else
+                frmTrackEntry.Grid2.Clear
+            End If
+            'gintRow = gintRow - 1
+            Exit Sub
+        Else
+            If frmTrackEntry.Grid2.TextMatrix(i, 0) = "" Then Exit Sub
+            If frmTrackEntry.Grid2.Row < frmTrackEntry.Grid2.Rows - 1 Then
+                frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1
+            Else
+                Exit For
+            End If
+        End If
+    Next
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+   
+End Sub
+
+'Public Sub addTubeShaft()
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".addTubeShaft()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'     If MeasU = 1 Then   'Imperial
+'        cboDiameter.Clear
+'        cboDiameter.AddItem "1"
+'        cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'        cboDiameter.ListIndex = 0
+'    Else                  'meteric
+'        cboDiameter.Clear
+'        cboDiameter.AddItem DBLValue(25)
+'        cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'        cboDiameter.ListIndex = 0
+'    End If
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'
+'End Sub
+'
+'Public Sub addSolidShaft()
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".addSolidShaft()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'     If MeasU = 0 Then   'Meteric
+'        If DrWgt > 450 And DrWgt < 1000 Then     ' for solid shaft
+'
+'            If HWType = 2 Then
+'                cboDiameter.Clear
+'                cboDiameter.AddItem DBLValue(25)
+'                cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'            Else
+'                cboDiameter.Clear
+'                cboDiameter.AddItem DBLValue(25)
+'                cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'                cboDiameter.AddItem DBLValue(32)
+'                cboDiameter.ItemData(cboDiameter.NewIndex) = 2
+'            End If
+'        ElseIf DrWgt >= 1000 Then
+'            cboDiameter.Clear
+'            cboDiameter.AddItem DBLValue(32)
+'            cboDiameter.ItemData(cboDiameter.NewIndex) = 2
+'        End If
+'        cboDiameter.ListIndex = 0
+'    Else    'Imperial
+'        If DrWgt > 450 And DrWgt < 1000 Then     ' for solid shaft
+'            If HWType = 2 Then
+'                cboDiameter.Clear
+'                cboDiameter.AddItem "1"
+'                cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'            Else
+'                cboDiameter.Clear
+'                cboDiameter.AddItem "1"
+'                cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'                cboDiameter.AddItem "1" & Chr(32) & Chr(188) '.25"
+'                cboDiameter.ItemData(cboDiameter.NewIndex) = 2
+'            End If
+'
+'        ElseIf DrWgt >= 1000 Then
+'            cboDiameter.Clear
+'            cboDiameter.AddItem "1" & Chr(32) & Chr(188) '.25"
+'            cboDiameter.ItemData(cboDiameter.NewIndex) = 2
+'        End If
+'        cboDiameter.ListIndex = 0
+'    End If
+'
+'    If DrWidth >= 207 Then chkCoupler.Value = 1  'by default, cut shaft
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'
+'End Sub
+
+'Private Sub OptSolid_Click()
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".OptSolid_Click()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    If MeasU = 1 Then   'Imperial
+'        If OptSolid.Value = True Then
+'            If DrWgt < 450 Or (DrWgt > 450 And DrWgt < 1000) Then     ' for solid shaft
+'
+'                If HWType = 2 Then
+'                    cboDiameter.Clear
+'                    cboDiameter.AddItem "1"
+'                    cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'                Else
+'                    cboDiameter.Clear
+'                    cboDiameter.AddItem "1"
+'                    cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'                    cboDiameter.AddItem "1" & Chr(32) & Chr(188) '.25"
+'                    cboDiameter.ItemData(cboDiameter.NewIndex) = 2
+'                End If
+'            ElseIf DrWgt >= 1000 Then
+'                cboDiameter.Clear
+'                cboDiameter.AddItem "1" & Chr(32) & Chr(188) '.25"
+'                cboDiameter.ItemData(cboDiameter.NewIndex) = 2
+'            End If
+'        End If
+'
+'    Else            'Meteric
+'        If OptSolid.Value = True Then
+'            If DrWgt < 450 Or (DrWgt > 450 And DrWgt < 1000) Then     ' for solid shaft
+'                If HWType = 2 Then
+'                    cboDiameter.Clear
+'                    cboDiameter.AddItem DBLValue(25)
+'                    cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'                Else
+'                    cboDiameter.Clear
+'                    cboDiameter.AddItem DBLValue(25)
+'                    cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'                    cboDiameter.AddItem DBLValue(31.75)
+'                    cboDiameter.ItemData(cboDiameter.NewIndex) = 2
+'                End If
+'
+'            ElseIf DrWgt >= 1000 Then
+'                cboDiameter.Clear
+'                cboDiameter.AddItem DBLValue(31.75)
+'                cboDiameter.ItemData(cboDiameter.NewIndex) = 2
+'            End If
+'        End If
+'    End If
+'    chkCoupler.Enabled = True
+'    cboDiameter.ListIndex = 0
+'
+'    chkSpringFailure.Enabled = True
+'    If CECompliant = 1 Then
+'        If DrType = "T45" Then
+'            chkSpringFailure.Value = 1
+'            chkSpringFailure.Enabled = False
+'        End If
+'    End If
+'
+'    If DrWidth >= 207 Then chkCoupler.Value = 1  'by default, cut shaft
+'
+'    ''''''''''Change in .NET''''''''''''''''
+'    chk14GaTube.Value = 0
+'    chk14GaTube.Enabled = False
+'    ''''''''''END Change in .NET
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+'
+'End Sub
+
+'Private Sub OptTube_Click()
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".OptTube_Click()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    If MeasU = 1 Then   'Imperial
+'        cboDiameter.Clear
+'        cboDiameter.AddItem "1"
+'        cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'        cboDiameter.ListIndex = 0
+'    Else                  'meteric
+'        cboDiameter.Clear
+'        cboDiameter.AddItem DBLValue(25)
+'        cboDiameter.ItemData(cboDiameter.NewIndex) = 1
+'        cboDiameter.ListIndex = 0
+'    End If
+'    chkCoupler.Enabled = False
+'    chkCoupler.Value = 0
+'
+'    If CECompliant = 1 Then
+'        If DrType = "T45" Then
+'            chkSpringFailure.Enabled = True
+'            chkSpringFailure.Value = 1
+'            chkSpringFailure.Enabled = False
+'        End If
+'    Else
+'        chkSpringFailure.Value = 0
+'        chkSpringFailure.Enabled = False
+'    End If
+'    ''''''''''Change in .NET''''''''''''''''
+'    chk14GaTube.Enabled = True
+'    ''''''''''END Change in .NET
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+'
+'End Sub
+
+Private Sub txtDegree_KeyPress(KeyAscii As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtDegree_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtDegree, KeyAscii, Len(txtDegree.Text)) = False Then
+        Beep
+        KeyAscii = 0
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtDegree_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtDegree_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    txtDegree.Text = Format(DBLValue(txtDegree.Text), cstrDollarMask)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtRise_KeyPress(KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtRise_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtRise, KeyAscii, Len(txtRise.Text)) = False Then
+        Beep
+        KeyAscii = 0
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub txtRise_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtRise_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    txtRise.Text = Format(DBLValue(txtRise.Text), cstrDollarMask)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub txtRun_KeyPress(KeyAscii As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtRun_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtRun, KeyAscii, Len(txtRun.Text)) = False Then
+        Beep
+        KeyAscii = 0
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub txtRun_Validate(Cancel As Boolean)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtRun_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    txtRun.Text = Format(DBLValue(txtRun.Text), cstrDollarMask)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+
+End Sub
+
+Public Sub addItem_WeatherStrip(ByVal Iindex As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".addItem_WeatherStrip()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim WStripsQTY As Integer
+    Dim i As Integer
+    Dim DH As Integer
+    Dim DW As Integer
+    Dim lsngHgt As Single
+    Dim lsngWidth As Single
+    Dim lstrP1 As String
+    Dim lstrP2 As String
+    Dim lstrP3 As String
+    Dim lstrP4 As String
+    Dim lintQ1 As Integer
+    Dim lintQ2 As Integer
+    Dim lintQ3 As Integer
+    Dim lintQ4 As Integer
+    Dim linti As Integer
+    
+    DH = CInt(DrHgt)
+    DW = CInt(DrWidth)
+    
+    If ((DH Mod 12) = 1) Then
+        lsngHgt = Fix(DH - 1)
+    Else
+        lsngHgt = Fix(DH)
+    End If
+     
+    If varDoorData.Track.strJambType <> "Wood" Then
+        lsngWidth = DrWidth - 2
+    Else
+        lsngWidth = Fix(DrWidth)
+    End If
+    
+    'select Vertical parts of the Aluminum Stop
+    If (DH <= 194) Then
+        lstrP1 = ModTracks.SelectAStopStock(DH, Iindex)
+        lintQ1 = 2
+    Else
+        linti = Int(DH / 2)
+        lstrP1 = ModTracks.SelectAStopStock(linti, Iindex)
+        lintQ1 = 2
+        
+        linti = Int(DH - linti)
+        lstrP2 = ModTracks.SelectAStopStock(linti, Iindex)
+        lintQ2 = 2
+        
+        If (lstrP1 = lstrP2) Then
+            lstrP2 = ""
+            lintQ1 = lintQ1 + lintQ2
+        End If
+    End If
+    
+    
+    'select Horizontal parts of the Aluminum Stop
+    'only in case of 'C' - "Complete Aluminum Stop" : partno are being selected on bases DH and DW
+    
+    linti = 0   're-initialize var
+    If Left(varDoorData.Track.strWeatherStrip, 1) = "C" Then
+        If (DW <= 194) Then
+            linti = Int(DrWidth)
+            lstrP3 = SelectAStopStock(linti, Iindex)
+            lintQ3 = 1
+        Else
+            linti = Int(DrWidth / 2)
+            lstrP3 = SelectAStopStock(linti, Iindex)
+            lintQ3 = 1
+           
+            linti = Int(DrWidth - linti)
+            lstrP4 = SelectAStopStock(linti, Iindex)
+            lintQ4 = 1
+           
+            If (lstrP3 = lstrP4) Then
+                lstrP4 = ""
+                lintQ3 = lintQ3 + lintQ4
+            End If
+        End If
+    End If
+    
+    If (lstrP1 = lstrP3) Then
+        lstrP3 = ""
+        lintQ1 = lintQ1 + lintQ3
+    End If
+    If (lstrP1 = lstrP4) Then
+        lstrP4 = ""
+        lintQ1 = lintQ1 + lintQ4
+    End If
+    If (lstrP2 = lstrP3) Then
+        lstrP3 = ""
+        lintQ2 = lintQ2 + lintQ3
+    End If
+    If (lstrP2 = lstrP4) Then
+        lstrP4 = ""
+        lintQ2 = lintQ2 + lintQ4
+    End If
+              
+'    For i = frmTrackEntry.Grid2.Row To frmTrackEntry.Grid2.Rows - 1
+        If lstrP1 <> "" Then
+'            If Grid2.Text = lstrP1 Then
+'                Exit Sub
+'            Else
+                FillSummaryGrid lstrP1, lintQ1, "Track", GetSubCategory(lstrP1), 0
+'            End If
+        End If
+        
+        If lstrP2 <> "" Then
+'            If Grid2.Text = lstrP2 Then
+'                Exit Sub
+'            Else
+                FillSummaryGrid lstrP2, lintQ2, "Track", GetSubCategory(lstrP2), 0
+'            End If
+        End If
+        
+        If lstrP3 <> "" Then
+'            If Grid2.Text = lstrP3 Then
+'                Exit Sub
+'            Else
+                FillSummaryGrid lstrP3, lintQ3, "Track", GetSubCategory(lstrP3), 0
+'            End If
+        End If
+        
+        If lstrP4 <> "" Then
+'            If Grid2.Text = lstrP4 Then
+'                Exit Sub
+'            Else
+                FillSummaryGrid lstrP4, lintQ4, "Track", GetSubCategory(lstrP4), 0
+'            End If
+        End If
+'    Next
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+'Public Sub LoadShaft()
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadShaft()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    If OptSolid.Value = True Then
+'        chkCoupler.Enabled = True
+'        Call addSolidShaft
+'    Else
+'        chkCoupler.Enabled = False
+'        Call addTubeShaft
+'    End If
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'
+'
+'End Sub
+
+Private Sub ClearTrackGrid()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ClearTrackGrid()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Integer
+    
+'    For i = Grid2.Row To Grid2.Rows - 1
+'        Grid2.RemoveItem (Grid2.Row)
+''        If Grid2.Row > 0 Then gintRow = gintRow - 1
+'    Next
+'
+'    Grid2.Row = 1
+
+Grid2.Clear
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+Private Sub UpdateRollerQty(ByVal PN As String)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SubName()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    frmGrid.Grid1.Row = 1
+    frmGrid.Grid1.Col = 0
+    
+    Do While frmGrid.Grid1.Row <= frmGrid.Grid1.Rows - 1
+        If PN = frmGrid.Grid1.Text Then
+            frmGrid.Grid1.TextMatrix(frmGrid.Grid1.Row, 1) = frmGrid.Grid1.TextMatrix(frmGrid.Grid1.Row, 1) - 2
+            Exit Do
+        Else
+            If frmGrid.Grid1.Row < frmGrid.Grid1.Rows - 1 Then
+                frmGrid.Grid1.Row = frmGrid.Grid1.Row + 1
+            Else
+                Exit Do
+            End If
+            
+        End If
+    Loop
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub

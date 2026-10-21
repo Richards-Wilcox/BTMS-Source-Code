@@ -1,0 +1,353 @@
+Option Explicit
+Const cstrModuleName As String = "frmFind"
+Public lobjForm As Form
+Private mblnInFocus As Boolean
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub CmdFind_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdFind_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim lintRow As Integer
+    
+    If Me.txtFind.Text <> "" Then
+     'YS- In house  search on Po Add/remove.
+     '        lintRow = SearchGrid(True, lobjForm.grdData, Me.txtFind.Text)
+
+     
+     If lobjForm.Name = "frmPOBOMAdd" Then
+         lintRow = SearchGrid(True, lobjForm.Grid2, Me.txtFind.Text)
+     Else
+             lintRow = SearchGrid(True, lobjForm.grdData, Me.txtFind.Text)
+     End If
+     
+     
+        
+        If lintRow = -1 Then
+            MsgBox "No Matches Found.", vbApplicationModal + vbInformation, "Search Item Not Found."
+        Else
+                         'lobjForm.grdData.Row = lintRow  -  Ys Inhouse search on Po Add/remove
+
+             If lobjForm.Name = "frmPOBOMAdd" Then
+                 lobjForm.Grid2.Row = lintRow
+             Else
+                 lobjForm.grdData.Row = lintRow
+             End If
+            
+        End If
+    End If
+'    If lobjForm.grdData.RowIsVisible(lobjForm.grdData.Row) = False Then
+'        lobjForm.grdData.TopRow = lobjForm.grdData.Row
+'    End If
+
+             If lobjForm.Name = "frmPOBOMAdd" Then
+                If lobjForm.Grid2.RowIsVisible(lobjForm.Grid2.Row) = False Then
+                    lobjForm.Grid2.TopRow = lobjForm.Grid2.Row
+                End If
+             Else
+                If lobjForm.grdData.RowIsVisible(lobjForm.grdData.Row) = False Then
+                    lobjForm.grdData.TopRow = lobjForm.grdData.Row
+                End If
+             End If
+
+
+
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdFindNext_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdFindNext_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim lintRow As Integer
+    
+'    If Me.txtFind.Text <> "" Then
+'        lintRow = SearchGrid(False, lobjForm.grdData, Me.txtFind.Text)
+'
+'        If lintRow = -1 Then
+'            MsgBox "No Matches Found.", vbApplicationModal + vbInformation, "Search Item Not Found."
+'        Else
+'            lobjForm.grdData.Row = lintRow
+'        End If
+'    End If
+'    If lobjForm.grdData.RowIsVisible(lobjForm.grdData.Row) = False Then
+'        lobjForm.grdData.TopRow = lobjForm.grdData.Row
+'    End If
+    
+    
+       If Me.txtFind.Text <> "" Then
+     'YS- In house  search on Po Add/remove.
+     '        lintRow = SearchGrid(True, lobjForm.grdData, Me.txtFind.Text)
+
+     If lobjForm.Name = "frmPOBOMAdd" Then
+         lintRow = SearchGrid(False, lobjForm.Grid2, Me.txtFind.Text)
+     Else
+             lintRow = SearchGrid(False, lobjForm.grdData, Me.txtFind.Text)
+     End If
+     
+     
+        
+        If lintRow = -1 Then
+            MsgBox "No Matches Found.", vbApplicationModal + vbInformation, "Search Item Not Found."
+        Else
+                         'lobjForm.grdData.Row = lintRow  -  Ys Inhouse search on Po Add/remove
+
+             If lobjForm.Name = "frmPOBOMAdd" Then
+                 lobjForm.Grid2.Row = lintRow
+             Else
+                 lobjForm.grdData.Row = lintRow
+             End If
+            
+        End If
+    End If
+'    If lobjForm.grdData.RowIsVisible(lobjForm.grdData.Row) = False Then
+'        lobjForm.grdData.TopRow = lobjForm.grdData.Row
+'    End If
+
+             If lobjForm.Name = "frmPOBOMAdd" Then
+                If lobjForm.Grid2.RowIsVisible(lobjForm.Grid2.Row) = False Then
+                    lobjForm.Grid2.TopRow = lobjForm.Grid2.Row
+                End If
+             Else
+                If lobjForm.grdData.RowIsVisible(lobjForm.grdData.Row) = False Then
+                    lobjForm.grdData.TopRow = lobjForm.grdData.Row
+                End If
+             End If
+
+
+    
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Function SearchGrid(ByVal mblnFirst As Boolean, ByVal pgrdData As VSFlexGrid, ByVal pstrFindWhat As String) As Long
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SearchGrid()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lintStartRow As Integer
+    Dim i As Integer
+    Dim lintPos As Integer
+    Dim lintCol As Integer
+    
+    'set column where to search according to form name.
+    Select Case lobjForm.Name
+    Case "frmBOMList"
+        lintCol = 1
+    Case "frmPOList"
+        lintCol = 2
+    Case "frmQuoteList"
+        lintCol = 2
+    Case "frmPOBOMAdd"
+         lintCol = 0
+    End Select
+    
+'    If mblnFirst = True Then
+'        lintStartRow = 1
+'    Else
+'         If lobjForm.Name = "frmPOBOMAdd" Then 'YS -- InHouse Search on Po Add remove
+'                 lintStartRow = 2
+'        Else
+'                lintStartRow = pgrdData.Row + 1
+'        End If
+'    End If
+
+
+    If mblnFirst = True Then
+             If lobjForm.Name = "frmPOBOMAdd" Then 'YS -- InHouse Search on Po Add remove
+        
+                 lintStartRow = 2
+             Else
+                 
+                 lintStartRow = 1
+              End If
+    Else
+
+        lintStartRow = pgrdData.Row + 1
+
+
+    End If
+
+
+    
+    For i = lintStartRow To pgrdData.Rows - 1
+        lintPos = InStr(1, pgrdData.TextMatrix(i, lintCol), pstrFindWhat, vbTextCompare)
+'
+'        If lintPos > 0 Then
+'            Exit For
+'        End If
+
+         If lobjForm.Name = "frmPOBOMAdd" Then 'YS -- InHouse Search on Po Add remove
+              If lintPos = 1 Then  'Only find that begins with
+                Exit For
+              End If
+         Else
+                 If lintPos > 0 Then
+                    Exit For
+                End If
+         
+         End If
+
+
+
+    Next
+    
+    If i = pgrdData.Rows Then i = -1 'no match
+    SearchGrid = i
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    cmdFind.Enabled = False
+    cmdFindNext.Enabled = False
+    LoadHelpText Me
+    MousePos1.Init Me
+    mblnInFocus = True
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub txtFind_Change()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtFind_Change()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If txtFind.Text = "" Then
+        cmdFind.Enabled = False
+        cmdFindNext.Enabled = False
+    Else
+        cmdFind.Enabled = True
+        cmdFindNext.Enabled = True
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    If KeyCode = 112 Then
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Or mblnInFocus = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+

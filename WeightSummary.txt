@@ -1,0 +1,546 @@
+Option Explicit
+Const cstrModuleName As String = "frmWeightSummary"
+
+Private Sub chkLock_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkLock_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If chkLock.Value = 0 Then
+        Grid1.TextMatrix(7, 2) = Format(Grid1.Aggregate(flexSTSum, 1, 2, 6, 2), "Fixed")
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+
+Private Sub Grid1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Grid1_MouseMove()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+'    If grdData1.MouseRow > 0 And grdData1.MouseCol > 0 And grdData1.MouseRow <= grdData1.Rows - 1 And grdData1.MouseCol <= grdData1.Cols - 1 Then
+        Grid1.ToolTipText = Grid1.Cell(flexcpTextDisplay, Grid1.MouseRow, Grid1.MouseCol)
+'    End If
+    
+    Exit Sub
+
+Error_Handler:
+Exit Sub 'sometimes this routine produced unexpected errors if
+'mouse is over the boundaries of the grid. Generating an error
+'screen is not necessary
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdBack_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdBack_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Unload Me
+    frmTrackEntry.Show
+    Screen.MousePointer = vbDefault
+    
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdNext_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdNext_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    If Me.chkLock.Value = 1 Then
+        WgtLock = True
+    Else
+        WgtLock = False
+    End If
+    
+    If MeasU = 1 Then
+        SecWgt = DBLValue(Grid1.TextMatrix(1, 2)) 'IIf(Val(Grid1.TextMatrix(1, 2)) = 0, SecWgt, Grid1.TextMatrix(1, 2))
+        LiteWgt = DBLValue(Grid1.TextMatrix(2, 2))  'IIf(Val(Grid1.TextMatrix(2, 2)) = 0, LiteWgt, Grid1.TextMatrix(2, 2))
+        varPassDoor.sngWgt = DBLValue(Grid1.TextMatrix(3, 2)) 'IIf(Val(Grid1.TextMatrix(3, 2)) = 0, HWWgt, Grid1.TextMatrix(3, 2))
+        HWWgt = DBLValue(Grid1.TextMatrix(4, 2))    'IIf(Val(Grid1.TextMatrix(3, 2)) = 0, HWWgt, Grid1.TextMatrix(3, 2))
+        MRSBWgt = DBLValue(Grid1.TextMatrix(5, 2)) 'IIf(Val(Grid1.TextMatrix(4, 2)) = 0, MRSBWgt, Grid1.TextMatrix(4, 2))
+        TrussWgt = DBLValue(Grid1.TextMatrix(6, 2))  'IIf(Val(Grid1.TextMatrix(5, 2)) = 0, TrussWgt, Grid1.TextMatrix(5, 2))
+        DrWgt = DBLValue(Grid1.TextMatrix(7, 2))  'IIf(Val(Grid1.TextMatrix(6, 2)) = 0, DrWgt, Grid1.TextMatrix(6, 2))
+    Else
+        If DBLValue(Grid1.TextMatrix(1, 2)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(1, 2)
+            aCon.LBcalc
+            SecWgt = aCon.LB
+        Else
+            SecWgt = 0
+        End If
+        If DBLValue(Grid1.TextMatrix(2, 2)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(2, 2)
+            aCon.LBcalc
+            LiteWgt = aCon.LB
+        Else
+            LiteWgt = 0
+        End If
+        If DBLValue(Grid1.TextMatrix(3, 2)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(3, 2)
+            aCon.LBcalc
+            varPassDoor.sngWgt = aCon.LB
+        Else
+            varPassDoor.sngWgt = 0
+        End If
+        If DBLValue(Grid1.TextMatrix(4, 2)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(4, 2)
+            aCon.LBcalc
+            HWWgt = aCon.LB
+        Else
+            HWWgt = 0
+        End If
+        If DBLValue(Grid1.TextMatrix(5, 2)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(5, 2)
+            aCon.LBcalc
+            MRSBWgt = aCon.LB
+        Else
+            MRSBWgt = 0
+        End If
+        If DBLValue(Grid1.TextMatrix(6, 2)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(6, 2)
+            aCon.LBcalc
+            TrussWgt = aCon.LB
+        Else
+            TrussWgt = 0
+        End If
+        If DBLValue(Grid1.TextMatrix(7, 2)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(7, 2)
+            aCon.LBcalc
+            DrWgt = aCon.LB
+        Else
+            DrWgt = 0
+        End If
+    End If
+    
+    If MeasU = 1 Then
+        SecWgtOld = DBLValue(Grid1.TextMatrix(1, 1)) 'IIf(Val(Grid1.TextMatrix(1, 2)) = 0, SecWgt, Grid1.TextMatrix(1, 2))
+        LiteWgtOld = DBLValue(Grid1.TextMatrix(2, 1))  'IIf(Val(Grid1.TextMatrix(2, 2)) = 0, LiteWgt, Grid1.TextMatrix(2, 2))
+        varPassDoor.sngWgtOld = DBLValue(Grid1.TextMatrix(3, 1)) 'IIf(Val(Grid1.TextMatrix(3, 2)) = 0, HWWgt, Grid1.TextMatrix(3, 2))
+        HWWgtOld = DBLValue(Grid1.TextMatrix(4, 1))    'IIf(Val(Grid1.TextMatrix(3, 2)) = 0, HWWgt, Grid1.TextMatrix(3, 2))
+        MRSBWgtOld = DBLValue(Grid1.TextMatrix(5, 1)) 'IIf(Val(Grid1.TextMatrix(4, 2)) = 0, MRSBWgt, Grid1.TextMatrix(4, 2))
+        TrussWgtOld = DBLValue(Grid1.TextMatrix(6, 1))  'IIf(Val(Grid1.TextMatrix(5, 2)) = 0, TrussWgt, Grid1.TextMatrix(5, 2))
+        'DrWgt = DBLValue(Grid1.TextMatrix(7, 1))  'IIf(Val(Grid1.TextMatrix(6, 2)) = 0, DrWgt, Grid1.TextMatrix(6, 2))
+    Else
+        If DBLValue(Grid1.TextMatrix(1, 1)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(1, 1)
+            aCon.LBcalc
+            SecWgtOld = aCon.LB
+        Else
+            SecWgtOld = 0
+        End If
+        If DBLValue(Grid1.TextMatrix(2, 1)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(2, 1)
+            aCon.LBcalc
+            LiteWgtOld = aCon.LB
+        Else
+            LiteWgtOld = 0
+        End If
+        If DBLValue(Grid1.TextMatrix(3, 1)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(3, 1)
+            aCon.LBcalc
+            varPassDoor.sngWgtOld = aCon.LB
+        Else
+            varPassDoor.sngWgtOld = 0
+        End If
+        If DBLValue(Grid1.TextMatrix(4, 1)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(4, 1)
+            aCon.LBcalc
+            HWWgtOld = aCon.LB
+        Else
+            HWWgtOld = 0
+        End If
+        If DBLValue(Grid1.TextMatrix(5, 1)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(5, 1)
+            aCon.LBcalc
+            MRSBWgtOld = aCon.LB
+        Else
+            MRSBWgtOld = 0
+        End If
+        If DBLValue(Grid1.TextMatrix(6, 1)) > 0 Then
+            aCon.KG = Grid1.TextMatrix(6, 1)
+            aCon.LBcalc
+            TrussWgtOld = aCon.LB
+        Else
+            TrussWgtOld = 0
+        End If
+'        If DBLValue(Grid1.TextMatrix(7, 2)) > 0 Then
+'            aCon.KG = Grid1.TextMatrix(7, 2)
+'            aCon.LBcalc
+'            DrWgt = aCon.LB
+'        Else
+'            DrWgt = 0
+'        End If
+    End If
+
+    If Grid1.TextMatrix(1, 3) <> "" Then
+        frmGrid.txtSecWgt.Text = Grid1.TextMatrix(1, 3) ' frmGrid.txtSecWgt.Text & Grid1.TextMatrix(1, 3)
+    End If
+    
+    If Grid1.TextMatrix(2, 3) <> "" Then
+        frmGrid.txtLiteWgt.Text = Grid1.TextMatrix(2, 3) ' frmGrid.txtLiteWgt.Text & Grid1.TextMatrix(2, 3)
+    End If
+    
+    If Grid1.TextMatrix(3, 3) <> "" Then
+        frmGrid.txtPassDoorWgt.Text = Grid1.TextMatrix(3, 3) ' frmGrid.txtPassDoorWgt.Text & Grid1.TextMatrix(3, 3)
+    End If
+    
+    If Grid1.TextMatrix(4, 3) <> "" Then
+        frmGrid.txtHWWgt.Text = Grid1.TextMatrix(4, 3) ' frmGrid.txtHWWgt.Text & Grid1.TextMatrix(4, 3)
+    End If
+    
+    If Grid1.TextMatrix(5, 3) <> "" Then
+        frmGrid.txtExtraWgt.Text = Grid1.TextMatrix(5, 3) ' frmGrid.txtExtraWgt.Text & Grid1.TextMatrix(5, 3)
+    End If
+    
+    If Grid1.TextMatrix(6, 3) <> "" Then
+        frmGrid.txtTrussWgt.Text = Grid1.TextMatrix(6, 3) ' frmGrid.txtTrussWgt.Text & Grid1.TextMatrix(6, 3)
+    End If
+    
+    If Grid1.TextMatrix(7, 3) <> "" Then
+        frmGrid.txtTotalWgt.Text = Grid1.TextMatrix(7, 3) ' frmGrid.txtTotalWgt.Text & Grid1.TextMatrix(7, 3)
+    End If
+    
+    Unload Me
+    
+    If ProdType = "Alumatite" Then
+        Call LoadSprings
+        Exit Sub
+    End If
+    
+    Call frmTrackEntry.LoadData
+'    Call frmTrackEntry.LoadShaft
+    frmTrackEntry.Show
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    If WgtLock = True Then
+        Me.chkLock.Value = 1
+    Else
+        chkLock.Value = 0
+    End If
+    
+    Me.Caption = IIf(MeasU = 1, "Weight Summary in Pounds", "Weight Summary in Kilograms")
+
+    Grid1.Clear
+'    Grid1.Left = (Me.Width - Grid1.Width) / 2
+    Grid1.ColWidth(0) = Grid1.Width * 0.25
+    Grid1.ColWidth(1) = Grid1.Width * 0.13
+    Grid1.ColWidth(2) = Grid1.Width * 0.13
+    Grid1.ColWidth(3) = Grid1.Width - Grid1.ColWidth(0) - Grid1.ColWidth(1) - Grid1.ColWidth(2) - 100
+    
+    Grid1.TextMatrix(0, 1) = "Calculated"
+    Grid1.TextMatrix(0, 2) = "New"
+    Grid1.TextMatrix(0, 3) = "Reason for change"
+    
+    Grid1.TextMatrix(1, 0) = "Sections Weight"
+    Grid1.TextMatrix(2, 0) = "Lite Weight"
+    Grid1.TextMatrix(3, 0) = "Pass Door Weight"
+    Grid1.TextMatrix(4, 0) = "Hardware Weight"
+    Grid1.TextMatrix(5, 0) = "Extra Wgt on Bottom"
+    Grid1.TextMatrix(6, 0) = "Truss Weight"
+    Grid1.TextMatrix(7, 0) = "Total Weight"
+    
+    If MeasU = 1 Then
+        Grid1.TextMatrix(1, 1) = Format(SecWgtOld, "Fixed") 'Format(IIf(SecWgtOld = 0, SecWgt, SecWgtOld), "Fixed")
+        Grid1.TextMatrix(2, 1) = Format(LiteWgtOld, "Fixed") ' Format(IIf(LiteWgtOld = 0, LiteWgt, LiteWgtOld), "Fixed")
+        Grid1.TextMatrix(3, 1) = Format(varPassDoor.sngWgtOld, "Fixed") 'Format(IIf(varPassDoor.sngWgtOld = 0, varPassDoor.sngWgt, varPassDoor.sngWgtOld), "Fixed")
+        Grid1.TextMatrix(4, 1) = Format(HWWgtOld, "Fixed") 'Format(IIf(HWWgtOld = 0, HWWgt, HWWgtOld), "Fixed")
+        Grid1.TextMatrix(5, 1) = Format(MRSBWgtOld, "Fixed") 'Format(IIf(MRSBWgtOld = 0, MRSBWgt, MRSBWgtOld), "Fixed")
+        Grid1.TextMatrix(6, 1) = Format(TrussWgtOld, "Fixed") 'Format(IIf(TrussWgtOld = 0, TrussWgt, TrussWgtOld), "Fixed")
+        Grid1.TextMatrix(1, 2) = Format(SecWgt, "Fixed")
+        Grid1.TextMatrix(2, 2) = Format(LiteWgt, "Fixed")
+        Grid1.TextMatrix(3, 2) = Format(varPassDoor.sngWgt, "Fixed")
+        Grid1.TextMatrix(4, 2) = Format(HWWgt, "Fixed")
+        Grid1.TextMatrix(5, 2) = Format(MRSBWgt, "Fixed")
+        Grid1.TextMatrix(6, 2) = Format(TrussWgt, "Fixed")
+    Else
+    
+        aCon.LB = SecWgtOld
+        aCon.KGcalc
+        Grid1.TextMatrix(1, 1) = Format(aCon.KG, "Fixed")
+        aCon.LB = LiteWgtOld
+        aCon.KGcalc
+        Grid1.TextMatrix(2, 1) = Format(aCon.KG, "Fixed")
+        aCon.LB = varPassDoor.sngWgtOld
+        aCon.KGcalc
+        Grid1.TextMatrix(3, 1) = Format(aCon.KG, "Fixed")
+        aCon.LB = HWWgtOld
+        aCon.KGcalc
+        Grid1.TextMatrix(4, 1) = Format(aCon.KG, "Fixed")
+        aCon.LB = MRSBWgtOld
+        aCon.KGcalc
+        Grid1.TextMatrix(5, 1) = Format(aCon.KG, "Fixed")
+        aCon.LB = TrussWgtOld
+        aCon.KGcalc
+        Grid1.TextMatrix(6, 1) = Format(aCon.KG, "Fixed")
+    
+    
+    
+    
+    
+    
+        aCon.LB = SecWgt
+        aCon.KGcalc
+        Grid1.TextMatrix(1, 2) = Format(aCon.KG, "Fixed")
+        aCon.LB = LiteWgt
+        aCon.KGcalc
+        Grid1.TextMatrix(2, 2) = Format(aCon.KG, "Fixed")
+        aCon.LB = varPassDoor.sngWgt
+        aCon.KGcalc
+        Grid1.TextMatrix(3, 2) = Format(aCon.KG, "Fixed")
+        aCon.LB = HWWgt
+        aCon.KGcalc
+        Grid1.TextMatrix(4, 2) = Format(aCon.KG, "Fixed")
+        aCon.LB = MRSBWgt
+        aCon.KGcalc
+        Grid1.TextMatrix(5, 2) = Format(aCon.KG, "Fixed")
+        aCon.LB = TrussWgt
+        aCon.KGcalc
+        Grid1.TextMatrix(6, 2) = Format(aCon.KG, "Fixed")
+    End If
+    Grid1.TextMatrix(7, 1) = Format(Grid1.Aggregate(flexSTSum, 1, 1, 6, 1), "Fixed")  'Format(DrWgt, "Fixed")
+
+    If chkLock.Value = 1 Then
+        If MeasU = 0 Then
+            aCon.LB = DrWgt
+            aCon.KGcalc
+            Grid1.TextMatrix(7, 2) = Format(aCon.KG, "Fixed")
+        Else
+            Grid1.TextMatrix(7, 2) = Format(DrWgt, "Fixed")
+        End If
+    Else
+        Grid1.TextMatrix(7, 2) = Format(Grid1.Aggregate(flexSTSum, 1, 2, 6, 2), "Fixed") 'Grid1.TextMatrix(7, 1)
+    End If
+    
+    Grid1.TextMatrix(1, 3) = frmGrid.txtSecWgt.Text
+    
+    Grid1.TextMatrix(2, 3) = frmGrid.txtLiteWgt.Text
+    
+    Grid1.TextMatrix(3, 3) = frmGrid.txtPassDoorWgt.Text
+    
+    Grid1.TextMatrix(4, 3) = frmGrid.txtHWWgt.Text
+    
+    Grid1.TextMatrix(5, 3) = frmGrid.txtExtraWgt.Text
+    
+    Grid1.TextMatrix(6, 3) = frmGrid.txtTrussWgt.Text
+    
+    Grid1.TextMatrix(7, 3) = frmGrid.txtTotalWgt.Text
+    
+'    Me.cmdBack.Left = Grid1.Left + Grid1.Width - cmdBack.Width
+'    Me.cmdNext.Left = Grid1.Left
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    LoadHelpText Me
+    MousePos1.Init Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub grid1_AfterEdit(ByVal Row As Long, ByVal Col As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Grid1_AfterEdit()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If chkLock.Value = 0 Then Grid1.TextMatrix(7, 2) = Grid1.Aggregate(flexSTSum, 1, 2, 6, 2)
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Grid1_Click()
+
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Grid1_click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If Grid1.Col = 2 Or Grid1.Col = 3 Then
+        
+        Grid1.EditCell
+    End If
+    
+    Exit Sub
+    
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Grid1_KeyPressEdit(ByVal Row As Long, ByVal Col As Long, KeyAscii As Integer)
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Grid1_KeyPressEdit()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Col = 2 Then
+        If Not (Len(Grid1.Text) = Grid1.EditSelLength) And Len(Grid1.EditText) >= 6 Then
+            Beep
+            KeyAscii = 0
+            Exit Sub
+        End If
+        If Not IsNumeric(Chr$(KeyAscii)) Xor KeyAscii = 8 Then
+            If (DecimU = 0 And KeyAscii = 46) Or (DecimU = 1 And KeyAscii = 44) Then
+                Beep
+                KeyAscii = 0
+            End If
+        End If
+    End If
+    If Col = 3 Then
+        If Not (Len(Grid1.Text) = Grid1.EditSelLength) And Len(Grid1.EditText) >= 30 Then
+            Beep
+            KeyAscii = 0
+            Exit Sub
+        End If
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub

@@ -1,0 +1,1242 @@
+Option Explicit
+'AW, KN
+Const cstrTableName As String = "CustomerInformation"
+Private Const cstrModuleName As String = "frmCustomerModify"
+
+Private mobjCustInfoRS As ADODB.Recordset
+Public mlngCustNum As Long
+Public mstrCustName As String
+Private mlngPrevCust As Long
+Public mintMode As Integer
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        If mintMode = MODE_VIEW Then ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdAdd_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAdd_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If mintMode = MODE_ADD Then
+        If mlngCustNum = 0 Then
+            Load frmCustInfo
+            Unload Me
+            Exit Sub
+        Else
+            Call LoadData
+            Exit Sub
+        End If
+    End If
+    
+    mintMode = MODE_ADD
+    Call SetControls(mintMode)
+    Call ClearScreen
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub cmdBack_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdBack_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    'RecCust.Requery 're-sort data
+    Me.Hide
+    frmCustInfo.Show
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdEdit_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdEdit_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    
+    If mintMode = MODE_EDIT Then
+        mintMode = MODE_VIEW
+        Call LoadData
+        Exit Sub
+    End If
+    
+    mintMode = MODE_EDIT
+    Call SetControls(mintMode)
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub cmdMainMenu_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdMainMenu_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    frmMainMenu.Show
+    Unload Me
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+    
+End Sub
+
+Private Sub cmdPrint_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdPrint_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+'
+'    CommonDialog1.CancelError = True
+'    CommonDialog1.ShowPrinter
+    Call ShowTaskbar(False) 'will hide the widows taskbar for the time of printing
+    
+    Set Picture1.Picture = CaptureScreen()
+    PrintPictureToFitPage Printer, Picture1.Picture
+    
+    Printer.EndDoc
+    
+    Call ShowTaskbar(True)
+'    If gblnWordFlag = False Then
+'        Me.PrintForm
+'    Else
+'        Call FillTemplates("Templates\Cust.dot", "Reports\Cust.Doc", Me)
+'    End If
+    Exit Sub
+
+Error_Handler:
+    If Err.Number = 32755 Then
+        Call ShowTaskbar(True)
+        Exit Sub
+    End If
+    
+    If Err.Number = 482 Or Err.Number = 484 Then 'Make sure all connections between computer and printer are solid. Most printers provide a display for error information such as "Out of paper," "Offline," and so on.
+        MsgBox Err.Number & ":" & " Printer error!", vbCritical + vbApplicationModal, "Printer Error."
+        Exit Sub
+    End If
+    
+    If Err.Number = 9 Then  'no printer installed
+        MsgBox Err.Number & ":" & " Printer error!", vbCritical + vbApplicationModal, "Printer Error."
+        Exit Sub
+    End If
+    
+    Call ShowTaskbar(True)
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdSave_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSave_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    If MsgBox("Save Data?", vbApplicationModal + vbYesNo + vbQuestion, "Save Data.") = vbYes Then Call SaveData
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub SaveData()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SaveData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lstrSQL As String
+    Dim lstrWhereClause As String
+    Dim lstrExcludeFieldList As String
+    Dim llngAffected As Long
+    Dim lobjADORS As ADODB.Recordset
+    If mintMode = MODE_ADD Then
+        lstrSQL = "select custname from customerinformation where custname=" & SQLString(Trim(txtCName.Text))
+        Set lobjADORS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+        If Not lobjADORS Is Nothing Then
+            If Not (lobjADORS.EOF = True And lobjADORS.BOF = True) Then
+                MsgBox "Customer name already exists.", vbApplicationModal + vbOKOnly + vbInformation, "Duplicate Customer Name"
+                Exit Sub
+            End If
+        End If
+    End If
+    ' Copy the fields from the screen to an ADO Recordset
+    
+    Set lobjADORS = BuildRS()
+    If Not ValidateData(lobjADORS) Then Exit Sub
+    
+    ' Process through the recordset and insert or update rows
+    If Not lobjADORS Is Nothing Then
+        If Not (lobjADORS.BOF And lobjADORS.EOF) Then
+            lobjADORS.MoveFirst
+            Do While lobjADORS.EOF = False
+                If mintMode = MODE_ADD Then
+                    lstrErrDescr = "Error building insert statement for " & cstrTableName
+                    lstrSQL = Build_Insert(lobjADORS, cstrTableName, "CustNum")
+                    lstrErrDescr = "Error inserting data into " & cstrTableName
+                    Call CnnBTMS.Execute(lstrSQL, 0, adCmdText And adExecuteNoRecords)
+                    
+                    mlngCustNum = GetID(cstrTableName, "CustNum", "CustName", Trim(lobjADORS.Fields("CustName").Value))
+                Else
+                    lstrErrDescr = "Error building update statement for " & cstrTableName
+                    lstrWhereClause = "CustNum=" & mlngCustNum
+                    lstrSQL = Build_Update(lobjADORS, cstrTableName, lstrWhereClause)
+                    lstrErrDescr = "Error updating " & cstrTableName
+                    Call CnnBTMS.Execute(lstrSQL, 0, adCmdText And adExecuteNoRecords)
+                End If
+                lstrErrDescr = ""
+                
+                mstrCustName = Trim(lobjADORS.Fields("CustName").Value)
+                lobjADORS.MoveNext
+            Loop
+            
+            lobjADORS.Close
+        End If
+    End If
+    
+    Set lobjADORS = Nothing
+    Call LoadData
+    
+    Exit Sub
+
+Error_Handler:
+
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdSpell_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSpell_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Call SpellCheck(txtNotes)
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Activate()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Activate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If mintMode = MODE_ADD Then
+        mintMode = MODE_VIEW
+        Call cmdAdd_Click
+    Else
+        Call LoadData
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Initialize()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Initialize()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    mintMode = MODE_VIEW
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Set mobjCustInfoRS = New ADODB.Recordset
+    mobjCustInfoRS.Open "CustomerInformation", CnnBTMS, adOpenKeyset, adLockOptimistic
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    LoadHelpText Me
+    MousePos1.Init Me
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Unload()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    If Not mobjCustInfoRS Is Nothing Then
+        If mobjCustInfoRS.State = adStateOpen Then mobjCustInfoRS.Close
+        Set mobjCustInfoRS = Nothing
+    End If
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub txtCity_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtCity_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtCity.SelStart = 0
+    txtCity.SelLength = Len(txtCity.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtCName_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtCName_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtCName.SelStart = 0
+    txtCName.SelLength = Len(txtCName.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtCountry_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtCountry_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtCountry.SelStart = 0
+    txtCountry.SelLength = Len(txtCountry.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtmarkup_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtmarkup_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtMarkup.SelStart = 0
+    txtMarkup.SelLength = Len(txtMarkup.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtMarkup_KeyPress(KeyAscii As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtmarkup_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+'    If ValNumericText(txtMarkup, KeyAscii, Len(txtMarkup.Text)) = False Then
+'        Beep
+'        KeyAscii = 0
+'    End If
+
+    'Khurram - Nov 18, 2003
+    
+    'instead of making change in the global defined function : ' ValNumericText '
+    'copy the lines of code from the function and allow -ve value (KeyAsscii = 45)
+    
+    If DecimU = 1 Then
+        If Not IsNumeric(Chr(KeyAscii)) And KeyAscii <> 46 And KeyAscii <> 8 And KeyAscii <> 45 Then
+            Beep
+            KeyAscii = 0
+            Exit Sub
+        End If
+    Else
+        If Not IsNumeric(Chr(KeyAscii)) And KeyAscii <> 44 And KeyAscii <> 8 And KeyAscii <> 45 Then
+            Beep
+            KeyAscii = 0
+            Exit Sub
+        End If
+    End If
+    
+    If KeyAscii = 44 Then
+        If Not txtMarkup.SelLength = Len(txtMarkup.Text) Then
+            If InStr(1, txtMarkup.Text, Chr(46)) <> 0 Or InStr(1, txtMarkup.Text, Chr(44)) <> 0 Then
+                Beep
+                KeyAscii = 0
+                Exit Sub
+            End If
+        End If
+    End If
+    
+    If KeyAscii = 45 Then
+        If Not txtMarkup.SelLength = Len(txtMarkup.Text) Then
+            If InStr(1, txtMarkup.Text, Chr(45)) <> 0 Then
+                Beep
+                KeyAscii = 0
+                Exit Sub
+            End If
+        End If
+    End If
+    
+    If KeyAscii = 44 Then
+        If Not txtMarkup.SelLength = Len(txtMarkup.Text) Then
+            If InStr(1, txtMarkup.Text, Chr(46)) <> 0 Or InStr(1, txtMarkup.Text, Chr(44)) <> 0 Then
+                Beep
+                KeyAscii = 0
+                Exit Sub
+            End If
+        End If
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtMarkup_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtmarkup_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    txtMarkup.Text = Format(DBLValue(txtMarkup.Text), cstrDiscountMask)
+    If DBLValue(txtMarkup.Text) > 9 Then
+        MsgBox "This value cannot be greater than 9." & vbCrLf & _
+            "It will give you a markup of 900%", vbExclamation + vbOKOnly + vbApplicationModal, "Invalid data."
+        txtMarkup.SelStart = 0
+        txtMarkup.SelLength = Len(txtMarkup.Text)
+        Cancel = True
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub txtEmail_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtEmail_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtEmail.SelStart = 0
+    txtEmail.SelLength = Len(txtEmail.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtFax_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtFax_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtFax.SelStart = 0
+    txtFax.SelLength = Len(txtFax.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtNotes_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtNotes_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtNotes.SelStart = 0
+    txtNotes.SelLength = Len(txtNotes.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtPCode_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtPCode_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtPCode.SelStart = 0
+    txtPCode.SelLength = Len(txtPCode.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtPhone_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtPhone_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtPhone.SelStart = 0
+    txtPhone.SelLength = Len(txtPhone.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtProvince_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtProvince_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtProvince.SelStart = 0
+    txtProvince.SelLength = Len(txtProvince.Text)
+    Exit Sub
+    
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtStAddress1_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtStAddress1_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtStAddress1.SelStart = 0
+    txtStAddress1.SelLength = Len(txtStAddress1.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtStAddress2_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtStAddress2_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtStAddress2.SelStart = 0
+    txtStAddress2.SelLength = Len(txtStAddress2.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtStAddress3_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtStAddress3_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtStAddress3.SelStart = 0
+    txtStAddress3.SelLength = Len(txtStAddress3.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtYTD_GotFocus()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtYTD_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    txtYTD.SelStart = 0
+    txtYTD.SelLength = Len(txtYTD.Text)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtYTD_KeyPress(KeyAscii As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtYTD_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtYTD, KeyAscii, Len(txtYTD.Text)) = False Then
+        Beep
+        KeyAscii = 0
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub LoadData()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim lobjQuoteRS As ADODB.Recordset
+    
+    mintMode = MODE_VIEW
+    Call ClearScreen
+    
+    lstrSQLQuery = " select * from  CustomerInformation where CustNum=" & mlngCustNum
+    Set lobjQuoteRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjQuoteRS Is Nothing Then
+        lobjQuoteRS.ActiveConnection = Nothing
+        If Not (lobjQuoteRS.BOF And lobjQuoteRS.EOF) Then
+            lobjQuoteRS.MoveFirst
+            mlngCustNum = lobjQuoteRS.Fields("CustNum").Value
+            
+            lblCustNum.Caption = IIf(IsNull(lobjQuoteRS.Fields("CustName").Value), "", lobjQuoteRS.Fields("CustNum").Value)
+    
+            txtCName.Text = IIf(IsNull(lobjQuoteRS.Fields("CustName").Value), "", Trim(lobjQuoteRS.Fields("CustName").Value))
+            txtCName.MaxLength = lobjQuoteRS.Fields("CustName").DefinedSize
+    
+            txtMarkup.Text = Format(lobjQuoteRS.Fields("CustMarkup").Value, cstrDiscountMask)
+            txtMarkup.MaxLength = 6
+    
+            txtStAddress1.Text = IIf(IsNull(lobjQuoteRS.Fields("CustStrAddr1").Value), "", Trim(lobjQuoteRS.Fields("CustStrAddr1").Value))
+            txtStAddress1.MaxLength = lobjQuoteRS.Fields("CustStrAddr1").DefinedSize
+    
+            txtStAddress2.Text = IIf(IsNull(lobjQuoteRS.Fields("CustStrAddr2").Value), "", Trim(lobjQuoteRS.Fields("CustStrAddr2").Value))
+            txtStAddress2.MaxLength = lobjQuoteRS.Fields("CustStrAddr2").DefinedSize
+    
+            txtStAddress3.Text = IIf(IsNull(lobjQuoteRS.Fields("CustStrAddr3").Value), "", Trim(lobjQuoteRS.Fields("CustStrAddr3").Value))
+            txtStAddress3.MaxLength = lobjQuoteRS.Fields("CustStrAddr3").DefinedSize
+    
+            txtCity.Text = IIf(IsNull(lobjQuoteRS.Fields("CustCity").Value), "", Trim(lobjQuoteRS.Fields("CustCity").Value))
+            txtCity.MaxLength = lobjQuoteRS.Fields("CustCity").DefinedSize
+    
+            txtProvince.Text = IIf(IsNull(lobjQuoteRS.Fields("CustProv").Value), "", Trim(lobjQuoteRS.Fields("CustProv").Value))
+            txtProvince.MaxLength = lobjQuoteRS.Fields("CustProv").DefinedSize
+    
+            txtCountry.Text = IIf(IsNull(lobjQuoteRS.Fields("CustCountry").Value), "", Trim(lobjQuoteRS.Fields("CustCountry").Value))
+            txtCountry.MaxLength = lobjQuoteRS.Fields("CustCountry").DefinedSize
+    
+            txtPCode.Text = IIf(IsNull(lobjQuoteRS.Fields("CustPostal").Value), "", Trim(lobjQuoteRS.Fields("CustPostal").Value))
+            txtPCode.MaxLength = lobjQuoteRS.Fields("CustPostal").DefinedSize
+    
+            txtContact.Text = IIf(IsNull(lobjQuoteRS.Fields("CustContact").Value), "", Trim(lobjQuoteRS.Fields("CustContact").Value))
+            txtContact.MaxLength = lobjQuoteRS.Fields("CustContact").DefinedSize
+    
+            txtExtn.Text = IIf(IsNull(lobjQuoteRS.Fields("CustExt").Value), "", Trim(lobjQuoteRS.Fields("CustExt").Value))
+            txtExtn.MaxLength = lobjQuoteRS.Fields("CustExt").DefinedSize
+    
+            txtPhone.Text = IIf(IsNull(lobjQuoteRS.Fields("CustPhone").Value), "", Trim(lobjQuoteRS.Fields("CustPhone").Value))
+            txtPhone.MaxLength = lobjQuoteRS.Fields("CustPhone").DefinedSize
+    
+            txtFax.Text = IIf(IsNull(lobjQuoteRS.Fields("CustFax").Value), "", Trim(lobjQuoteRS.Fields("CustFax").Value))
+            txtFax.MaxLength = lobjQuoteRS.Fields("CustFax").DefinedSize
+    
+            txtEmail.Text = IIf(IsNull(lobjQuoteRS.Fields("CustEmail").Value), "", Trim(lobjQuoteRS.Fields("CustEmail").Value))
+            txtEmail.MaxLength = lobjQuoteRS.Fields("CustEmail").DefinedSize
+    
+            txtNotes.Text = IIf(IsNull(lobjQuoteRS.Fields("CustExtraInfo").Value), "", Trim(lobjQuoteRS.Fields("CustExtraInfo").Value))
+
+            txtYTD.Text = Format(lobjQuoteRS.Fields("CustYTD").Value, cstrDollarMask)
+            txtYTD.MaxLength = 15
+    
+            chkActive.Value = IIf(lobjQuoteRS.Fields("CustActive").Value = True, 1, 0)
+        End If
+    lobjQuoteRS.Close
+    End If
+    Set lobjQuoteRS = Nothing
+    Call SetControls(mintMode)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub SetControls(ByVal intMode)
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetControls()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+Select Case intMode
+        Case MODE_ADD
+                         cmdAdd.Caption = "Cancel &Add"
+                         cmdAdd.Enabled = True
+                         cmdEdit.Enabled = False
+                         cmdSave.Enabled = True
+                         cmdPrint.Enabled = False
+                         cmdBack.Enabled = False
+                         If gblnWordFlag = True Then cmdSpell.Enabled = True
+                         txtCName.Enabled = True
+                         chkActive.Value = 1
+                         txtCName.Enabled = True
+                         txtStAddress1.Enabled = True
+                         txtStAddress2.Enabled = True
+                         txtStAddress3.Enabled = True
+                         txtCity.Enabled = True
+                         txtProvince.Enabled = True
+                         txtPCode.Enabled = True
+                         txtCountry.Enabled = True
+                         txtPhone.Enabled = True
+                         txtFax.Enabled = True
+                         txtEmail.Enabled = True
+                         txtMarkup.Enabled = True
+                         txtYTD.Enabled = True
+                         txtNotes.Enabled = True
+                         txtContact.Enabled = True
+                         txtExtn.Enabled = True
+                         chkActive.Enabled = True
+
+                         txtCName.BackColor = &HFFFFFF
+                         txtStAddress1.BackColor = &HFFFFFF
+                         txtStAddress2.BackColor = &HFFFFFF
+                         txtStAddress3.BackColor = &HFFFFFF
+                         txtCity.BackColor = &HFFFFFF
+                         txtProvince.BackColor = &HFFFFFF
+                         txtPCode.BackColor = &HFFFFFF
+                         txtCountry.BackColor = &HFFFFFF
+                         txtPhone.BackColor = &HFFFFFF
+                         txtFax.BackColor = &HFFFFFF
+                         txtEmail.BackColor = &HFFFFFF
+                         txtMarkup.BackColor = &HFFFFFF
+                         txtYTD.BackColor = &HFFFFFF
+                         txtNotes.BackColor = &HFFFFFF
+                         txtContact.BackColor = &HFFFFFF
+                         txtExtn.BackColor = &HFFFFFF
+
+        Case MODE_EDIT
+                         cmdEdit.Caption = "Cancel &Edit"
+                         cmdAdd.Enabled = False
+                         cmdEdit.Enabled = True
+                         cmdSave.Enabled = True
+                         cmdPrint.Enabled = False
+                         cmdBack.Enabled = False
+                         If gblnWordFlag = True Then cmdSpell.Enabled = True
+                         txtCName.Enabled = False
+                         txtStAddress1.Enabled = True
+                         txtStAddress2.Enabled = True
+                         txtStAddress3.Enabled = True
+                         txtCity.Enabled = True
+                         txtProvince.Enabled = True
+                         txtPCode.Enabled = True
+                         txtCountry.Enabled = True
+                         txtPhone.Enabled = True
+                         txtFax.Enabled = True
+                         txtEmail.Enabled = True
+                         txtMarkup.Enabled = True
+                         txtYTD.Enabled = True
+                         txtNotes.Enabled = True
+                         txtContact.Enabled = True
+                         txtExtn.Enabled = True
+                         chkActive.Enabled = True
+                         
+                         txtCName.BackColor = &HFFFFFF
+                         txtStAddress1.BackColor = &HFFFFFF
+                         txtStAddress2.BackColor = &HFFFFFF
+                         txtStAddress3.BackColor = &HFFFFFF
+                         txtCity.BackColor = &HFFFFFF
+                         txtProvince.BackColor = &HFFFFFF
+                         txtPCode.BackColor = &HFFFFFF
+                         txtCountry.BackColor = &HFFFFFF
+                         txtPhone.BackColor = &HFFFFFF
+                         txtFax.BackColor = &HFFFFFF
+                         txtEmail.BackColor = &HFFFFFF
+                         txtMarkup.BackColor = &HFFFFFF
+                         txtYTD.BackColor = &HFFFFFF
+                         txtNotes.BackColor = &HFFFFFF
+                         txtContact.BackColor = &HFFFFFF
+                         txtExtn.BackColor = &HFFFFFF
+        Case Else
+                         cmdAdd.Caption = "&Add Customer"
+                         cmdEdit.Caption = "&Edit Customer"
+                         cmdAdd.Enabled = True
+                         cmdEdit.Enabled = True
+                         cmdSave.Enabled = False
+                         cmdPrint.Enabled = True
+                         cmdBack.Enabled = True
+                         cmdSpell.Enabled = False
+                        
+                         txtCName.Enabled = False
+                         txtStAddress1.Enabled = False
+                         txtStAddress2.Enabled = False
+                         txtStAddress3.Enabled = False
+                         txtCity.Enabled = False
+                         txtProvince.Enabled = False
+                         txtPCode.Enabled = False
+                         txtCountry.Enabled = False
+                         txtPhone.Enabled = False
+                         txtFax.Enabled = False
+                         txtEmail.Enabled = False
+                         txtMarkup.Enabled = False
+                         txtYTD.Enabled = False
+                         txtNotes.Enabled = False
+                         txtContact.Enabled = False
+                         txtExtn.Enabled = False
+                         chkActive.Enabled = False
+                        
+                         txtCName.BackColor = &HE0E0E0
+                         txtStAddress1.BackColor = &HE0E0E0
+                         txtStAddress2.BackColor = &HE0E0E0
+                         txtStAddress3.BackColor = &HE0E0E0
+                         txtCity.BackColor = &HE0E0E0
+                         txtProvince.BackColor = &HE0E0E0
+                         txtPCode.BackColor = &HE0E0E0
+                         txtCountry.BackColor = &HE0E0E0
+                         txtPhone.BackColor = &HE0E0E0
+                         txtFax.BackColor = &HE0E0E0
+                         txtEmail.BackColor = &HE0E0E0
+                         txtMarkup.BackColor = &HE0E0E0
+                         txtYTD.BackColor = &HE0E0E0
+                         txtNotes.BackColor = &HE0E0E0
+                         txtContact.BackColor = &HE0E0E0
+                         txtExtn.BackColor = &HE0E0E0
+        End Select
+    Label23.Caption = "(e.g. for 7% enter " & Format(0.07, "Fixed") & ")"
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub ClearScreen()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ClearScreen()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    lblCustNum.Caption = ""
+    txtCName.Text = ""
+    txtStAddress1.Text = ""
+    txtStAddress2.Text = ""
+    txtStAddress3.Text = ""
+    txtCity.Text = ""
+    txtProvince.Text = ""
+    txtPCode.Text = ""
+    txtContact.Text = ""
+    txtCountry.Text = ""
+    txtPhone.Text = ""
+    txtExtn.Text = ""
+    txtFax.Text = ""
+    txtEmail.Text = ""
+    txtMarkup.Text = ""
+    txtYTD.Text = ""
+    txtNotes.Text = ""
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+Private Function BuildRS() As ADODB.Recordset
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".BuildRS()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lstrSchema As String
+    Dim llngAffected As Long
+    Dim lobjADORS As ADODB.Recordset
+    
+    ' Get empty recordset
+    lstrErrDescr = "Error getting empty ADO recordset."
+    lstrSQL = "Select * from " & cstrTableName & " where 1=0"
+    Set lobjADORS = New ADODB.Recordset
+    lobjADORS.CursorType = adOpenForwardOnly
+    lobjADORS.CursorLocation = adUseClient
+    lobjADORS.Open lstrSQL, CnnBTMS, adOpenForwardOnly, adLockOptimistic
+    lobjADORS.AddNew
+    Set lobjADORS.ActiveConnection = Nothing
+    lstrErrDescr = ""
+    
+    lobjADORS.Fields("CustName").Value = Trim(txtCName.Text)
+    lobjADORS.Fields("CustMarkup").Value = DBLValue(txtMarkup.Text)
+    lobjADORS.Fields("CustStrAddr1").Value = IIf(txtStAddress1.Text = "", "", txtStAddress1.Text)
+    lobjADORS.Fields("CustStrAddr2").Value = IIf(txtStAddress2.Text = "", "", txtStAddress2.Text)
+    lobjADORS.Fields("CustStrAddr3").Value = IIf(txtStAddress3.Text = "", "", txtStAddress3.Text)
+    lobjADORS.Fields("CustCity").Value = IIf(txtCity.Text = "", "", txtCity.Text)
+    lobjADORS.Fields("CustProv").Value = IIf(txtProvince.Text = "", "", txtProvince.Text)
+    lobjADORS.Fields("CustCountry").Value = IIf(txtCountry.Text = "", "", txtCountry.Text)
+    lobjADORS.Fields("CustPostal").Value = IIf(txtPCode.Text = "", "", txtPCode.Text)
+    lobjADORS.Fields("CustContact").Value = IIf(txtContact.Text = "", "", txtContact.Text)
+    lobjADORS.Fields("CustPhone").Value = IIf(txtPhone.Text = "", "", txtPhone.Text)
+    lobjADORS.Fields("CustExt").Value = Trim(txtExtn.Text)
+    lobjADORS.Fields("CustFax").Value = IIf(txtFax.Text = "", "", txtFax.Text)
+    lobjADORS.Fields("CustEmail").Value = IIf(txtEmail.Text = "", "", txtEmail.Text)
+    lobjADORS.Fields("CustExtraInfo").Value = IIf(txtNotes.Text = "", "", txtNotes.Text)
+    lobjADORS.Fields("CustYTD").Value = DBLValue(txtYTD.Text)
+    lobjADORS.Fields("CustActive").Value = IIf(chkActive.Value = 1, True, False)
+    
+    Set BuildRS = lobjADORS
+    Set lobjADORS = Nothing
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Function
+
+Private Function ValidateData(ByRef objADORS As ADODB.Recordset) As Boolean
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ValidateData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    ValidateData = True
+    
+    txtMarkup.Text = Format(DBLValue(Trim(txtMarkup.Text)), cstrDiscountMask)
+    txtYTD.Text = Format(DBLValue(Trim(txtYTD.Text)), cstrDollarMask)
+    ' ADD Mode only Validations
+    If mintMode = MODE_ADD Then
+        If objADORS.Fields("CustName").Value = "" Then
+            MsgBox "Invalid Customer Name.", vbApplicationModal + vbCritical + vbOKOnly, "Validation Failure"
+            txtCName.SetFocus
+            ValidateData = False
+            Exit Function
+        End If
+    End If
+    
+    ' EDIT Mode only Validations
+    If mintMode = MODE_EDIT Then
+    End If
+    
+    ' Validation for ALL modes
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Private Sub txtYTD_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtYTD_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    txtYTD.Text = Format(DBLValue(txtYTD.Text), cstrDollarMask)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub

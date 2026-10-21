@@ -1,0 +1,110 @@
+Option Explicit
+Const cstrModuleName As String = "frmSecHWPckgs"
+
+Private Sub cmdOK_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdOK_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    Screen.MousePointer = vbHourglass
+    Dim i  As Integer
+    For i = 1 To VSFlexGrid1.Rows - 1
+        If DBLValue(VSFlexGrid1.TextMatrix(i, 1)) > 0 Then
+            Call FillSummaryGrid(VSFlexGrid1.TextMatrix(i, 0), DBLValue(VSFlexGrid1.TextMatrix(i, 1)), "Sections", GetSubCategory(VSFlexGrid1.TextMatrix(i, 0)), 0)
+        End If
+    Next
+    Unload Me
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Me.VSFlexGrid1.ColWidth(0) = Me.VSFlexGrid1.Width / 2.1
+    Me.VSFlexGrid1.ColWidth(1) = Me.VSFlexGrid1.Width / 2.1
+    
+    Me.VSFlexGrid1.TextMatrix(0, 0) = "Part Number"
+    Me.VSFlexGrid1.TextMatrix(0, 1) = "Quantity"
+    
+    If ProdType = "Rolltite" Then
+        Me.VSFlexGrid1.Rows = 11
+        Me.VSFlexGrid1.TextMatrix(1, 0) = "8-3030"
+        Me.VSFlexGrid1.TextMatrix(2, 0) = "8-3036"
+        Me.VSFlexGrid1.TextMatrix(3, 0) = "8-3044"
+        Me.VSFlexGrid1.TextMatrix(4, 0) = "8-3052"
+        Me.VSFlexGrid1.TextMatrix(5, 0) = "8-3060"
+        Me.VSFlexGrid1.TextMatrix(6, 0) = "8-7027"
+        Me.VSFlexGrid1.TextMatrix(7, 0) = "8-7033"
+        Me.VSFlexGrid1.TextMatrix(8, 0) = "8-7039"
+        Me.VSFlexGrid1.TextMatrix(9, 0) = "8-7041"
+        Me.VSFlexGrid1.TextMatrix(10, 0) = "8-7090"
+    Else
+        Me.VSFlexGrid1.Rows = 5
+        Me.VSFlexGrid1.TextMatrix(1, 0) = "8-9028"
+        Me.VSFlexGrid1.TextMatrix(2, 0) = "8-9034"
+        Me.VSFlexGrid1.TextMatrix(3, 0) = "8-9040"
+        Me.VSFlexGrid1.TextMatrix(4, 0) = "8-9098"
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub VSFlexGrid1_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".VSFlexGrid1_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If VSFlexGrid1.Col = 1 And VSFlexGrid1.Row > 0 Then
+        VSFlexGrid1.EditCell
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub VSFlexGrid1_KeyPressEdit(ByVal Row As Long, ByVal Col As Long, KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".VSFlexGrid1_KeyPressEdit()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If Not IsNumeric(Chr(KeyAscii)) Xor KeyAscii = 8 Then KeyAscii = 0
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub

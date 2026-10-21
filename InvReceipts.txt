@@ -1,0 +1,380 @@
+Option Explicit
+Const cstrModuleName As String = "frmInvReceipts"
+Const cstrTableName As String = "PO"
+Const cstrTitle As String = "PO Listing"
+Const cintMinRows As Integer = 12
+Const cstrSelectList As String = "IIf(POStatus='Issued', 3, 0) As StatusValue, POnum, POstatus, POdate, POReqDate, POIssueDate, POCompleteDate, POID"
+Private mobjADORS As ADODB.Recordset
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdMenu_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdMenu_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Unload Me
+    frmInvMenu.Show
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+ 
+End Sub
+
+Private Sub cmdReceiptsPO_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdReceiptsPO_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Dim llngRow As Long
+    Dim llngPOID As Long
+    
+    llngRow = POListGrid.RowSel
+    llngPOID = DBLValue(POListGrid.TextMatrix(llngRow, 8))
+    If llngPOID > 0 Then
+        Dim frmP As frmInvPOReceipts
+        Set frmP = New frmInvPOReceipts
+        frmP.mlngPOID = llngPOID
+        frmP.mstrPONum = Trim(POListGrid.TextMatrix(llngRow, 1))
+        Unload Me
+        frmP.Show
+        Set frmP = Nothing
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    
+'    If CnnBTMS Is Nothing Then
+'        Set CnnBTMS = New ADODB.Connection
+'        CnnBTMS.Provider = "Microsoft.Jet.OLEDB.4.0"
+'        CnnBTMS.CursorLocation = adUseClient
+'        CnnBTMS.IsolationLevel = adXactReadCommitted
+'        CnnBTMS.Open App.Path & "\RWMaster.mdb"
+'    End If
+    
+    chkInactive.Value = 1
+    Call InitializeGrid
+    Call LoadData
+    LoadHelpText Me
+    MousePos1.Init Me
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub InitializeGrid()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".InitializeGrid()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    POListGrid.ScrollBars = flexScrollBarBoth
+    POListGrid.SelectionMode = flexSelectionByRow
+    POListGrid.Cols = 9
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub LoadData()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim llngRecords As Long
+    Dim lstrSQLQuery As String
+    
+    POListGrid.Clear
+    llngRecords = 0
+    lstrSQLQuery = "Select " & cstrSelectList & " from " & cstrTableName & " where POStatus='Issued'"
+    Set mobjADORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not mobjADORS Is Nothing Then
+        mobjADORS.ActiveConnection = Nothing
+        If Not (mobjADORS.BOF And mobjADORS.EOF) Then
+            llngRecords = mobjADORS.RecordCount
+            POListGrid.VirtualData = False
+            POListGrid.DataMode = flexDMFree
+            Set POListGrid.DataSource = mobjADORS
+        End If
+    End If
+    fraGrid.Caption = " " & llngRecords & " Records "
+    chkInactive.Enabled = False
+    Call SetGridTitles
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Unload()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If Not mobjADORS Is Nothing Then
+        If mobjADORS.State = adStateOpen Then mobjADORS.Close
+        Set mobjADORS = Nothing
+    End If
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub POListGrid_AfterDataRefresh()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".POListGrid_AfterDataRefresh()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If Not mobjADORS Is Nothing Then
+        If mobjADORS.State = adStateOpen Then mobjADORS.Close
+        Set mobjADORS = Nothing
+    End If
+    If POListGrid.Rows < cintMinRows Then
+        Set POListGrid.DataSource = Nothing
+        POListGrid.Rows = cintMinRows
+    End If
+    Exit Sub
+    
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub POListGrid_DblClick()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".POListGrid_DblClick()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Call cmdReceiptsPO_Click
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub POListGrid_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".POListGrid_MouseMove()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+'    If POListGrid.MouseRow > 0 And POListGrid.MouseCol > 0 Then
+        POListGrid.ToolTipText = POListGrid.Cell(flexcpTextDisplay, POListGrid.MouseRow, POListGrid.MouseCol)
+'    End If
+    Exit Sub
+
+Error_Handler:
+Exit Sub 'sometimes this routine produced unexpected errors if
+'mouse is over the boundaries of the grid. Generating an error
+'screen is not necessary
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub SetGridTitles()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetGridTitles()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    POListGrid.ColHidden(0) = True
+    POListGrid.ColHidden(1) = True
+    POListGrid.ColHidden(8) = True
+    POListGrid.ColHidden(7) = True
+    
+    POListGrid.ColWidth(0) = 0
+    POListGrid.ColWidth(1) = 0
+    POListGrid.ColWidth(2) = POListGrid.Width / 3 '3350
+    POListGrid.ColWidth(3) = POListGrid.Width / 6 '1000
+    POListGrid.ColWidth(4) = POListGrid.Width / 7 '1000
+    POListGrid.ColWidth(5) = POListGrid.Width / 7 '1200
+    POListGrid.ColWidth(6) = POListGrid.Width / 7 '1200
+    POListGrid.ColWidth(7) = 0
+    POListGrid.ColWidth(8) = 0
+    
+    POListGrid.Row = 0
+    POListGrid.Col = 1
+    POListGrid.Text = "Index"
+    POListGrid.Col = 2
+    POListGrid.Text = "PO No."
+    POListGrid.Col = 3
+    POListGrid.Text = "PO Status"
+    POListGrid.Col = 4
+    POListGrid.Text = "Entry Date"
+    POListGrid.Col = 5
+    POListGrid.Text = "Request Date"
+    POListGrid.Col = 6
+    POListGrid.Text = "Issue Date"
+    POListGrid.Col = 7
+    POListGrid.Text = "Complete Date"
+
+''''''''''Change in .NET''''''''''''''''
+    POListGrid.ColFormat(4) = "Short Date"
+    POListGrid.ColFormat(5) = "Short Date"
+    POListGrid.ColFormat(6) = "Short Date"
+    POListGrid.ColFormat(7) = "Short Date"
+''''''''''END Change in .NET
+    
+    If POListGrid.Rows < 11 Then POListGrid.Rows = 11
+    POListGrid.Row = 1
+    POListGrid.Col = 2
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub

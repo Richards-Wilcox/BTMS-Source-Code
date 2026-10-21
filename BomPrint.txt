@@ -1,0 +1,178 @@
+Option Explicit
+Const cstrModuleName As String = "frmBOMPrint"
+
+'Public mlngBT As Long
+'Public mlngOA As Long
+'Public mlngBH As Long
+
+Public mlngBOMID As Long
+Public mstrComputerID As String
+
+Private Sub cmdBOM_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdBOM_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lstrPaperSize As String
+    
+    frmPrint.mblnDefaultDescr = optDefault.Value
+    frmPrint.mblnPNValue = optDefaultPN.Value
+    
+    frmPrint.mstrReportName = "Bom.rpt"
+    frmPrint.mstrTitle = "Bill of Material"
+    frmPrint.mlngIDValue = mlngBOMID
+    frmPrint.mstrBTMSID = App.Major & Chr(46) & App.Minor & Chr(46) & App.Revision
+    frmPrint.mlngShowPrice = chkPrices.Value
+    
+'    frmPrint.mlngBulkThermetiteSection = mlngBT
+'    frmPrint.mlngOptionAndAccessories = mlngOA
+'    frmPrint.mlngBulkHardware = mlngBH
+    
+    frmPrint.mstrComputerID = mstrComputerID
+    
+    aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada", True 'opens or creates key
+    lstrPaperSize = aReg.ReadValue("PaperSize")
+    aReg.CloseKey
+    
+    If lstrPaperSize = "" Then
+        MsgBox "Default paper is not detected. Please run the Administration program to set the default print option.", vbApplicationModal + vbInformation + vbOKOnly, "Print Option"
+        Unload Me
+        Exit Sub
+    End If
+    
+    Unload Me
+    frmPrint.Show vbModal
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Unload Me
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdPickList_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdPickList_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lstrPaperSize As String
+    
+    frmPrint.mblnDefaultDescr = optDefault.Value
+    frmPrint.mblnPNValue = optDefaultPN.Value
+    
+    frmPrint.mstrReportName = "Fabrication.rpt"
+    frmPrint.mstrTitle = "PickList / Fabrication"
+    frmPrint.mlngIDValue = mlngBOMID
+    frmPrint.mstrBTMSID = App.Major & Chr(46) & App.Minor & Chr(46) & App.Revision
+        
+'    frmPrint.mlngBulkThermetiteSection = mlngBT
+'    frmPrint.mlngOptionAndAccessories = mlngOA
+'    frmPrint.mlngBulkHardware = mlngBH
+    
+    frmPrint.mstrComputerID = mstrComputerID
+    
+    aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada", True 'opens or creates key
+    lstrPaperSize = aReg.ReadValue("PaperSize")
+    aReg.CloseKey
+    
+    If lstrPaperSize = "" Then
+        MsgBox "Default paper is not detected. Please run the Administration program to set the default print option.", vbApplicationModal + vbInformation + vbOKOnly, "Print Option"
+        Unload Me
+        Exit Sub
+    End If
+    
+    Unload Me
+    frmPrint.Show vbModal
+            
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+
+    If CheckShowPrices = True Then
+
+        chkPrices.Visible = True
+        chkPrices.Value = 1
+        
+    Else
+        
+        chkPrices.Visible = False
+        chkPrices.Value = 0
+        Frame3.Top = chkPrices.Top
+        Me.Height = Me.Height * 0.93
+            
+    End If
+    
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    
+    optDefault.Value = True
+    optDefaultPN.Value = True
+    
+    LoadHelpText Me
+    MousePos1.Init Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+
+

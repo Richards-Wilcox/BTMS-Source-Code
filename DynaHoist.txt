@@ -1,0 +1,388 @@
+Option Explicit
+Const cstrModuleName As String = "frmDynaHoist"
+
+Private Sub chkDTLM_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkDTLM_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If chkDTLM.Value = 1 Then chkTLM.Value = 0
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkTLM_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkTLM_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If chkTLM.Value = 1 Then chkDTLM.Value = 0
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdAccept_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAccept_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    If varDoorData.DynaHoist.strDynaHoistType = 1 Then
+        If DrHgt < 78 Then
+            MsgBox "Special 805 operator is available for doors less than 6'-6" & Chr(34) & " high !", vbInformation + vbApplicationModal + vbOKOnly, "Dyna-Hoist"
+            Unload Me
+            frmShipInstructions.Show
+        End If
+        
+    ElseIf varDoorData.DynaHoist.strDynaHoistType = 0 Then
+        If DrHgt < 114 Then
+            MsgBox "Special 8805 operator is available for doors less than 9'-6" & Chr(34) & " high !", vbInformation + vbApplicationModal + vbOKOnly, "Dyna-Hoist"
+            Unload Me
+            frmShipInstructions.Show
+        End If
+    End If
+    
+    ModTracks.OperatorSelection
+    
+    If chk8830.Value = 1 Then Call FillSummaryGrid("953-045", 1, "Operator", GetSubCategory("953-045"), 0)
+    If chk871.Value = 1 Then Call FillSummaryGrid("953-046", 1, "Operator", GetSubCategory("953-046"), 0)
+    If chk850.Value = 1 Then Call FillSummaryGrid("953-064", 1, "Operator", GetSubCategory("953-064"), 0)
+    If chk4401.Value = 1 Then Call FillSummaryGrid("953-065", 1, "Operator", GetSubCategory("953-065"), 0)
+    If chk8066.Value = 1 Then Call FillSummaryGrid("953-066", 1, "Operator", GetSubCategory("953-066"), 0)
+    If chkTLM.Value = 1 Then Call FillSummaryGrid("953-062", 1, "Operator", GetSubCategory("953-062"), 0)
+    If chkDTLM.Value = 1 Then Call FillSummaryGrid("953-063", 1, "Operator", GetSubCategory("953-063"), 0)
+    
+    Unload Me
+    frmShipInstructions.Show
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim lstrMsg As String, lintBut As Integer, lintRep As Integer
+    
+    lstrMsg = "Are you sure you want to return to the previous screen?" & vbCrLf & _
+        "Your selections made on this screen will be lost."
+    lintBut = 4 '(yes,no)
+    
+    lintRep = MsgBox(lstrMsg, vbApplicationModal + vbInformation + lintBut, "Return to the Previous Screen.")
+    
+    If lintRep = vbYes Then
+        Screen.MousePointer = vbHourglass
+        Call RollBack("Torsion", True)
+        Call RollBack("Operator", True)
+        
+        'PVC
+        Call RollBack("Track", True, "328-227")
+        
+        'Lag bolts
+        Call RollBack("Track", True, "4-0045")
+        Call RollBack("Track", True, "4-0046")
+        Call RollBack("Track", True, "4-0047")
+        Call RollBack("Track", True, "4-0048")
+        
+        'Bearings
+        Call RollBack("Drums", True, "411-189")
+        Call RollBack("Drums", True, "411-226")
+        Call RollBack("Drums", True, "411-227")
+        
+        Unload Me
+        
+        frmSprSelection.Show
+        'frmShipInstructions.Show
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    Call LoadData
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+       
+End Sub
+
+Private Sub opt115V_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".opt115V_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    varDoorData.DynaHoist.strVoltageSelect = 1
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub opt1Btn_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".opt1Btn_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    varDoorData.DynaHoist.strBtnSelect = 1
+    If varDoorData.DynaHoist.strDynaHoistType = 1 Then
+        opt115V.Enabled = True
+        opt230V.Enabled = False
+        
+        opt115V.Value = True
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+    
+End Sub
+
+Private Sub opt230V_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".opt230V_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    varDoorData.DynaHoist.strVoltageSelect = 0
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+    
+End Sub
+
+Private Sub opt3Btn_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".opt3Btn_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    varDoorData.DynaHoist.strBtnSelect = 0
+    opt115V.Enabled = True
+    opt230V.Enabled = True
+    
+    opt115V.Value = True
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub opt805_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".opt805_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+   varDoorData.DynaHoist.strDynaHoistType = 1
+   opt1Btn.Enabled = True
+   opt3Btn.Enabled = True
+
+   opt115V.Enabled = False
+   opt230V.Enabled = False
+   
+   opt3Btn.Value = True 'changed on Dec 10/2003
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub opt8805_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".opt8805_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    varDoorData.DynaHoist.strDynaHoistType = 0
+    opt1Btn.Enabled = False
+    opt3Btn.Enabled = True
+    
+    opt3Btn.Value = True
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub disableCtrls()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".disableCtrls()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+     
+    opt1Btn.Enabled = False
+    opt3Btn.Enabled = False
+    
+    opt115V.Enabled = False
+    opt230V.Enabled = False
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+      
+End Sub
+
+Private Sub LoadData()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Call disableCtrls
+    
+    If (DrType = "T175-20" And DrWgt < 464.1) Or DrWgt <= 465 Or DrHgt <= 174 Then
+        'max limits on 805 Operator
+        opt805.Value = True
+    
+    ElseIf (DrType = "T175-20" And DrWgt > 464.1 And DrWgt <= 955.5) Or (DrWgt >= 465 And DrWgt <= 960) Or DrHgt <= 276 Then
+        'max limits on 8805 Operator
+        opt8805.Enabled = True
+        opt8805.Value = True
+        
+        opt805.Enabled = False
+    End If
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub

@@ -1,0 +1,174 @@
+Option Explicit
+Const cstrModuleName As String = "frmBumperSpring"
+Private mstrBSPN As String
+
+Private Sub cmdCancel_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    frmTrackEntry.chkBSpring.Value = 0
+    frmTrackEntry.chkBSpring.Caption = "Bumper Spring"
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(lstrErrDescr, llngErrNo, Err.Source & vbCrLf & cstrErrorSource)
+End Sub
+
+Private Sub cmdOK_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdOK_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    'frmTrackEntry.chkBSpring.Caption = cboBSpring.Text
+    addItems_BumperSpring
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(lstrErrDescr, llngErrNo, Err.Source & vbCrLf & cstrErrorSource)
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    
+    cboBSpring.Clear
+    cboBSpring.AddItem "Bumper Leaf Spring"
+    cboBSpring.ItemData(cboBSpring.NewIndex) = 1
+    
+    cboBSpring.AddItem "Bumper Spring Assy Package"
+    cboBSpring.ItemData(cboBSpring.NewIndex) = 2
+    ' Mod 2.0.21
+    cboBSpring.AddItem "Bumper Springs Only"
+    cboBSpring.ItemData(cboBSpring.NewIndex) = 3
+
+    cboBSpring.ListIndex = 0
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+
+Private Sub addItems_BumperSpring()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".addItems_BumperSpring()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lintBumperSpringQTY As Integer
+    Dim i As Integer
+    Dim ReturnIndexBS As Integer
+    
+    Select Case cboBSpring.ItemData(cboBSpring.ListIndex)
+        Case 1
+            mstrBSPN = "7-6116"
+            lintBumperSpringQTY = 2
+        Case 2
+            mstrBSPN = "7-6117"
+            lintBumperSpringQTY = 1
+            
+            ' Mod  2.0.21
+         Case 3
+            mstrBSPN = "322-313"
+            lintBumperSpringQTY = 1
+
+        End Select
+        'populates golobal var to display in summary form
+        frmTrackEntry.ReturnIndexBS = cboBSpring.ItemData(cboBSpring.ListIndex)
+        
+    For i = frmTrackEntry.Grid2.Row To frmTrackEntry.Grid2.Rows - 1
+        If frmTrackEntry.Grid2.Text = mstrBSPN Then
+            Exit Sub
+        Else
+            Call SetTrackOptionsGrid(mstrBSPN, lintBumperSpringQTY, "Track", GetSubCategory(mstrBSPN), 0)
+            Exit Sub
+        End If
+    Next
+     
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+'Private Sub TrackGrid(PN As String, QTY As Integer, Group As String, SubGroup As String, Optional Var)
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".TrackGrid()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    If frmTrackEntry.Grid2.Text = "" And frmTrackEntry.Grid2.Row < 2 Then
+'        gintRow = 1
+'    End If
+'
+'    frmTrackEntry.Grid2.Row = gintRow
+'    frmTrackEntry.Grid2.Col = 0
+'    frmTrackEntry.Grid2.Text = PN
+'    frmTrackEntry.Grid2.Col = 1
+'    frmTrackEntry.Grid2.Text = QTY
+'    frmTrackEntry.Grid2.Col = 2
+'    frmTrackEntry.Grid2.Text = Group
+'    frmTrackEntry.Grid2.Col = 3
+'    frmTrackEntry.Grid2.Text = SubGroup
+'
+'    frmTrackEntry.Grid2.Col = 4
+'
+'    frmTrackEntry.Grid2.Rows = frmTrackEntry.Grid2.Rows + 1
+'    frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1
+'    gintRow = frmTrackEntry.Grid2.Row
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'
+'  End Sub
+

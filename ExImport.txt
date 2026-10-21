@@ -1,0 +1,789 @@
+Option Explicit
+''''''''''Change in .NET''''''''''''''''
+'new form
+Dim mblnIsEmpty As Boolean
+''''''''''END Change in .NET
+
+Const cstrModuleName As String = "frmExImport"
+Private mstrFilepath As String
+
+Private Sub cmdBack_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdBack_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Unload Me
+    frmMainMenu.Show
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdExport_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdExport_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    ComDialog1.CancelError = True
+
+''''''''''Change in .NET''''''''''''''''
+    If Trim(grdData.TextMatrix(1, 1)) = "" Then Exit Sub
+''''''''''END Change in .NET
+    
+    ComDialog1.Filter = "Text (*.rwd)|*.rwd"
+    ComDialog1.FLAGS = cdlOFNOverwritePrompt Or cdlOFNReadOnly
+    'ComDialog1.FileTitle = grdData.TextMatrix(grdData.Row, 2) & ".rwd"
+    ComDialog1.DefaultExt = ".rwd"
+    'ComDialog1.InitDir = "C:\Windows\Temp"
+    ComDialog1.ShowSave
+    mstrFilepath = ComDialog1.FileName
+    Call Export(grdData.TextMatrix(grdData.Row, 1), DBLValue(grdData.TextMatrix(grdData.Row, 4)))
+    
+    Exit Sub
+
+Error_Handler:
+    If Err.Number = cdlCancel Then Exit Sub 'cancel selected.
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdImport_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdImport_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim lblnEx As Boolean
+    Dim lstrDocName As String
+    
+    ComDialog1.Filter = "Text (*.rwd)|*.rwd"
+    ComDialog1.DefaultExt = ".rwd"
+    ComDialog1.CancelError = True
+    ComDialog1.ShowOpen
+    mstrFilepath = ComDialog1.FileName
+    If Not mstrFilepath = "" Then
+        lstrDocName = Mid(ComDialog1.FileTitle, 1, Len(ComDialog1.FileTitle) - 4)
+    
+        Do
+            lblnEx = DocNameExists(lstrDocName)
+            If lblnEx Then
+                lstrDocName = Trim(InputBox("Document with this name already exists on this computer." & _
+                    vbCrLf & "Please select a different name.", "Select Different Name"))
+                If lstrDocName = "" Then Exit Sub 'cancel selected or empty accepted.
+            Else
+                lblnEx = False
+            End If
+        Loop While lblnEx
+        
+        Call Import(lstrDocName)
+        If mblnIsEmpty = True Then
+            MsgBox "The document you are importing is not a valid type or is damaged. Please try exporting and importing it again.", vbApplicationModal + vbInformation, "Invalid document"
+            Exit Sub
+        End If
+        
+        Call LoadData
+    End If
+    Exit Sub
+
+Error_Handler:
+    If Err.Number = cdlCancel Then Exit Sub 'cancel selected.
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Call LoadData
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub LoadData()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim llngRecords As Long
+    Dim lstrSQLQuery As String
+    Dim mobjADORS As ADODB.Recordset
+    
+    grdData.Clear
+    llngRecords = 0
+    lstrSQLQuery = "SELECT 'BoM' as DocType, BoM.BOMNum as DocID, BoM.BOMDate as aDate,"
+    lstrSQLQuery = lstrSQLQuery & " BoM.BOMID as ID From BoM  UNION"
+    lstrSQLQuery = lstrSQLQuery & " SELECT 'Quote' as DocType, QUOTE.QuoteNum as DocID, QUOTE.QuoteDate as aDate,"
+    lstrSQLQuery = lstrSQLQuery & " QUOTE.QuoteID as ID From QUOTE  UNION"
+    lstrSQLQuery = lstrSQLQuery & " SELECT 'PO' as DocType, PO.PONum as DocID, PO.PODate as aDate,"
+    lstrSQLQuery = lstrSQLQuery & " PO.POID as ID From PO WHERE POSTatus='Active' order by DocID"
+    Set mobjADORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not mobjADORS Is Nothing Then
+        mobjADORS.ActiveConnection = Nothing
+        If Not (mobjADORS.BOF And mobjADORS.EOF) Then
+            llngRecords = mobjADORS.RecordCount
+            grdData.VirtualData = False
+            grdData.DataMode = flexDMFree
+            Set grdData.DataSource = mobjADORS
+        End If
+    End If
+    Call SetGridTitles
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub SetGridTitles()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetGridTitles()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    grdData.ColHidden(0) = True
+    grdData.ColWidth(0) = 0
+    grdData.ColWidth(1) = grdData.Width / 6
+    grdData.ColWidth(2) = grdData.Width / 2
+    grdData.ColWidth(3) = grdData.Width / 4
+    grdData.ColWidth(4) = 0
+    grdData.ColFormat(3) = "Short Date"
+
+    grdData.Row = 0
+    grdData.Col = 1
+    grdData.Text = "Doc Type"
+    grdData.Col = 2
+    grdData.Text = "Doc No."
+    grdData.Col = 3
+    grdData.Text = "Date"
+    grdData.Col = 4
+    grdData.Text = "Doc.ID"
+    grdData.Row = 1
+    grdData.Col = 2
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Function Export(ByVal pstrDocType As String, ByVal plngDocID As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Export()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lstrFilepath As String
+    Dim lstrLine As String
+    Dim lstrSQL As String
+    Dim lstrDocID As String
+    Dim lobjRS As ADODB.Recordset
+'    Dim lobjDetailsRS As ADODB.Recordset
+    Dim i As Integer
+    
+    Screen.MousePointer = vbHourglass
+    
+    Select Case pstrDocType
+    Case "BoM"
+        lstrDocID = "BoMID"
+    Case "Quote"
+        lstrDocID = "QuoteID"
+    Case "PO"
+        lstrDocID = "POID"
+    End Select
+    
+    Open mstrFilepath For Output As #1   ' Open file for output.
+    Print #1, pstrDocType 'doc type
+    
+    lstrSQL = "SELECT * from " & pstrDocType & " WHERE " & lstrDocID & "=" & plngDocID
+    Set lobjRS = New ADODB.Recordset
+    lobjRS.Open lstrSQL, CnnBTMS, adOpenKeyset, adLockOptimistic
+    lobjRS.MoveFirst
+    
+    Select Case pstrDocType
+    Case "BoM"
+        lobjRS.Fields("PONUM").Value = ""
+        lobjRS.Fields("POID").Value = 0
+        lobjRS.Fields("QuoteNum").Value = ""
+        lobjRS.Fields("QuoteID").Value = 0
+        lobjRS.Fields("BoMAlloc").Value = 0
+        lobjRS.Fields("BoMReserveDate").Value = Null
+        lobjRS.Fields("BoMDoneDate").Value = Null
+    Case "Quote"
+        lobjRS.Fields("PONUM").Value = ""
+        lobjRS.Fields("POID").Value = 0
+        lobjRS.Fields("QuoteAlloc").Value = 0
+        lobjRS.Fields("QuoteReserveDate").Value = Null
+        lobjRS.Fields("QuoteDoneDate").Value = Null
+    Case "PO"
+        lobjRS.Fields("PoIssueDate").Value = Null
+        lobjRS.Fields("POCompleteDate").Value = Null
+        lobjRS.Fields("POReqDate").Value = Null
+    End Select
+    lobjRS.Update
+    
+    lstrLine = ""
+    Dim ReturnFound1 As Integer
+    Dim ReturnFound2 As Integer
+    Dim AllText As String
+    
+    For i = 0 To lobjRS.Fields.Count - 1
+        If Right(lobjRS.Fields(i).Name, 5) = "Notes" Then
+            If lobjRS.Fields(i).Value <> "" Then
+                ReturnFound1 = InStr(1, lobjRS.Fields(i).Value, Chr(13))
+                If ReturnFound1 > 0 Then
+                    AllText = lobjRS.Fields(i).Value
+                    Do
+                        ReturnFound2 = InStr(1, AllText, Chr(13))
+                        If ReturnFound2 > 0 Then
+                            AllText = Mid(AllText, 1, ReturnFound2 - 1) & "ETR" & Mid(AllText, ReturnFound2 + 2, Len(AllText))
+                        End If
+                    Loop While ReturnFound2 > 0     'loop runs till there are no 'carriage return' found in the field value
+                    lobjRS.Fields(i).Value = AllText
+                End If
+            End If
+        End If
+        lstrLine = lstrLine & lobjRS.Fields(i).Value & "|"
+        'If i < lobjRS.Fields.Count - 1 Then lstrLine = lstrLine
+    Next
+    
+    Print #1, lstrLine
+    
+    're-instaintiate the variable
+    Dim lblnDetailNotesFlag As Boolean
+    AllText = ""
+    ReturnFound1 = 0
+    ReturnFound2 = 0
+    
+    lstrSQL = "SELECT * from " & pstrDocType & "Details WHERE " & lstrDocID & "=" & plngDocID
+    Set lobjRS = CnnBTMS.Execute(lstrSQL, 0, adCmdText)
+    
+     If Not lobjRS Is Nothing Then
+        If Not (lobjRS.EOF And lobjRS.BOF) Then
+            lobjRS.MoveLast
+            Print #1, lobjRS.RecordCount
+            
+            lobjRS.MoveFirst
+            Do While lobjRS.EOF = False
+                lstrLine = ""
+                For i = 0 To lobjRS.Fields.Count - 1
+                    lblnDetailNotesFlag = False
+                    If Right(lobjRS.Fields(i).Name, 5) = "Notes" Then
+                        If lobjRS.Fields(i).Value <> "" Then
+                            ReturnFound1 = InStr(1, lobjRS.Fields(i).Value, Chr(13))
+                            If ReturnFound1 > 0 Then
+                                AllText = lobjRS.Fields(i).Value
+                                Do
+                                    ReturnFound2 = InStr(1, AllText, Chr(13))
+                                    If ReturnFound2 > 0 Then
+                                        AllText = Mid(AllText, 1, ReturnFound2 - 1) & "ETR" & Mid(AllText, ReturnFound2 + 2, Len(AllText))
+                                    End If
+                                Loop While ReturnFound2 > 0     'loop runs till there are no 'carriage return' found in the field value
+                                
+'                                'it update the field value we just need to update the txt file not the current record.
+'
+'                                lstrSQL = "SELECT * from " & pstrDocType & "Details WHERE " & lstrDocID & "=" & plngDocID
+'                                Set lobjDetailsRS = New ADODB.Recordset
+'                                lobjDetailsRS.Open lstrSQL, CnnBTMS, adOpenKeyset, adLockOptimistic
+'                                lobjRS.MoveFirst
+'                                Select Case pstrDocType
+'                                    Case "BoM"
+'                                        lobjDetailsRS.Fields("BOMPTNotes").Value = AllText
+'                                    Case "Quote"
+'                                        lobjDetailsRS.Fields("QuotePtNotes").Value = AllText
+'                                    Case "PO"
+'                                        lobjDetailsRS.Fields("POPtNotes").Value = AllText
+'                                    End Select
+'
+'                                lobjDetailsRS.Fields(i).Value = AllText
+'                                lobjDetailsRS.Update
+'                                lstrLine = lstrLine & lobjDetailsRS.Fields(i).Value & "|"
+'                                lblnDetailNotesFlag = True
+
+                                lstrLine = lstrLine & AllText & "|"
+                                lblnDetailNotesFlag = True
+                                
+                            End If
+                        End If
+                    End If
+                    If lblnDetailNotesFlag = False Then lstrLine = lstrLine & lobjRS.Fields(i).Value & "|"
+                    'If i < lobjRS.Fields.Count - 1 Then lstrLine = lstrLine
+                Next
+                
+                Print #1, lstrLine
+                lobjRS.MoveNext
+            Loop
+        End If
+    End If
+    
+    If pstrDocType = "BoM" Or pstrDocType = "Quote" Then
+        
+        lstrSQL = "SELECT * from " & pstrDocType & "PartLenDetails WHERE DocID=" & plngDocID
+        Set lobjRS = CnnBTMS.Execute(lstrSQL, 0, adCmdText)
+        
+        If Not lobjRS Is Nothing Then
+            If Not (lobjRS.EOF And lobjRS.BOF) Then
+                lobjRS.MoveLast
+                Print #1, lobjRS.RecordCount
+                
+                lobjRS.MoveFirst
+                Do While lobjRS.EOF = False
+                    lstrLine = ""
+                    For i = 0 To lobjRS.Fields.Count - 1
+                        lstrLine = lstrLine & lobjRS.Fields(i).Value & "|"
+                        'If i < lobjRS.Fields.Count - 1 Then lstrLine = lstrLine
+                    Next
+                    
+                    Print #1, lstrLine
+                    lobjRS.MoveNext
+                Loop
+            End If
+        End If
+    End If
+    
+    If pstrDocType = "BoM" Then
+        lstrSQL = "SELECT * from BoMSection WHERE BomID=" & plngDocID
+        Set lobjRS = CnnBTMS.Execute(lstrSQL, 0, adCmdText)
+        
+        If Not lobjRS Is Nothing Then
+            If Not (lobjRS.EOF And lobjRS.BOF) Then
+            
+                lobjRS.MoveLast
+                Print #1, lobjRS.RecordCount
+            
+                lobjRS.MoveFirst
+                Do While lobjRS.EOF = False
+                    lstrLine = ""
+                    For i = 0 To lobjRS.Fields.Count - 1
+                        lstrLine = lstrLine & lobjRS.Fields(i).Value & "|"
+                        'If i < lobjRS.Fields.Count - 1 Then lstrLine = lstrLine
+                    Next
+                    
+                    Print #1, lstrLine
+                    lobjRS.MoveNext
+                Loop
+            End If
+        End If
+    End If
+    
+    Close #1
+    Screen.MousePointer = vbDefault
+    Exit Function
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Private Function Import(ByVal pstrDocName As String)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Import()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Screen.MousePointer = vbHourglass
+    
+    Dim lstrSQL As String
+    Dim lstrLine As String
+    Dim lstrDocType As String
+    Dim lobjRS As ADODB.Recordset
+    Dim i As Integer, X As Integer
+    Dim lintPOS1 As Integer
+    Dim llngID As Long
+    Dim lbytCount As Byte
+    Dim ReturnFound As Integer
+    
+    Open mstrFilepath For Input As #1
+    Line Input #1, lstrDocType
+
+''''''''''Change in .NET''''''''''''''''
+    If lstrDocType = "" Then
+        mblnIsEmpty = True
+        Close #1
+        Screen.MousePointer = vbDefault
+        Exit Function
+    End If
+    
+    mblnIsEmpty = False
+    lbytCount = 0
+''''''''''END Change in .NET
+    
+    CnnBTMS.BeginTrans
+    
+    lstrSQL = "SELECT * FROM " & lstrDocType
+    Set lobjRS = New ADODB.Recordset
+    lobjRS.Open lstrSQL, CnnBTMS, adOpenDynamic, adLockOptimistic
+    
+    lobjRS.AddNew
+    Line Input #1, lstrLine
+    i = 0
+    lintPOS1 = 0
+    Do Until lstrLine = ""
+        lintPOS1 = InStr(1, lstrLine, "|")
+        If lintPOS1 > 0 Then
+            If lobjRS.Fields.Item(i).Type = adDate And Mid(lstrLine, 1, lintPOS1 - 1) = "" Then
+            Else
+                If Not UCase(lobjRS.Fields.Item(i).Name) = UCase(lstrDocType) & "ID" Then
+                    If UCase(lobjRS.Fields.Item(i).Name) = UCase(lstrDocType & "Num") Then
+                        lobjRS.Fields(i).Value = pstrDocName
+                    Else
+                        If lobjRS.Fields(i).Type = 2 Or lobjRS.Fields(i).Type = 3 Or lobjRS.Fields(i).Type = 4 Or lobjRS.Fields(i).Type = 5 Then
+                            lobjRS.Fields(i).Value = DBLValue(Mid(lstrLine, 1, lintPOS1 - 1))
+                        Else
+                            ReturnFound = InStr(1, Mid(lstrLine, 1, lintPOS1 - 1), "ETR") 'memo field - feed next line for multiple lines
+                            If ReturnFound > 0 Then
+                                lobjRS.Fields(i).Value = Replace((Mid(lstrLine, 1, lintPOS1 - 1)), "ETR", vbNewLine)
+                            Else
+                                lobjRS.Fields(i).Value = (Mid(lstrLine, 1, lintPOS1 - 1))
+                            End If
+
+''''''''''Change in .NET''''''''''''''''
+                            If lobjRS.Fields(i).Value = "Alumatite" Or _
+                                lobjRS.Fields(i).Value = "Rolltite" Then lbytCount = 1
+''''''''''END Change in .NET
+                            
+                        End If
+                    End If
+                End If
+            End If
+            lstrLine = Mid(lstrLine, lintPOS1 + 1)
+            i = i + 1
+        End If
+    Loop
+    lobjRS.Update
+    lobjRS.Resync adAffectCurrent
+    llngID = lobjRS.Fields(lstrDocType & "ID").Value
+    
+    ReturnFound = 0
+    
+    lstrSQL = "SELECT * FROM " & lstrDocType & "Details"
+    Set lobjRS = New ADODB.Recordset
+    lobjRS.Open lstrSQL, CnnBTMS, adOpenDynamic, adLockOptimistic
+    
+    Line Input #1, lstrLine
+    X = 0
+    For X = 0 To DBLValue(lstrLine) - 1
+        i = 0
+        Line Input #1, lstrLine
+        lintPOS1 = 0
+        lobjRS.AddNew
+        Do Until lstrLine = ""
+            lintPOS1 = InStr(1, lstrLine, "|")
+            If lintPOS1 > 0 Then
+                If lobjRS.Fields.Item(i).Type = adDate And Mid(lstrLine, 1, lintPOS1 - 1) = "" Then
+                Else
+                    If Not UCase(lobjRS.Fields.Item(i).Name) = UCase(lstrDocType) & "ID" Then
+                        If UCase(lobjRS.Fields.Item(i).Name) = UCase(lstrDocType & "Num") Then
+                            lobjRS.Fields(i).Value = pstrDocName
+                        Else
+                            If lobjRS.Fields(i).Type = 2 Or lobjRS.Fields(i).Type = 3 Or lobjRS.Fields(i).Type = 4 Or lobjRS.Fields(i).Type = 5 Then
+                                lobjRS.Fields(i).Value = DBLValue(Mid(lstrLine, 1, lintPOS1 - 1))
+                            Else
+                                ReturnFound = InStr(1, Mid(lstrLine, 1, lintPOS1 - 1), "ETR") 'memo field - feed next line for multiple lines
+                                If ReturnFound > 0 Then
+                                    lobjRS.Fields(i).Value = Replace((Mid(lstrLine, 1, lintPOS1 - 1)), "ETR", vbNewLine)
+                                Else
+                                    lobjRS.Fields(i).Value = Mid(lstrLine, 1, lintPOS1 - 1)
+                                End If
+                            End If
+                        End If
+                    Else
+                        lobjRS.Fields(i).Value = llngID
+                    End If
+                End If
+                lstrLine = Mid(lstrLine, lintPOS1 + 1)
+                i = i + 1
+            End If
+        Loop
+        lobjRS.Update
+    Next
+       
+    If lstrDocType = "BoM" Or lstrDocType = "Quote" Then
+        lstrSQL = "SELECT * FROM " & lstrDocType & "PartLenDetails"
+        Set lobjRS = New ADODB.Recordset
+        lobjRS.Open lstrSQL, CnnBTMS, adOpenDynamic, adLockOptimistic
+        
+        If Not lobjRS Is Nothing Then
+            Set lobjRS.ActiveConnection = Nothing
+            If Not (lobjRS.EOF And lobjRS.BOF) Then
+            
+                Line Input #1, lstrLine
+                X = 0
+                For X = 0 To DBLValue(lstrLine) - 1
+                    i = 0
+                    Line Input #1, lstrLine
+                    lintPOS1 = 0
+                    lobjRS.AddNew
+                    Do Until lstrLine = ""
+                        lintPOS1 = InStr(1, lstrLine, "|")
+                        If lintPOS1 > 0 Then
+                            If lobjRS.Fields.Item(i).Type = adDate And Mid(lstrLine, 1, lintPOS1 - 1) = "" Then
+                            Else
+                                If Not UCase(lobjRS.Fields.Item(i).Name) = UCase(lstrDocType) & "ID" Then
+                                    If UCase(lobjRS.Fields.Item(i).Name) = UCase(lstrDocType & "Num") Then
+                                        lobjRS.Fields(i).Value = pstrDocName
+                                    Else
+                                        If lobjRS.Fields(i).Type = 2 Or lobjRS.Fields(i).Type = 3 Or lobjRS.Fields(i).Type = 4 Or lobjRS.Fields(i).Type = 5 Then
+                                            lobjRS.Fields(i).Value = DBLValue(Mid(lstrLine, 1, lintPOS1 - 1))
+                                        Else
+                                            lobjRS.Fields(i).Value = Mid(lstrLine, 1, lintPOS1 - 1)
+                                        End If
+                                    End If
+                                Else
+                                    lobjRS.Fields(i).Value = llngID
+                                End If
+                            End If
+                            lstrLine = Mid(lstrLine, lintPOS1 + 1)
+                            i = i + 1
+                        End If
+                    Loop
+                    lobjRS.Update
+                Next
+            End If
+        End If
+    End If
+
+''''''''''Change in .NET''''''''''''''''
+    If lbytCount < 1 Then
+''''''''''END Change in .NET
+    
+        If lstrDocType = "BoM" Then
+            lstrSQL = "SELECT * FROM " & lstrDocType & "Section"
+            Set lobjRS = New ADODB.Recordset
+            lobjRS.Open lstrSQL, CnnBTMS, adOpenDynamic, adLockOptimistic
+            
+            Line Input #1, lstrLine
+            X = 0
+            For X = 0 To DBLValue(lstrLine) - 1
+                i = 0
+                Line Input #1, lstrLine
+                i = 0
+                lintPOS1 = 0
+                lobjRS.AddNew
+                Do Until lstrLine = ""
+                    lintPOS1 = InStr(1, lstrLine, "|")
+                    If lintPOS1 > 0 Then
+                        If lobjRS.Fields.Item(i).Type = adDate And Mid(lstrLine, 1, lintPOS1 - 1) = "" Then
+                        Else
+                            If Not UCase(lobjRS.Fields.Item(i).Name) = UCase(lstrDocType) & "ID" Then
+                                If UCase(lobjRS.Fields.Item(i).Name) = UCase(lstrDocType & "Num") Then
+                                    lobjRS.Fields(i).Value = pstrDocName
+                                Else
+                                    If lobjRS.Fields(i).Type = 2 Or lobjRS.Fields(i).Type = 3 Or lobjRS.Fields(i).Type = 4 Or lobjRS.Fields(i).Type = 5 Then
+                                        lobjRS.Fields(i).Value = DBLValue(Mid(lstrLine, 1, lintPOS1 - 1))
+                                    Else
+                                        lobjRS.Fields(i).Value = Mid(lstrLine, 1, lintPOS1 - 1)
+                                    End If
+                                End If
+                            Else
+                                lobjRS.Fields(i).Value = llngID
+                            End If
+                        End If
+                        lstrLine = Mid(lstrLine, lintPOS1 + 1)
+                        i = i + 1
+                    End If
+                Loop
+            Next
+            lobjRS.Update
+        End If
+''''''''''Change in .NET''''''''''''''''
+    End If
+''''''''''END Change in .NET
+
+    Close #1
+    If lstrDocType = "PO" Then
+        Call UpdateOnPOsForPO(llngID, False)
+    End If
+    lobjRS.Close
+    Set lobjRS = Nothing
+    CnnBTMS.CommitTrans
+    
+    Screen.MousePointer = vbDefault
+    Exit Function
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    CnnBTMS.RollbackTrans
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Private Function DocNameExists(ByVal pstrName As String) As Boolean
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".DocNameExists()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    DocNameExists = False
+    Dim lstrSQL As String
+    Dim lobjRS As ADODB.Recordset
+    
+    lstrSQL = "Select BomNum from BoM where BomNum = " & SQLString(pstrName)
+    Set lobjRS = CnnBTMS.Execute(lstrSQL, 0, adCmdText)
+    If Not lobjRS Is Nothing Then
+        If Not (lobjRS.EOF And lobjRS.BOF) Then
+            DocNameExists = True
+        End If
+    End If
+    lstrSQL = "Select QuoteNum from Quote where QuoteNum = " & SQLString(pstrName)
+    Set lobjRS = CnnBTMS.Execute(lstrSQL, 0, adCmdText)
+    If Not lobjRS Is Nothing Then
+        If Not (lobjRS.EOF And lobjRS.BOF) Then
+            DocNameExists = True
+        End If
+    End If
+    lstrSQL = "Select PONum from PO where PONum = " & SQLString(pstrName)
+    Set lobjRS = CnnBTMS.Execute(lstrSQL, 0, adCmdText)
+    If Not lobjRS Is Nothing Then
+        If Not (lobjRS.EOF And lobjRS.BOF) Then
+            DocNameExists = True
+        End If
+    End If
+    
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Private Sub GrdData_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".grdData_MouseMove()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+'    If GrdData.MouseRow > 0 And GrdData.MouseCol > 0 And GrdData.MouseRow < GrdData.Rows - 1 And GrdData.MouseCol < GrdData.Cols - 1 Then
+        grdData.ToolTipText = grdData.Cell(flexcpTextDisplay, grdData.MouseRow, grdData.MouseCol)
+'    End If
+    Exit Sub
+
+Error_Handler:
+Exit Sub 'sometimes this routine produced unexpected errors if
+'mouse is over the boundaries of the grid. Generating an error
+'screen is not necessary
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub grdData_BeforeSort(ByVal Col As Long, Order As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".grdData_BeforeSort()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    
+    ' no flags? apply custom sort
+    If grdData.ExplorerBar > &H1000& Then Exit Sub
+    
+    ' save selection
+    Dim R&, c&, rs&, cs&
+    grdData.GetSelection R, c, rs, cs
+    grdData.Redraw = flexRDNone
+    
+    ' apply sort to non-empty range
+    Dim Row%
+    For Row = grdData.Rows - 1 To grdData.FixedRows Step -1
+        If Len(grdData.TextMatrix(Row, Col)) Then Exit For
+    Next
+    If Row > grdData.FixedRows Then
+        Dim llngCol As Long
+        llngCol = Col
+        grdData.Select grdData.FixedRows, llngCol, Row, llngCol
+        grdData.Sort = Order
+    End If
+    
+    ' restore selection
+    grdData.Select R, c, rs, cs
+    grdData.Redraw = flexRDDirect
+    
+    ' cancel default sort
+    Order = 0
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+

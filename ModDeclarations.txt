@@ -1,0 +1,868 @@
+                  
+Option Explicit
+'AW, KN
+Public Const cstrApplicationName As String = "prjBTMS"   ' used in ErrorHandling
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'string masking constants
+Public Const cstrDollarMask As String = "Fixed"
+Public Const cstrDiscountMask As String = "0.000"
+
+Public Const cstrPctMask As String = "Fixed"
+Public Const cstrQtyMask As String = "Fixed"
+Public Const cstrDateMask As String = "Short Date"
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'string Queue status constants
+Public Const QS_HOTKEY = &H80
+Public Const QS_KEY = &H1
+Public Const QS_MOUSEBUTTON = &H4
+Public Const QS_MOUSEMOVE = &H2
+Public Const QS_PAINT = &H20
+Public Const QS_POSTMESSAGE = &H8
+Public Const QS_SENDMESSAGE = &H40
+Public Const QS_TIMER = &H10
+Public Const QS_ALLINPUT = (QS_SENDMESSAGE Or QS_PAINT Or QS_TIMER Or QS_POSTMESSAGE Or QS_MOUSEBUTTON Or QS_MOUSEMOVE Or QS_HOTKEY Or QS_KEY)
+Public Const QS_MOUSE = (QS_MOUSEMOVE Or QS_MOUSEBUTTON)
+Public Const QS_INPUT = (QS_MOUSE Or QS_KEY)
+Public Const QS_ALLEVENTS = (QS_INPUT Or QS_POSTMESSAGE Or QS_TIMER Or QS_PAINT Or QS_HOTKEY)
+ 
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'truss constants
+Public Const T25x18 = 1, T3625x18 = 2, T40x16 = 3
+Public Const WdLoadBasic = 0, WdLoad15Psf = 1, WdLoad20Psf = 2
+Public Const NoTruss = 0, TopBottom = 1, TopBottom2nd = 2, EverySect = 3
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'general variables
+Public MeasU As Byte                ' measurement system stored in the registry (0 for Metric, 1 for Imperial)
+Public DecimU As Byte               ' decimal delimiter (0 for comma, 1 for point)
+Public aReg As CRegistry            ' Registry class object
+Public aCon As New clsConverter     ' Converter object
+Public aCryp As New CrypKeySDK      ' CrypKey object
+Public intCheck As Integer          ' Check for prices
+Public strMultId As String          ' To store MultId or NewMultId - Hanover
+Public CRow As Integer              ' current row in the summary grid
+Public gblnDistributor As Boolean   ' check if Distributor is in the table
+Public PriceArr() As String
+Public IsInvMaint As Byte           ' 0 if they chose not to maintain inventory, 1 if they do.
+'Public gintRow As Integer           ' current row in track grid
+Public IsRWConverterRunning As Byte ' 1 if Coverter utility is running, 0 otherwise
+Public glngRow As Long              ' keeps track of the current row in browse master listing form.
+Public objFrmB As frmBrowseMasterListing    ' by declaring this form globally, we can access its objects in the Search form
+Public PicLoc As Byte               ' location of pictures (0 for HD, 1 for CD)
+Public CDROMPic As Boolean          ' true if pictures in cdrom
+Public chk As Boolean               ' used to check if standard Springing Solution exists
+Public CurrSpItem  As Integer       ' Current number of non stock parts.
+Public gstrArraySubCat() As String
+Public CECompliant As Integer       ' used to check if CECompliant is ON for T45
+Public SerialNum As String          ' used to save the serial num for each BoM
+Public fFile As String              ' stores the path to the installed program
+Public aFSO As New FileSystemObject
+
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'database variables
+Public CnnBTMS As ADODB.Connection
+Public gobjAgent As clsMSAgent
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'door variables
+Public Type SectionData
+    intHeight As Integer
+    intNLites As Integer
+    intNTruss As Integer
+    intTrussStyle As Integer 'truss style 1,2,3 for New Linear; 4 for standard
+    strPN As String
+    sngWgt As Single
+End Type
+
+Public Type TrackData
+    blnWeatherStrip As Boolean
+    strMountType As String      ' ADCA, Bracket and Clip angle
+    strChainPkg As String
+    strJambType As String       ' Steel & Wood Jamb
+    strLowerSplice As String    ' UBKT Mount & Upper Wall Angle
+    strWeatherStrip As String
+    blnOnePieceHT As Boolean    ' true if one piece HT, if false separate curve HT
+    FullHorzAngle As Byte       ' 1=select full hrz. angle
+    strPusherSpring As String
+    strBumperSpring As String
+    strInterlockSwitches As String
+    strPullChainPkg As String
+    strFenderGuard As String
+    strHaningAngle As String
+    strFullLengthHA As String
+    ShaftsInList As Integer     ' checks to see if multiple shaft exist in the list on TrackDataEntry screen
+'    UpgradeShaft As Boolean     ' True if Chain Hoist JR / 200D Drive chosen to be upgraded to 2000
+    
+End Type
+
+Public Type OperatorDynaHoist
+    strDynaHoistType As String  ' 805 + 8805
+    strBtnSelect As String      ' 1-btn or 3-btn
+    strVoltageSelect As String  ' 115 V or 230 V
+End Type
+    
+Public Type typPOInfo
+    POID As Long
+    PONum As String
+    DistNum As Long
+    ShipNum As Long
+    ReqDate As Date
+    PriceLevel As Integer
+    CancelFlag As Boolean
+End Type
+
+Public Type typQuoteInfo
+    QuoteID As Long
+    QuoteNum As String
+    CancelFlag As Boolean
+End Type
+
+Public Type DrumData
+    strPN As String
+    strStamping As String
+    strDescr As String
+    sngMaxWeight As Single
+    sngMaxHgt As Single
+    HMA As Single
+    FMA As Single
+    Circ As Single
+    RoR As Single
+    TTDD As Single
+    TTDU As Single
+    REVS As Single
+    IPPT As Single
+    DrumDia As Single
+    CableLen As Single
+    Price As Single
+End Type
+
+Public Type SpringData
+    strPN As String
+    WireSize As Single
+    IPPT As Single
+    Length As Single
+    AC As Single
+    PVC As Single
+    Price As Single
+    Left As Boolean
+    Turns As Single 'added in 2.0.14
+    WoundSpringLength As Single 'added for 2.0.14 - for each spring (mismatch: different W.Length small. big))
+End Type
+
+Public Type SelectedSolution
+    arrSpring() As SpringData
+    strDrumStamping As String
+    strDrumPN As String
+    strDrumDescr As String
+    sngMaxWeight As Single
+    sngMaxHgt As Single
+    sngMaxHiLift As Single
+    sngHMA As Single
+    sngFMA As Single
+    sngCirc As Single
+    sngRoR As Single
+    sngTTDD As Single
+    sngTTDU As Single
+    sngREVS As Single
+    sngIPPT As Single
+    sngDrumDia As Single
+    sngCableLen As Single
+    sngDrumPrice As Single
+    sngSpringCoilID As Single
+    sngSpringDC As Integer
+    sngSpringCL As Single
+    strSpringWireType As String
+    sngShaftSpace As Single
+    blnMismatched As Boolean
+    
+''''''''''Change in .NET''''''''''''''''
+    OneCenterPlatePerSpring As Boolean
+
+''''''''''END Change in .NET
+
+End Type
+
+Public Type SpringSolutionData
+    arrSpring() As SpringData
+    CoilID As Single
+    DC As Integer
+    CL As Single
+    WireType As String
+    ShaftSpace As Single
+    Torten As Single
+    Mismatched As Boolean
+    Selected As Boolean
+    Tight As Boolean
+    Turns As Single  'added for 2.0.14 release
+
+End Type
+
+Public Type Shaft
+    PN As String
+    ShaftLen(2) As Single
+End Type
+
+Public Type BtmRetainer
+    PN As String
+    RetLen(2) As Single
+End Type
+
+Public Type TopRetainer
+    PN As String
+    RetLen(2) As Single
+End Type
+
+Public Type DoorData
+    DrQty As Long                   ' total number of doors needed.
+    arrSections() As SectionData    ' element 0 represents the top section, element at ubound(arr) represents the bottom section
+    Track As TrackData
+    arrSpringSolution() As SpringSolutionData
+    arrSelectedSolution() As SelectedSolution
+    aDrum As DrumData
+    intTopTreatment As Integer      '    follows cbotopWSeal.itemdata
+    intBottomTreatment As Integer   '    follows cboBottomWSeal.itemdata
+    sngHeadroom As Single
+    sngShaftCenter As Single
+    intCenterPlates As Integer      ' qty of center plates
+    SectionNotes As String
+    ECapType As Integer
+
+''''''''''Change in .NET''''''''''''''''
+'    OneCenterPlatePerSpring As Boolean
+
+''''''''''END Change in .NET
+    TrackNotes As String
+    CutTop As Single            ' cut to amount
+    CutBtm As Single            ' cut to amount
+    DblEndCaps As Boolean       ' true if double end caps selected.
+    DblEndHinges As Boolean     ' true if double end hinges selected.
+    intFaceColour As Integer    ' Face (section) colour 1=White, 2=Brown
+
+''''''''''Change in .NET''''''''''''''''
+'                                3=Anodized
+''''''''''END Change in .NET
+    
+    WindLoad As String
+    NPanels As Integer          ' number of panels.
+    OperatorLeft As Boolean     ' true if operator chosen on the left side of shaft
+    OperatorType As Byte        ' 0 for None
+                                ' 1 for Manual
+                                ' 2 for ChainHoist RW GHC
+                                ' 3 for ChainHoist Model 2000
+                                ' 4 for ChainHoist Model JR
+                                ' 5 for ChainHoist RW direct drive
+                                ' 6 for Dyna-Hoist
+                                ' 7 for Drawbar w/ 1 trolley plate
+                                ' 8 for Drawbar w/ 2 trolley plates
+                                ' 9 for ChainHoist 200D Drive
+                                ' 10for Jackshaft
+    
+    LiteType As Long                '1 = "E"
+                                    '2 = "CPL"
+                                    '3 = "D"
+                                    '4 = "A"
+                                    '5 = "AA"
+                                    '6 = "B"
+                                    
+                                    'fullview: colour/size/material/finish
+                                    '7001 = "Anodized 1/8 clear glass"
+                                    '7002 = "Anodized 1/8 tinted glass"
+                                    '7003 = "Anodized 1/8 tempered glass"
+                                    '7004 = "Anodized 1/8 other glass"
+                                    
+                                    '7101 = "Anodized 1/4 clear glass"
+                                    '7102 = "Anodized 1/4 tinted glass"
+                                    '7103 = "Anodized 1/4 tempered glass"
+                                    '7104 = "Anodized 1/4 other glass"
+                                    
+                                    '7010 = "Anodized 1/8 acrylic"
+                                    '7020 = "Anodized 1/8 lexan"
+                                    '7030 = "Anodized 1/8 other"
+                                    
+                                    '7110 = "Anodized 1/4 acrylic"
+                                    '7120 = "Anodized 1/4 lexan"
+                                    '7130 = "Anodized 1/4 other"
+                                    
+                                    '8001 = "White 1/8 clear glass"
+                                    '8002 = "White 1/8 tinted glass"
+                                    '8003 = "White 1/8 tempered glass"
+                                    '8004 = "White 1/8 other glass"
+                                    
+                                    '8101 = "White 1/4 clear glass"
+                                    '8102 = "White 1/4 tinted glass"
+                                    '8103 = "White 1/4 tempered glass"
+                                    '8104 = "White 1/4 other glass"
+                                    
+                                    '8010 = "White 1/8 acrylic"
+                                    '8020 = "White 1/8 lexan"
+                                    '8030 = "White 1/8 other"
+                                    
+                                    '8110 = "White 1/4 acrylic"
+                                    '8110 = "White 1/4 lexan"
+                                    '8130 = "White 1/4 other"
+                                    
+                                    '9000 = "1/8" Glass by others"
+                                    '9010 = "1/8" Acrylic/Lexan by others"
+                                    '9100 = "1/4" Glass by others"
+                                    '9110 = "1/4" Acrylic/Lexan by others"
+                                    
+                                    'sealed units are saved per side, ex: 70017002 = 7001 on one side 7002 on the other side.
+                                    
+                                    '8 = "Special"
+                                    
+    EndCapsOnFullView As Boolean    'true if full view sections have end caps
+    DblGalvFullView As Boolean      'true if full view sections have double galvanized(dbl end lites)
+    
+    LiteColour As Integer           '1 = White
+                                    '2 = Brown
+                                    '3 = Black
+                                    
+    LiteMaterial As Integer         '1 = Acrylic
+                                    '2 = Tampered
+                                    '3 = Glass
+
+    NLiteSec As Integer         ' number of sections with lites
+    TrussSchedule As Byte       ' receives value 0 : No Truss
+                                '                1 : 1Top + 1Bottom
+                                '                2 : 1Top + 1EveryOtherSection + 1Bottom
+                                '                3 : 1EverySection
+                                '                4 : 1EverySection + 1EveryOtherSection
+                                '                5 : 2EverySection
+                                '                6 : 1Top only
+    ShaftDia As Single          ' shaft diameter
+    ShaftTube As Boolean        ' true if tube or false if solid
+    
+    ''''''''''Change in .NET''''''''''''''''
+    GlavanizedTubeShaft As Boolean  'True - 14 ga Glanz. tube shaft or False - tube shaft
+    KeyedTubeShaft As Boolean       'True - Keyed tube shaft or False - either tube/solid/glav.
+    AuxillaryShaft As Boolean       'auxillary shaft
+    CenterPickup As Boolean         'center pickup
+    ''''''''''END Change in .NET
+    
+    sngMaxHiLift As Single
+    FlangeBearing As Boolean    ' true if self-aligning Flange bearings or DrWgt >1000
+    ExtraChainReq As Single     ' Extra handchain
+    Exhaust As String
+    StepPlate As String
+    Option As Byte              ' 0=Complete Door
+                                ' 1=Sections Only
+                                ' 2=Retrofit
+                                ' 3=HW Only
+    varShaft() As Shaft
+    varBtmRetainer() As BtmRetainer
+    varTopRetainer() As TopRetainer
+    DynaHoist As OperatorDynaHoist
+    gblnNylonRollers As Boolean
+    gblnClinchNuts As Boolean
+    gintQuickClose As Integer
+    gblnCableFailure As Boolean
+    gblnSpringFailure As Boolean
+    gblnHingeUpgrade As Boolean
+    gstrAlumBtmPanel As String      ' "Alum Pnl" for "Aluminum Panel"
+                                    ' "Kick Pnl" for "Kick Panel"
+                                    ' "Thmx Pnl" for "Thermex Panel"
+    
+    CSBB As String                  ' ADCA
+                                    'EU ADCA
+                                    
+    
+End Type
+
+Public Type PassDoor
+    strPN As String
+    btBottom As Byte '(1 for solution A, 2 for B, 3 for C)
+    btTop As Byte
+    sngWgt As Single
+    sngWgtOld As Single    '    weight before a change on WgtSummary screen
+    intPosition As Integer '    1 for Left
+                           '    2 for LeftCenter
+                           '    3 for Center
+                           '    4 for RightCenter
+                           '    5 for Right
+End Type
+
+Public Type SpecialItem
+    strPN As String
+    strDescription As String
+    sngSpringingWgt As Single
+    sngShippingWgt As Single
+    sngPrice As Single
+    strUM As String
+    sngQty As Single
+    sngLength As Single
+    intType As Integer      '1 for Lite, 2 for Truss, 0 for other
+    blnBtmWgt As Boolean    'true if springing weight applies to bottom of bottom section.
+    strNotes As String
+End Type
+
+Public varSpItem() As SpecialItem
+
+''''''''''Change in .NET''''''''''''''''
+Public Type CallPriceItem
+    strPN As String
+End Type
+
+Public varCallPriceItem() As CallPriceItem
+''''''''''END Change in .NET
+ 
+Public varPassDoor As PassDoor
+Public varDoorData As DoorData
+Public gblnWordFlag As Boolean  ' MS-Word Installed flag
+Public ProdType As String       ' "Thermatite"...
+Public DrType As String         ' "SR24", "SR20", "SR16", "SR1626"
+Public DrWidth As Single        ' door width in inches
+Public DrHgt As Single          ' door height in inches
+Public N21 As Integer, N24 As Integer  'number of 21 and 24 inch sections.
+Public HWType As Single         ' signifies 2", 3" or Super3"
+Public NewLinearHW As Boolean   ' true if new linear hardware selected, otherwise false
+Public Insulator As Integer     ' 1=AF530, 2=Styrofoam, 3=Styroplast
+Public BSheet As Integer        ' 1=26ga, 2=24ga, 3=20ga, 4=16ga
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'Springing variables
+Public MaxSpringLength As Integer
+Public StandardVariance As Integer
+Public Winds As Single
+Public HRadius As Integer       ' for Horiz radius
+Public MinCycLife As Single     ' min cycl life
+Public MaxCycLife As Integer    ' max cycl life
+Public CouplNum As Integer      ' number of couplers
+Public SlopHAng As Double       ' slope horiz angle
+Public SpringIndex As Integer
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'weight variables
+Public WgtLock As Boolean       ' true if user locked the weight in the weight summary screen.
+Public DrWgt As Double          ' total weight of door in pounds
+Public SecWgt As Single, LiteWgt As Single, TrussWgt As Single
+Public HWWgt As Single, MRSBWgt As Single
+Public SecWgtOld As Single, LiteWgtOld As Single, TrussWgtOld As Single
+Public HWWgtOld As Single, MRSBWgtOld As Single
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'Track variables
+Public TADCA As Byte            ' Tapered(European)ADCA (0 for TADCA, 1 for ADCA)
+Public HILIFT As Single         ' hilft input
+Public LiftType As String       ' for lift type
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Enum enmFormMode
+    MODE_ADD
+    MODE_EDIT
+    MODE_VIEW
+End Enum
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'Public Function declarations()
+'find twmp folder
+Private Declare Function GetTempPath Lib "kernel32.dll" Alias "GetTempPathA" (ByVal nBufferLength As Long, ByVal lpBuffer As String) As Long
+
+
+'---find if app is running
+Declare Function EnumWindows Lib "user32" (ByVal lpEnumFunc As Long, ByVal lParam As Long) As Long
+Declare Function IsWindowVisible Lib "user32" (ByVal hwnd As Long) As Long
+Declare Function GetParent Lib "user32" (ByVal hwnd As Long) As Long
+Public Const SW_SHOW = 5
+Public Const SW_RESTORE = 9
+Public Const GW_OWNER = 4
+Public Const GWL_HWNDPARENT = (-8)
+Public Const GWL_EXSTYLE = (-20)
+Public Const WS_EX_TOOLWINDOW = &H80
+Public Const WS_EX_APPWINDOW = &H40000
+Declare Function GetWindow Lib "user32" (ByVal hwnd As Long, ByVal wCmd As Long) As Long
+Declare Function GetWindowLong Lib "user32" Alias "GetWindowLongA" (ByVal hwnd As Long, ByVal nIndex As Long) As Long
+Declare Function GetWindowText Lib "user32" Alias "GetWindowTextA" (ByVal hwnd As Long, ByVal lpString As String, ByVal cch As Long) As Long
+Declare Function GetWindowThreadProcessId Lib "user32" (ByVal hwnd As Long, lpdwProcessId As Long) As Long
+Declare Function IsIconic Lib "user32" (ByVal hwnd As Long) As Long
+Public Const LB_ADDSTRING = &H180
+Public Const LB_SETITEMDATA = &H19A
+Declare Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, lParam As Any) As Long
+Declare Function SetForegroundWindow Lib "user32" (ByVal hwnd As Long) As Long
+Declare Function ShowWindow Lib "user32" (ByVal hwnd As Long, ByVal nCmdShow As Long) As Long
+
+'--end-find if app is running
+
+'---run application
+Public Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" (ByVal hwnd As Long, ByVal lpOperation As String, ByVal lpFile As String, ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
+
+Public Const SW_MINIMIZE = 6
+
+'---end run application
+
+Public Type RECT
+  Left As Long
+  Top As Long
+  Right As Long
+  Bottom As Long
+End Type
+
+'-------set combo box max length
+Public Declare Function SendMessage_1 Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, lParam As Any) As Long
+
+Public Const CB_LIMITTEXT = &H141
+'------
+
+'for finding local measurement system and decimal settings
+Public Const LOCALE_IMEASURE = &HD     '0 = metric, 1 = US
+Public Const LOCALE_SDECIMAL = &HE     'decimal separator
+Public Declare Function GetUserDefaultLCID Lib "kernel32" () As Long
+Public Declare Function GetQueueStatus Lib "user32" (ByVal qsFlags As Long) As Long
+Public Declare Function GetWindowRect Lib "user32" (ByVal hwnd As Long, ByRef lpRect As RECT) As Long
+Public Const LOCALE_SSHORTDATE            As Long = &H1F    'short date format string
+
+Public Declare Function GetLocaleInfo Lib "kernel32" _
+   Alias "GetLocaleInfoA" _
+  (ByVal Locale As Long, _
+   ByVal LCType As Long, _
+   ByVal lpLCData As String, _
+   ByVal cchData As Long) As Long
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+''''''''''Change in .NET''''''''''''''''
+'API to get BTMS exe version
+Public Declare Function GetFileVersionInfo Lib "version.dll" Alias "GetFileVersionInfoA" _
+    (ByVal lptstrFilename As String, ByVal dwHandle As Long, ByVal dwLen As Long, _
+    lpData As Any) As Long
+    
+Public Declare Function GetFileVersionInfoSize Lib "version.dll" Alias _
+    "GetFileVersionInfoSizeA" (ByVal lptstrFilename As String, lpdwHandle As Long) As Long
+    
+Public Declare Function VerQueryValue Lib "version.dll" Alias "VerQueryValueA" (pBlock _
+    As Any, ByVal lpSubBlock As String, lplpBuffer As Long, puLen As Long) As Long
+
+Public Declare Sub CopyMemory Lib "kernel32.dll" Alias "RtlMoveMemory" (Destination As Any, _
+    Source As Any, ByVal Length As Long)
+
+Public Type VS_FIXEDFILEINFO
+    dwSignature As Long
+    dwStrucVersion As Long
+    dwFileVersionMS As Long
+    dwFileVersionLS As Long
+    dwProductVersionMS As Long
+    dwProductVersionLS As Long
+    dwFileFlagsMask As Long
+    dwFileFlags As Long
+    dwFileOS As Long
+    dwFileType As Long
+    dwFileSubtype As Long
+    dwFileDateMS As Long
+    dwFileDateLS As Long
+End Type
+Public Const VFT_APP = &H1
+Public Const VFT_DLL = &H2
+Public Const VFT_DRV = &H3
+Public Const VFT_VXD = &H5
+
+''''''''''END Change in .NET
+
+'make window topmost'''''''''''''
+
+Public Const SWP_NOMOVE = 2
+      Public Const SWP_NOSIZE = 1
+      Public Const FLAGS = SWP_NOMOVE Or SWP_NOSIZE
+      Public Const HWND_TOPMOST = -1
+      Public Const HWND_NOTOPMOST = -2
+
+      Declare Function SetWindowPos Lib "user32" _
+            (ByVal hwnd As Long, _
+            ByVal hWndInsertAfter As Long, _
+            ByVal X As Long, _
+            ByVal Y As Long, _
+            ByVal cx As Long, _
+            ByVal cy As Long, _
+            ByVal wFlags As Long) As Long
+
+' end make window topmost'''''''''''''
+
+'-exit  application------------------------------------------------------
+Type PROCESSENTRY32
+    dwSize As Long
+    cntUsage As Long
+    th32ProcessID As Long
+    th32DefaultHeapID As Long
+    th32ModuleID As Long
+    cntThreads As Long
+    th32ParentProcessID As Long
+    pcPriClassBase As Long
+    dwFlags As Long
+    szExeFile As String * 260
+End Type
+'-------------------------------------------------------
+Declare Function OpenProcess Lib "kernel32.dll" (ByVal dwDesiredAccess As Long, _
+ByVal blnheritHandle As Long, ByVal dwAppProcessId As Long) As Long
+
+Declare Function ProcessFirst Lib "kernel32.dll" Alias "Process32First" (ByVal hSnapShot As Long, _
+uProcess As PROCESSENTRY32) As Long
+
+Declare Function ProcessNext Lib "kernel32.dll" Alias "Process32Next" (ByVal hSnapShot As Long, _
+uProcess As PROCESSENTRY32) As Long
+
+Declare Function CreateToolhelpSnapshot Lib "kernel32.dll" Alias "CreateToolhelp32Snapshot" ( _
+ByVal lFlags As Long, lProcessID As Long) As Long
+
+Declare Function TerminateProcess Lib "kernel32.dll" (ByVal ApphProcess As Long, _
+ByVal uExitCode As Long) As Long
+
+Declare Function CloseHandle Lib "kernel32.dll" (ByVal hObject As Long) As Long
+
+Public Sub KillProcess(NameProcess As String)
+    Const PROCESS_ALL_ACCESS = 0
+    Const TH32CS_SNAPPROCESS As Long = 2&
+    Const PROCESS_TERMINATE = &H1&
+    Dim uProcess  As PROCESSENTRY32
+    Dim RProcessFound As Long
+    Dim hSnapShot As Long
+    Dim SzExename As String
+    Dim ExitCode As Long
+    Dim MyProcess As Long
+    Dim AppKill As Boolean
+    Dim AppCount As Integer
+    Dim i As Integer
+    Dim WinDirEnv As String
+        
+       If NameProcess <> "" Then
+          AppCount = 0
+
+          uProcess.dwSize = Len(uProcess)
+          hSnapShot = CreateToolhelpSnapshot(TH32CS_SNAPPROCESS, 0&)
+          RProcessFound = ProcessFirst(hSnapShot, uProcess)
+          Do
+            i = InStr(1, uProcess.szExeFile, Chr(0))
+            SzExename = LCase$(Left$(uProcess.szExeFile, i - 1))
+            WinDirEnv = Environ("Windir") + "\"
+            WinDirEnv = LCase$(WinDirEnv)
+        
+            If Right$(SzExename, Len(NameProcess)) = LCase$(NameProcess) Then
+               AppCount = AppCount + 1
+               MyProcess = OpenProcess(PROCESS_TERMINATE, False, uProcess.th32ProcessID)
+               AppKill = TerminateProcess(MyProcess, ExitCode)
+               Call CloseHandle(MyProcess)
+            End If
+            RProcessFound = ProcessNext(hSnapShot, uProcess)
+          Loop While RProcessFound
+          Call CloseHandle(hSnapShot)
+       End If
+
+End Sub
+'--end exit application-----------------------------------------------------
+
+Public Sub DisplayError(ByVal lngErrNo As Long, _
+                        ByVal strErrSource As String, _
+                        ByVal strErrDescr As String)
+     
+     Dim frmError As frmDisplayError
+     Set frmError = New frmDisplayError
+     
+     frmError.txtErrNo.Text = lngErrNo
+     frmError.txtErrSrc.Text = strErrSource
+     frmError.txtErrDesc.Text = strErrDescr
+     
+     frmError.Show vbModal
+End Sub
+
+Public Function GetTempDir() As String
+' Returns the temp directory from the OS system
+    Dim sBuffer As String
+    Dim HoldBuffer As String
+    Dim iBuffLen As Long
+    Dim iReturn As Long
+    Const BUFFER_LENGTH = 256
+
+    iBuffLen = BUFFER_LENGTH
+    sBuffer = Space(BUFFER_LENGTH)
+    iReturn = GetTempPath(iBuffLen, sBuffer) '* get rid of the null character
+    HoldBuffer = Left$(sBuffer, iBuffLen - 1)
+    GetTempDir = Left$(HoldBuffer, InStr(HoldBuffer, vbNullChar) - 1)
+End Function
+
+Public Function GetEventState(ByVal lngQS_State As Long) As Long
+    GetEventState = GetQueueStatus(lngQS_State)
+End Function
+
+Public Sub LimitCBText(CB As ComboBox, _
+   MaxLength As Long)
+    
+    'usage: CB = ComboBox to limit length of
+    'MaxLength: Max characters allowed
+    'Example: LimitCBText Combo1, 5
+    
+    SendMessage_1 CB.hwnd, CB_LIMITTEXT, MaxLength, 0&
+End Sub
+
+
+Public Function isEmptyArray2(ByRef CheckArr) As Boolean
+    On Local Error Resume Next
+    Dim uLimit As Integer
+
+    isEmptyArray2 = False        'This will be the return value If no errors occur
+    uLimit = UBound(CheckArr)   'If the array is undimensioned this'll cause an Error
+    If Err.Number Then isEmptyArray2 = True
+    Err.Clear
+End Function
+
+Public Function isEmptyArraySubCat() As Boolean
+
+    On Local Error Resume Next
+    
+    Dim uLimit As Integer
+    isEmptyArraySubCat = False
+    
+    uLimit = UBound(gstrArraySubCat)
+    If Err.Number Then isEmptyArraySubCat = True
+    
+    Err.Clear
+
+End Function
+
+Public Function isEmptyArraySpItems() As Boolean
+
+    On Local Error Resume Next
+    
+    Dim uLimit As Integer
+    isEmptyArraySpItems = False
+    
+    uLimit = UBound(varSpItem)
+    If Err.Number Then isEmptyArraySpItems = True
+    
+    Err.Clear
+
+End Function
+
+Public Function RoundUp(ByVal dblVal As Double) As Double
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & ".RoundUp()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrValue As String
+    Dim ldblValue2 As Double
+    Dim lintPos As Integer
+    
+    RoundUp = dblVal
+    lstrValue = dblVal
+    lintPos = InStr(1, lstrValue, ".")
+    If lintPos = 0 Then lintPos = InStr(1, lstrValue, ",")
+    If lintPos > 0 Then lstrValue = Left(lstrValue, lintPos - 1)
+    ldblValue2 = DBLValue(lstrValue)
+    If dblVal > ldblValue2 Then RoundUp = ldblValue2 + 1
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Public Function RoundDown(ByVal dblVal As Double) As Double
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & ".RoundDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrValue As String
+    Dim ldblValue2 As Double
+    Dim lintPos As Integer
+    
+    RoundDown = dblVal
+    lstrValue = dblVal
+    lintPos = InStr(1, lstrValue, ".")
+    If lintPos = 0 Then lintPos = InStr(1, lstrValue, ",")
+    If lintPos > 0 Then lstrValue = Left(lstrValue, lintPos - 1)
+    ldblValue2 = DBLValue(lstrValue)
+    If dblVal > ldblValue2 Then RoundDown = ldblValue2
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Public Function IsTaskRunning(sWindowName As String) As Boolean
+    
+    Call EnumWindows(AddressOf fEnumWindowsCallBack, 0&) 'makes a list of all open windows.
+    If IsRWConverterRunning = 1 Then IsTaskRunning = True
+    
+End Function
+
+Private Function fEnumWindowsCallBack(ByVal hwnd As Long, ByVal lParam As Long) As Long
+    Dim lReturn     As Long
+    Dim lExStyle    As Long
+    Dim bNoOwner    As Boolean
+    Dim sWindowText As String
+    '
+    ' This callback function is called by Windows (from
+    ' the EnumWindows API call) for EVERY window that exists.
+    
+    ' Windows that:
+    '   -   are not this app's
+    '   -   are visible
+    '   -   do not have a parent
+    '   -   have no owner and are not Tool windows OR
+    '       have an owner and are App windows
+    '
+    If IsWindowVisible(hwnd) Then
+        If GetParent(hwnd) = 0 Then
+            bNoOwner = (GetWindow(hwnd, GW_OWNER) = 0)
+            lExStyle = GetWindowLong(hwnd, GWL_EXSTYLE)
+            
+            If (((lExStyle And WS_EX_TOOLWINDOW) = 0) And bNoOwner) Or _
+                ((lExStyle And WS_EX_APPWINDOW) And Not bNoOwner) Then
+                '
+                ' Get the window's caption.
+                '
+                sWindowText = Space$(256)
+                lReturn = GetWindowText(hwnd, sWindowText, Len(sWindowText))
+                If Left(sWindowText, 12) = "RW Converter" Then
+                        'set the variable to 1 if instance of the converter was found running.
+                    IsRWConverterRunning = 1
+                    fEnumWindowsCallBack = False 'do not re-call function
+                    Exit Function
+                End If
+            End If
+        End If
+    End If
+    fEnumWindowsCallBack = True 'makes the function call itself
+
+End Function
+
+Public Function SetTopMostWindow(hwnd As Long, Topmost As Boolean) _
+   As Long
+
+   If Topmost = True Then 'Make the window topmost
+      SetTopMostWindow = SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, _
+         0, FLAGS)
+   Else
+      SetTopMostWindow = SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, _
+         0, 0, FLAGS)
+      SetTopMostWindow = False
+   End If
+End Function
+
+'the following code is to copy and paste in areas that need to be removed or altered
+'before deployment. With each temporary change that is done for testing, place
+'the following lines for easy search.
+'Later, before the project is compiled search for "FIND AND DESTROY" in the program,
+'and alter those areas accordingly.
+'
+'
+''''''''''FIND AND DESTROY''''''''''''''''
+'
+'(place your temporary code here)
+'
+''''''''''END TEMPORARY CHANGES
+
+

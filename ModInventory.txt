@@ -1,0 +1,3681 @@
+Option Explicit
+Const cstrModuleName As String = "modInventory"
+
+''''''''''Change in .NET''''''''''''''''
+
+Public Function GetSpecialPart(ByVal lstrType As String) As String
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetSpecialPart()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrCurrVal As String
+    Dim llngNextVal As Long
+    
+    GetSpecialPart = ""
+    aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\BTMS", True 'opens or creates key
+    
+    Select Case lstrType
+    Case "NSTK"
+        lstrCurrVal = aReg.ReadValue("LastNumber")
+        llngNextVal = DBLValue(lstrCurrVal)
+        If llngNextVal = 0 Or llngNextVal > 999 Then llngNextVal = 1
+'        aReg.WriteValue "LastNumber", CStr(llngNextVal + 1)
+    Case "ASECT"
+        lstrCurrVal = aReg.ReadValue("LastNumberASECT")
+        llngNextVal = DBLValue(lstrCurrVal)
+        If llngNextVal = 0 Or llngNextVal > 999 Then llngNextVal = 1
+'        aReg.WriteValue "LastNumberASECT", CStr(llngNextVal + 1)
+    Case "RSECT"
+        lstrCurrVal = aReg.ReadValue("LastNumberRSECT")
+        llngNextVal = DBLValue(lstrCurrVal)
+        If llngNextVal = 0 Or llngNextVal > 999 Then llngNextVal = 1
+'        aReg.WriteValue "LastNumberRSECT", CStr(llngNextVal + 1)
+    End Select
+    aReg.CloseKey 'close key
+    
+    GetSpecialPart = CStr(llngNextVal + 1)
+    GetSpecialPart = "COMM-" & lstrType & "-" & Left("000", 3 - Len(GetSpecialPart)) & GetSpecialPart
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+'Public Function GetSpecialPart(ByVal lstrType As String) As String
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetSpecialPart()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim lstrCurrVal As String
+'    Dim llngNextVal As Long
+'
+'    GetSpecialPart = ""
+'    aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\BTMS", True 'opens or creates key
+'
+''    Select Case lstrType
+''    Case "NSTK"
+'        lstrCurrVal = aReg.ReadValue("LastNumber")
+'        llngNextVal = DBLValue(lstrCurrVal)
+'        If llngNextVal = 0 Or llngNextVal > 999 Then llngNextVal = 1
+''        aReg.WriteValue "LastNumber", CStr(llngNextVal + 1)
+''    Case "ASECT"
+''        lstrCurrVal = aReg.ReadValue("LastNumberASECT")
+''        llngNextVal = DBLValue(lstrCurrVal)
+''        If llngNextVal = 0 Or llngNextVal > 999 Then llngNextVal = 1
+''        aReg.WriteValue "LastNumberASECT", CStr(llngNextVal + 1)
+''    Case "RSECT"
+''        lstrCurrVal = aReg.ReadValue("LastNumberRSECT")
+''        llngNextVal = DBLValue(lstrCurrVal)
+''        If llngNextVal = 0 Or llngNextVal > 999 Then llngNextVal = 1
+''        aReg.WriteValue "LastNumberRSECT", CStr(llngNextVal + 1)
+''    End Select
+'    aReg.CloseKey 'close key
+'
+'    GetSpecialPart = CStr(llngNextVal + 1)
+'    GetSpecialPart = "COMM-" & lstrType & "-" & Left("000", 3 - Len(GetSpecialPart)) & GetSpecialPart
+'
+'    Exit Function
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'End Function
+''''''''''END Change in .NET
+
+
+Public Function SaveSpecialPart(ByVal lstrType As String) As String
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SaveSpecialPart()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrCurrVal As String
+    Dim llngNextVal As Long
+    
+    SaveSpecialPart = ""
+    aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\BTMS", True 'opens or creates key
+    
+    Select Case lstrType
+    Case "NSTK"
+        lstrCurrVal = aReg.ReadValue("LastNumber")
+        llngNextVal = DBLValue(lstrCurrVal)
+        If llngNextVal = 0 Or llngNextVal > 999 Then llngNextVal = 1
+        aReg.WriteValue "LastNumber", CStr(llngNextVal + 1)
+    Case "ASECT"
+        lstrCurrVal = aReg.ReadValue("LastNumberASECT")
+        llngNextVal = DBLValue(lstrCurrVal)
+        If llngNextVal = 0 Or llngNextVal > 999 Then llngNextVal = 1
+        aReg.WriteValue "LastNumberASECT", CStr(llngNextVal + 1)
+    Case "RSECT"
+        lstrCurrVal = aReg.ReadValue("LastNumberRSECT")
+        llngNextVal = DBLValue(lstrCurrVal)
+        If llngNextVal = 0 Or llngNextVal > 999 Then llngNextVal = 1
+        aReg.WriteValue "LastNumberRSECT", CStr(llngNextVal + 1)
+    End Select
+    aReg.CloseKey 'close key
+    
+    SaveSpecialPart = CStr(llngNextVal)
+    SaveSpecialPart = "COMM-" & lstrType & "-" & Left("000", 3 - Len(SaveSpecialPart)) & SaveSpecialPart
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Public Function AllocateQuote(ByVal lngQuoteID As Long) As Boolean
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".AllocateQuote()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjQuoteDetRS As ADODB.Recordset
+    Dim lblnInTrans As Boolean
+    Dim dblQtyReq As Double
+    Dim ldblStock   As Double
+    Dim ldblResult As Double
+    Dim lobjINVRS As ADODB.Recordset
+    lblnInTrans = False
+    
+
+    'Get BoM Details for part to Allocate
+    lstrSQL = "select QuotePtNum, QuotePtQty,QuoteTotAmountReq from QuoteDetails"
+    lstrSQL = lstrSQL & " where QuoteID=" & lngQuoteID
+    Set lobjQuoteDetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjQuoteDetRS Is Nothing Then
+        If Not (lobjQuoteDetRS.BOF And lobjQuoteDetRS.EOF) Then
+            lobjQuoteDetRS.MoveFirst
+            CnnBTMS.BeginTrans
+            lblnInTrans = True
+            
+            Do While lobjQuoteDetRS.EOF = False
+                If IsNull(lobjQuoteDetRS.Fields("QuoteTotAmountReq").Value) Then
+                    dblQtyReq = 0
+                Else
+                    dblQtyReq = DBLValue(lobjQuoteDetRS.Fields("QuoteTotAmountReq").Value)
+                End If
+                If dblQtyReq > 0 Then
+                    lstrSQL = "select PartNum, Qtyinstock from Inventory "
+                    lstrSQL = lstrSQL & " Where PartNum=" & SQLString(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+                    
+                    Set lobjINVRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+                    If Not lobjINVRS Is Nothing And Not (lobjINVRS.BOF And lobjINVRS.EOF) Then
+                        
+                        lobjINVRS.MoveFirst
+                        lobjINVRS.Find "PartNum=" & SQLString(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+                        If lobjINVRS.EOF = False And lobjINVRS.BOF = False Then
+                            ldblStock = lobjINVRS.Fields("QtyInStock").Value
+                        End If
+                    End If
+                    
+                    ldblResult = ldblStock - dblQtyReq
+                    If ldblResult < 0.01 Then ldblResult = 0
+                    lstrSQL = "Update Inventory Set "
+                    lstrSQL = lstrSQL & "QtyInStock=" & Replace(ldblResult, ",", ".")
+                    lstrSQL = lstrSQL & " Where PartNum=" & SQLString(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+                    Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+                    Set lobjINVRS = Nothing
+                    
+                End If
+                lobjQuoteDetRS.MoveNext
+            Loop
+            lobjQuoteDetRS.Close
+        End If
+    End If
+    
+    lstrSQL = "Update BoM Set "
+    lstrSQL = lstrSQL & " BOMAlloc=True, BOMDoneDate=" & SQLString(Now())
+    lstrSQL = lstrSQL & " where QuoteID=" & lngQuoteID
+    Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+    
+    lstrSQL = "Update Quote Set "
+    lstrSQL = lstrSQL & " QuoteAlloc=True, QuoteDoneDate=" & SQLString(Now())
+    lstrSQL = lstrSQL & " where QuoteID=" & lngQuoteID
+    Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+    
+    CnnBTMS.CommitTrans
+    AllocateQuote = True
+    lblnInTrans = False
+    Set lobjQuoteDetRS = Nothing
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    If lblnInTrans = True Then CnnBTMS.RollbackTrans
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Public Function AllocateBOM(ByVal lngBOMID As Long) As Boolean
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".AllocateBOM()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjBOMDetRS As ADODB.Recordset
+    Dim lblnInTrans As Boolean
+    Dim dblQtyReq As Double
+    Dim ldblStock   As Double
+    Dim ldblResult As Double
+    Dim lobjINVRS As ADODB.Recordset
+    
+    lblnInTrans = False
+
+    'Get BoM Details for part to Allocate
+    lstrSQL = "select BOMPtNum, BOMPtQtyReq,BOMPttotamountReq from BOMDetails"
+    lstrSQL = lstrSQL & " where BOMID=" & lngBOMID
+    Set lobjBOMDetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjBOMDetRS Is Nothing Then
+        If Not (lobjBOMDetRS.BOF And lobjBOMDetRS.EOF) Then
+            lobjBOMDetRS.MoveFirst
+            CnnBTMS.BeginTrans
+            lblnInTrans = True
+            
+            Do While lobjBOMDetRS.EOF = False
+                If IsNull(lobjBOMDetRS.Fields("BOMPttotamountReq").Value) Then
+                    dblQtyReq = 0
+                Else
+                    dblQtyReq = DBLValue(lobjBOMDetRS.Fields("BOMPttotamountReq").Value)
+                End If
+                        
+                If dblQtyReq > 0 Then
+                    lstrSQL = "select PartNum, Qtyinstock from Inventory "
+                    lstrSQL = lstrSQL & " Where PartNum=" & SQLString(lobjBOMDetRS.Fields("bomPtNum").Value)
+                    
+                    Set lobjINVRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+                    If Not lobjINVRS Is Nothing And Not (lobjINVRS.BOF And lobjINVRS.EOF) Then
+                        
+                        lobjINVRS.MoveFirst
+                        lobjINVRS.Find "PartNum=" & SQLString(lobjBOMDetRS.Fields("bomPtNum").Value)
+                        If lobjINVRS.EOF = False And lobjINVRS.BOF = False Then
+                            ldblStock = lobjINVRS.Fields("QtyInStock").Value
+                        End If
+                    End If
+                    
+                    ldblResult = ldblStock - dblQtyReq
+                    If ldblResult < 0.01 Then ldblResult = 0
+                    lstrSQL = "Update Inventory Set "
+                    lstrSQL = lstrSQL & "QtyInStock=" & Replace(ldblResult, ",", ".")
+                    lstrSQL = lstrSQL & " Where PartNum=" & SQLString(lobjBOMDetRS.Fields("bomPtNum").Value)
+                    Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+                    Set lobjINVRS = Nothing
+                End If
+                lobjBOMDetRS.MoveNext
+            Loop
+            lobjBOMDetRS.Close
+        End If
+    End If
+    
+    lstrSQL = "Update  BoM Set "
+    lstrSQL = lstrSQL & " BOMAlloc=True, BOMDoneDate=" & SQLString(Now())
+    lstrSQL = lstrSQL & " where BOMID=" & lngBOMID
+    Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+    
+    CnnBTMS.CommitTrans
+    AllocateBOM = True
+    lblnInTrans = False
+    Set lobjBOMDetRS = Nothing
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    If lblnInTrans = True Then CnnBTMS.RollbackTrans
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Public Function CheckBOMforAllocation(ByVal lngBOMID As Long, ByVal mstrBOMUM As String, ByVal pblnNow As Boolean) As Boolean
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".CheckBOMforAllocation()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjINVRS As ADODB.Recordset
+    Dim lobjMainRS As ADODB.Recordset
+    Dim lobjBOMDetRS As ADODB.Recordset
+    Dim lblnInTrans As Boolean
+    Dim ldblQtyReq As Double
+    Dim ldblQtyStk As Double
+    Dim lintCounter As Integer
+    Dim ldblQtyResult As Double
+    Dim ldblRecmd As Double
+    Dim ldblLength As Double
+    Dim ldblTempLen As Double
+    lblnInTrans = False
+
+    ' Get BoM Details for part to Allocate
+    lstrSQL = "select BOMPtNum,BOMPtDesc, BOMPtUM,BOMPtTotAmountReq,BOMPtQtyReq from BOMDetails"
+    lstrSQL = lstrSQL & " where BOMID=" & lngBOMID
+    Set lobjBOMDetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjBOMDetRS Is Nothing Then
+        If Not (lobjBOMDetRS.BOF And lobjBOMDetRS.EOF) Then
+            lobjBOMDetRS.MoveFirst
+            CnnBTMS.BeginTrans
+            lblnInTrans = True
+            Do While lobjBOMDetRS.EOF = False
+                ' Find out if Inventory record Exists
+                lstrSQL = "Select I.PartNum, M.DescImp, M.DescMet, M.DescOther, I.QtyInStock, I.QtyReserved, I.QtyOnOrder, I.QtyBkOrder, I.RestockingLevel, I.QtyMin ,I.QtyOnPos From Inventory I"
+                lstrSQL = lstrSQL & " Left join Main M on I.PartNum = M.PartNum"
+                lstrSQL = lstrSQL & " where I.PartNum=" & SQLString(lobjBOMDetRS.Fields("BOMPtNum").Value)
+                Set lobjINVRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                If Not lobjINVRS Is Nothing Then
+                    If Not (lobjINVRS.BOF And lobjINVRS.EOF) Then
+                        
+                        lobjINVRS.MoveFirst
+                        If IsNull(lobjINVRS.Fields("QtyInStock").Value) Then
+                            ldblQtyStk = 0
+                        Else
+                            ldblQtyStk = DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+                        End If
+                        
+                        If IsNull(lobjBOMDetRS.Fields("BOMPtTotAmountReq").Value) Then
+                            ldblQtyReq = 0
+                        Else
+                            ldblQtyReq = DBLValue(lobjBOMDetRS.Fields("BOMPtTotAmountReq").Value)
+                        End If
+                        
+                        ldblQtyResult = ldblQtyStk - IIf(pblnNow = True, 0, DBLValue(lobjINVRS.Fields("QtyReserved").Value)) - ldblQtyReq
+                        If Format(ldblQtyResult, "Fixed") < 0 Then 'if insufficient stock
+                            lintCounter = lintCounter + 1
+                            If lintCounter >= 2 Then
+                                frmBOMAlloc.grdData1.Rows = frmBOMAlloc.grdData1.Rows + 1
+                            End If
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 0) = lobjINVRS.Fields("PartNum").Value
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 1) = IIf(UCase(mstrBOMUM) = "METRIC", lobjINVRS.Fields("DescMet").Value, lobjINVRS.Fields("DescImp").Value)
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 2) = IIf(IsNull(lobjINVRS.Fields("DescOther").Value), "", lobjINVRS.Fields("DescOther").Value)
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 3) = lobjBOMDetRS.Fields("BOMPTUM").Value
+                            
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("QtyInStock").Value, "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 4) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 4) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 4) = IIf(lobjBOMDetRS.Fields("BOMPtUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyInStock").Value, "Fixed"), Round(lobjINVRS.Fields("QtyInStock").Value, 0))
+                            End If
+                            
+                            
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 5) = IIf(lobjBOMDetRS.Fields("BOMPtUM").Value = "INCHES" And mstrBOMUM <> "Metric", Format(lobjBOMDetRS.Fields("BOMPtQtyReq").Value, "Fixed"), Round(lobjBOMDetRS.Fields("BOMPtQtyReq").Value, 0))
+                            
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("QtyReserved").Value, "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyReserved").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 6) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 6) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 6) = IIf(lobjBOMDetRS.Fields("BOMPtUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyReserved").Value, "Fixed"), Round(lobjINVRS.Fields("QtyReserved").Value, 0))
+                            End If
+                            
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then
+                                'If Format(DBLValue(lobjINVRS.Fields("QtyInStock").Value) - DBLValue(lobjINVRS.Fields("QtyReserved").Value), "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyInStock").Value) - DBLValue(lobjINVRS.Fields("QtyReserved").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 7) = Round(aCon.mm, 0)
+                                'Else
+                                '    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 7) = 0
+                                'End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 7) = IIf(lobjBOMDetRS.Fields("BOMPtUM").Value = "INCHES", Format(DBLValue(lobjINVRS.Fields("QtyInStock").Value) - DBLValue(lobjINVRS.Fields("QtyReserved").Value), "Fixed"), Round(DBLValue(lobjINVRS.Fields("QtyInStock").Value) - DBLValue(lobjINVRS.Fields("QtyReserved").Value), 0))
+                            End If
+                            
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("qtyOnPos").Value, "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("qtyOnPos").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = 0
+                                End If
+                            Else
+                                If Not IsNull(lobjINVRS.Fields("QtyOnPos").Value) Then
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = IIf(lobjBOMDetRS.Fields("BOMPtUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyOnPos").Value, "Fixed"), Round(lobjINVRS.Fields("QtyOnPos").Value, 0))
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = IIf(lobjBOMDetRS.Fields("BOMPtUM").Value = "INCHES", Format(0, "Fixed"), 0)
+                                End If
+                            End If
+                            
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("QtyOnOrder").Value, "Fixed") > 0 Then
+                                
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyOnOrder").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 9) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 9) = 0
+                                End If
+                            
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 9) = IIf(lobjBOMDetRS.Fields("BOMPtUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyOnOrder").Value, "Fixed"), Round(lobjINVRS.Fields("QtyOnOrder").Value, 0))
+                            End If
+                            
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("QtyBkOrder").Value, "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyBkOrder").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 10) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 10) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 10) = IIf(lobjBOMDetRS.Fields("BOMPtUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyBkOrder").Value, "Fixed"), Round(lobjINVRS.Fields("QtyBkOrder").Value, 0))
+                            End If
+                            
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("QtyMin").Value, "Fixed") > 0 Then
+                                
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyMin").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 11) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 11) = 0
+                                End If
+                            
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 11) = IIf(lobjBOMDetRS.Fields("BOMPtUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyMin").Value, "Fixed"), Round(lobjINVRS.Fields("QtyMin").Value, 0))
+                            End If
+                            
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("RestockingLevel").Value, "Fixed") > 0 Then
+                                
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("RestockingLevel").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 12) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 12) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 12) = IIf(lobjBOMDetRS.Fields("BOMPtUM").Value = "INCHES", Format(lobjINVRS.Fields("RestockingLevel").Value, "Fixed"), Round(lobjINVRS.Fields("RestockingLevel").Value, 0))
+                            End If
+                            
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then
+                                If Format((ldblQtyReq - DBLValue(lobjINVRS.Fields("QtyInStock").Value)), "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = ldblQtyReq - DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+                                    aCon.mmcalc
+                                    ldblRecmd = Round(aCon.mm, 0)
+'                                    ldblLength = GetLengthFromMain(lobjINVRS.Fields("PartNum").Value)
+'                                    ClearConObj
+'                                    aCon.Inch = ldblLength
+'                                    aCon.mmcalc
+'                                    ldblLength = Round(aCon.mm, 0)
+'                                    ldblTempLen = ldblLength
+'                                    If GetUMfromMain(lobjINVRS.Fields("PartNum").Value) = "EACH" Then
+'                                        Do Until ldblLength Mod ldblRecmd = 0
+'                                            If ldblRecmd < ldblLength Then
+'                                                ldblRecmd = ldblLength
+'                                            ElseIf ldblRecmd > ldblLength Then
+'                                                ldblLength = ldblLength + ldblTempLen
+'                                            End If
+'                                        Loop
+'                                    End If
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = ldblRecmd
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = 0
+                                End If
+                            ElseIf mstrBOMUM <> "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then
+                                If Format((ldblQtyReq - DBLValue(lobjINVRS.Fields("QtyInStock").Value)), "Fixed") > 0 Then
+                                    ldblRecmd = ldblQtyReq - DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+'                                    ldblLength = GetLengthFromMain(lobjINVRS.Fields("PartNum").Value)
+'                                    If GetUMfromMain(lobjINVRS.Fields("PartNum").Value) = "EACH" Then
+'                                        Do Until ldblLength Mod ldblRecmd = 0
+'                                            If ldblRecmd < ldblLength Then
+'                                                ldblRecmd = ldblLength
+'                                            ElseIf ldblRecmd > ldblLength Then
+'                                                ldblLength = ldblLength + ldblTempLen
+'                                            End If
+'                                        Loop
+'                                    End If
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = Format(ldblRecmd, "Fixed")
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = IIf(ldblQtyReq - lobjINVRS.Fields("QtyInStock").Value < 0, 0, Round(ldblQtyReq - lobjINVRS.Fields("QtyInStock").Value, 0))
+                            End If
+                            
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then frmBOMAlloc.grdData1.TextMatrix(lintCounter, 3) = "MM"
+                            
+                        End If
+                    Else
+                        If pblnNow = False Then
+                            lintCounter = lintCounter + 1
+                            If lintCounter >= 2 Then
+                                frmBOMAlloc.grdData1.Rows = frmBOMAlloc.grdData1.Rows + 1
+                            End If
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 0) = IIf(IsNull(lobjBOMDetRS.Fields("BomPtNum").Value), "", lobjBOMDetRS.Fields("BomPtNum").Value)
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 1) = IIf(IsNull(lobjBOMDetRS.Fields("BOMPtDesc").Value), "", lobjBOMDetRS.Fields("BOMPtDesc").Value)
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 2) = ""
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 3) = IIf(IsNull(lobjBOMDetRS.Fields("BOMPTUM").Value), "", lobjBOMDetRS.Fields("BOMPTUM").Value)
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 5) = IIf(lobjBOMDetRS.Fields("BOMptUM").Value = "INCHES" And mstrBOMUM <> "Metric", Format(lobjBOMDetRS.Fields("BOMPtQtyReq").Value, "Fixed"), Round(lobjBOMDetRS.Fields("BOMPtQtyReq").Value, 0))
+                            Dim ldblOnPos As Double
+                            ldblOnPos = GetQtyOnActivePOs(lobjBOMDetRS.Fields("BomPtNum").Value)
+                            
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then
+                                If Format(ldblOnPos, "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = ldblOnPos
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = IIf(lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES", Format(ldblOnPos, "Fixed"), Round(ldblOnPos, 0))
+                            End If
+                            
+                            If lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" And Format(ldblQtyReq, "Fixed") > 0 Then
+
+''''''''''Change in .NET''''''''''''''''
+'                                ldblRecmd = Round(lobjBOMDetRS.Fields("BOMPtQtyReq").Value)
+                                ldblRecmd = lobjBOMDetRS.Fields("BOMPtQtyReq").Value
+
+''''''''''END Change in .NET
+'                                ldblLength = GetLengthFromMain(lobjBOMDetRS.Fields("BomPtNum").Value)
+'
+'                                If mstrBOMUM = "Metric" Then
+'                                    ClearConObj
+'                                    aCon.Inch = ldblLength
+'                                    aCon.mmcalc
+'                                    ldblLength = Round(aCon.mm, 0)
+'                                End If
+'                                If GetUMfromMain(lobjBOMDetRS.Fields("BomPtNum").Value) = "EACH" Then
+'                                    ldblTempLen = ldblLength
+'                                    Do Until ldblLength Mod ldblRecmd = 0
+'                                        If ldblRecmd < ldblLength Then
+'                                            ldblRecmd = ldblLength
+'                                        ElseIf ldblRecmd > ldblLength Then
+'                                            ldblLength = ldblLength + ldblTempLen
+'                                        End If
+'                                    Loop
+'                                End If
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = IIf(mstrBOMUM = "Metric", Round(ldblRecmd, 0), Format(ldblRecmd, "Fixed"))
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = lobjBOMDetRS.Fields("BOMPtQtyReq").Value
+                            End If
+                            If mstrBOMUM = "Metric" And lobjBOMDetRS.Fields("BOMPTUM").Value = "INCHES" Then frmBOMAlloc.grdData1.TextMatrix(lintCounter, 3) = "MM"
+                        End If
+                    End If
+                Else
+                    ' No Inventory record exits - DO NOTHING!!!!
+                End If
+                lobjINVRS.Close
+                Set lobjINVRS = Nothing
+                lobjBOMDetRS.MoveNext
+            Loop
+                        
+            lobjBOMDetRS.Close
+            CnnBTMS.CommitTrans
+            lblnInTrans = False
+        Else
+            CheckBOMforAllocation = True
+        End If
+    End If
+    Set lobjBOMDetRS = Nothing
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    If lblnInTrans = True Then CnnBTMS.RollbackTrans
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+Public Function CheckQuoteforAllocation(ByVal lngQuoteID As Long, ByVal mstrQuoteUM As String, pblnNow As Boolean) As Boolean
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".CheckQuoteforAllocation()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjINVRS As ADODB.Recordset
+    Dim lobjMainRS As ADODB.Recordset
+    Dim lobjQuoteDetRS As ADODB.Recordset
+    Dim lblnInTrans As Boolean
+    Dim ldblQtyReq As Double
+    Dim ldblQtyStk As Double
+    Dim ldblQtyResult As Double
+    Dim lintCounter As Integer
+    Dim ldblRecmd As Double
+    Dim ldblLength As Double
+    Dim ldblTempLen As Double
+    Dim ldblOnPos As Double
+    lblnInTrans = False
+
+    ' Get BoM Details for part to Allocate
+    lstrSQL = "select QuotePtNum,QuotePtDesc,QuoteUM,QuoteTotAmountReq,QuotePtQty from QuoteDetails"
+    lstrSQL = lstrSQL & " where QuoteID=" & lngQuoteID
+    Set lobjQuoteDetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjQuoteDetRS Is Nothing Then
+        If Not (lobjQuoteDetRS.BOF And lobjQuoteDetRS.EOF) Then
+            lobjQuoteDetRS.MoveFirst
+            CnnBTMS.BeginTrans
+            lblnInTrans = True
+            Do While lobjQuoteDetRS.EOF = False
+                ' Find out if Inventory record Exists
+                lstrSQL = "Select I.PartNum, M.DescImp, M.DescMet, M.DescOther, I.QtyInStock, I.QtyReserved, I.QtyOnOrder, I.QtyBkOrder, I.RestockingLevel, I.QtyMin, I.QtyOnPos From Inventory I"
+                lstrSQL = lstrSQL & " Left join Main M on I.PartNum = M.PartNum"
+                lstrSQL = lstrSQL & " where I.PartNum=" & SQLString(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+                Set lobjINVRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                If Not lobjINVRS Is Nothing Then
+                    If Not (lobjINVRS.BOF And lobjINVRS.EOF) Then
+                        
+                        lobjINVRS.MoveFirst
+                        If IsNull(lobjINVRS.Fields("QtyInStock").Value) Then
+                            ldblQtyStk = 0
+                        Else
+                            ldblQtyStk = DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+                        End If
+                        
+                        If IsNull(lobjQuoteDetRS.Fields("QuoteTotAmountReq").Value) Then
+                            ldblQtyReq = 0
+                        Else
+                            ldblQtyReq = DBLValue(lobjQuoteDetRS.Fields("QuoteTotAmountReq").Value)
+                        End If
+                        
+                        ldblQtyResult = lobjINVRS.Fields("QtyInStock").Value - IIf(pblnNow = True, 0, lobjINVRS.Fields("QtyReserved").Value) - ldblQtyReq
+                        If Format(ldblQtyResult, "Fixed") < 0 Then
+                            lintCounter = lintCounter + 1
+                            If lintCounter >= 2 Then
+                                frmBOMAlloc.grdData1.Rows = frmBOMAlloc.grdData1.Rows + 1
+                            End If
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 0) = lobjINVRS.Fields("PartNum").Value
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 1) = IIf(UCase(mstrQuoteUM) = "METRIC", lobjINVRS.Fields("DescMet").Value, lobjINVRS.Fields("DescImp").Value)
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 2) = IIf(IsNull(lobjINVRS.Fields("DescOther").Value), "", lobjINVRS.Fields("DescOther").Value)
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 3) = lobjQuoteDetRS.Fields("QuoteUM").Value
+                            
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("QtyInStock").Value, "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 4) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 4) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 4) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyInStock").Value, "Fixed"), Round(lobjINVRS.Fields("QtyInStock").Value, 0))
+                            End If
+                            
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 5) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" And mstrQuoteUM <> "Metric", Format(lobjQuoteDetRS.Fields("QuotePtQty").Value, "Fixed"), Round(lobjQuoteDetRS.Fields("QuotePtQty").Value, 0))
+                            
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("QtyReserved").Value, "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyReserved").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 6) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 6) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 6) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyReserved").Value, "Fixed"), Round(lobjINVRS.Fields("QtyReserved").Value, 0))
+                            End If
+                            
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then
+                                'If Format((DBLValue(lobjINVRS.Fields("QtyInStock").Value) - DBLValue(lobjINVRS.Fields("QtyReserved").Value)), "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyInStock").Value) - DBLValue(lobjINVRS.Fields("QtyReserved").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 7) = Round(aCon.mm, 0)
+                                'Else
+                                '    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 7) = 0
+                                'End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 7) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES", Format(DBLValue(lobjINVRS.Fields("QtyInStock").Value) - DBLValue(lobjINVRS.Fields("QtyReserved").Value), "Fixed"), Round(DBLValue(lobjINVRS.Fields("QtyInStock").Value) - DBLValue(lobjINVRS.Fields("QtyReserved").Value), 0))
+                            End If
+                            
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("QtyOnPos").Value > 0, "Fixed") Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyOnPos").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = 0
+                                End If
+                            Else
+                                If Not IsNull(lobjINVRS.Fields("QtyOnPos").Value) Then
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyOnPos").Value, "Fixed"), Round(lobjINVRS.Fields("QtyOnPos").Value, 0))
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES", Format(0, "Fixed"), 0)
+                                End If
+                            End If
+                            
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("QtyOnOrder").Value, "Fixed") > 0 Then
+
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyOnOrder").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 9) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 9) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 9) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyOnOrder").Value, "Fixed"), Round(lobjINVRS.Fields("QtyOnOrder").Value, 0))
+                            End If
+                            
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("QtyBkOrder").Value, "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyBkOrder").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 10) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 10) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 10) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyBkOrder").Value, "Fixed"), Round(lobjINVRS.Fields("QtyBkOrder").Value, 0))
+                            End If
+                            
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("QtyMin").Value, "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyMin").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 11) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 11) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 11) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES", Format(lobjINVRS.Fields("QtyMin").Value, "Fixed"), Round(lobjINVRS.Fields("QtyMin").Value, 0))
+                            End If
+                            
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then
+                                If Format(lobjINVRS.Fields("RestockingLevel").Value, "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = DBLValue(lobjINVRS.Fields("RestockingLevel").Value)
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 12) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 12) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 12) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES", Format(lobjINVRS.Fields("RestockingLevel").Value, "Fixed"), Round(lobjINVRS.Fields("RestockingLevel").Value, 0))
+                            End If
+                            
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then
+                                If Format((ldblQtyReq - lobjINVRS.Fields("QtyInStock").Value), "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = ldblQtyReq - DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+                                    aCon.mmcalc
+                                    ldblRecmd = Round(aCon.mm, 0)
+'                                ldblLength = GetLengthFromMain(lobjINVRS.Fields("PartNum").Value)
+'                                ClearConObj
+'                                aCon.Inch = ldblLength
+'                                aCon.mmcalc
+'                                ldblLength = Round(aCon.mm, 0)
+'                                If GetUMfromMain(lobjINVRS.Fields("PartNum").Value) = "EACH" Then
+'                                    Do Until ldblLength Mod ldblRecmd = 0
+'                                        If ldblRecmd < ldblLength Then
+'                                            ldblRecmd = ldblLength
+'                                        ElseIf ldblRecmd > ldblLength Then
+'                                            ldblLength = ldblLength * 2
+'                                        End If
+'                                    Loop
+'                                End If
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = ldblRecmd
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = 0
+                                End If
+                            ElseIf mstrQuoteUM <> "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then
+                                If Format((ldblQtyReq - lobjINVRS.Fields("QtyInStock").Value), "Fixed") > 0 Then
+                                    ldblRecmd = ldblQtyReq - DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+'                                    ldblLength = GetLengthFromMain(lobjINVRS.Fields("PartNum").Value)
+'                                    If GetUMfromMain(lobjINVRS.Fields("PartNum").Value) = "EACH" Then
+'                                        ldblTempLen = ldblLength
+'                                        Do Until ldblLength Mod ldblRecmd = 0
+'                                            If ldblRecmd < ldblLength Then
+'                                                ldblRecmd = ldblLength
+'                                            ElseIf ldblRecmd > ldblLength Then
+'                                                ldblLength = ldblLength + ldblTempLen
+'                                            End If
+'                                        Loop
+'                                    End If
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = Format(ldblRecmd, "Fixed")
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = IIf(ldblQtyReq - lobjINVRS.Fields("QtyInStock").Value < 0, 0, ldblQtyReq - lobjINVRS.Fields("QtyInStock").Value)
+                            End If
+                            
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then frmBOMAlloc.grdData1.TextMatrix(lintCounter, 3) = "MM"
+                            
+                        End If
+                    Else
+                        If pblnNow = False Then
+                            lintCounter = lintCounter + 1
+                            If lintCounter >= 2 Then
+                                frmBOMAlloc.grdData1.Rows = frmBOMAlloc.grdData1.Rows + 1
+                            End If
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 0) = lobjQuoteDetRS.Fields("QuotePtNum").Value
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 1) = lobjQuoteDetRS.Fields("QuotePtDesc").Value
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 2) = ""
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 3) = lobjQuoteDetRS.Fields("QuoteUM").Value
+                            frmBOMAlloc.grdData1.TextMatrix(lintCounter, 5) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" And mstrQuoteUM <> "Metric", Format(lobjQuoteDetRS.Fields("QuotePtQty").Value, "Fixed"), Round(lobjQuoteDetRS.Fields("QuotePtQty").Value, 0))
+                            
+                            
+                            If lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" And Format(ldblQtyReq, "Fixed") > 0 Then
+                                
+                                ldblRecmd = Round(lobjQuoteDetRS.Fields("QuotePtQty").Value, 0)
+'                                ldblLength = GetLengthFromMain(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+'                                ClearConObj
+'                                aCon.Inch = ldblLength
+'                                aCon.mmcalc
+'                                ldblLength = Round(aCon.mm, 0)
+'                                If GetUMfromMain(lobjQuoteDetRS.Fields("QuotePtNum").Value) = "EACH" Then
+'                                    ldblTempLen = ldblLength
+'                                    Do Until ldblLength Mod ldblRecmd = 0
+'                                        If ldblRecmd < ldblLength Then
+'                                            ldblRecmd = ldblLength
+'                                        ElseIf ldblRecmd > ldblLength Then
+'                                            ldblLength = ldblLength + ldblTempLen
+'                                        End If
+'                                    Loop
+'                                End If
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = IIf(mstrQuoteUM = "Metric", Round(ldblRecmd, 0), Format(ldblRecmd, "Fixed"))
+                            
+'                            ElseIf mstrQuoteUM <> "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" And ldblQtyReq > 0 Then
+'
+'                                ldblRecmd = ldblQtyReq
+'                                ldblLength = GetLengthFromMain(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+'                                If GetUMfromMain(lobjQuoteDetRS.Fields("QuotePtNum").Value) = "EACH" Then
+'                                    ldblTempLen = ldblLength
+'                                    Do Until ldblLength Mod ldblRecmd = 0
+'                                        If ldblRecmd < ldblLength Then
+'                                            ldblRecmd = ldblLength
+'                                        ElseIf ldblRecmd > ldblLength Then
+'                                            ldblLength = ldblLength + ldblTempLen
+'                                        End If
+'                                    Loop
+'                                End If
+'                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = Format(ldblRecmd, "Fixed")
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 13) = lobjQuoteDetRS.Fields("QuotePtQty").Value
+                            End If
+                            
+                            ldblOnPos = GetQtyOnActivePOs(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then
+                                If Format(ldblOnPos, "Fixed") > 0 Then
+                                    ClearConObj
+                                    aCon.Inch = ldblOnPos
+                                    aCon.mmcalc
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = Round(aCon.mm, 0)
+                                Else
+                                    frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = 0
+                                End If
+                            Else
+                                frmBOMAlloc.grdData1.TextMatrix(lintCounter, 8) = IIf(lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES", Format(ldblOnPos, "Fixed"), Round(ldblOnPos, 0))
+                            End If
+                            
+                            If mstrQuoteUM = "Metric" And lobjQuoteDetRS.Fields("QuoteUM").Value = "INCHES" Then frmBOMAlloc.grdData1.TextMatrix(lintCounter, 3) = "MM"
+                        End If
+                    End If
+                Else
+                    ' No Inventory record exits - DO NOTHING!!!!
+                End If
+                lobjINVRS.Close
+                Set lobjINVRS = Nothing
+                lobjQuoteDetRS.MoveNext
+            Loop
+                        
+            lobjQuoteDetRS.Close
+            CnnBTMS.CommitTrans
+            lblnInTrans = False
+        Else
+            CheckQuoteforAllocation = True
+        End If
+    End If
+    Set lobjQuoteDetRS = Nothing
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    If lblnInTrans = True Then CnnBTMS.RollbackTrans
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Public Sub UnAllocateBOM(ByVal lngBOMID As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".UnAllocateBOM()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjINVRS As ADODB.Recordset
+    Dim lobjBOMDetRS As ADODB.Recordset
+    Dim lblnInTrans As Boolean
+    Dim dblQtyRes As Double
+    Dim dblQtyStk As Double
+    Dim lobjBOMRS As ADODB.Recordset
+    lblnInTrans = False
+    CnnBTMS.BeginTrans
+    lblnInTrans = True
+    lstrSQL = "select BOMReserveDate from BoM where BOMID=" & lngBOMID
+    Set lobjBOMRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    
+    'Get BoM Details for part to UnAllocate
+    lstrSQL = "select BOMPtNum, BOMPtTotAmountReq from BOMDetails where BOMID=" & lngBOMID
+    Set lobjBOMDetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjBOMDetRS Is Nothing Then
+        If Not (lobjBOMDetRS.BOF And lobjBOMDetRS.EOF) Then
+            lobjBOMDetRS.MoveFirst
+            Do While lobjBOMDetRS.EOF = False
+                ' Find out if Inventory record Exists
+                lstrSQL = "Select PartNum, QtyInStock, QtyReserved From Inventory"
+                lstrSQL = lstrSQL & " where PartNum=" & SQLString(lobjBOMDetRS.Fields("BOMPtNum").Value)
+                Set lobjINVRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                If Not lobjINVRS Is Nothing Then
+                    If Not (lobjINVRS.BOF And lobjINVRS.EOF) Then
+                        lobjINVRS.MoveFirst
+                        If IsNull(lobjINVRS.Fields("QtyInStock").Value) Then
+                            dblQtyStk = 0
+                        Else
+                            dblQtyStk = DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+                        End If
+                        If IsNull(lobjBOMDetRS.Fields("BOMPtTotAmountReq").Value) Then
+                            dblQtyRes = 0
+                        Else
+                             dblQtyRes = DBLValue(lobjINVRS.Fields("QtyReserved").Value) - DBLValue(lobjBOMDetRS.Fields("BOMPtTotAmountReq").Value)
+                        End If
+                        
+                        lobjINVRS.Close
+                                                
+                        If lobjBOMRS.Fields("BOMReserveDate").Value > 0 Then 'unreserve
+                            lstrSQL = "Update Inventory Set "
+                            lstrSQL = lstrSQL & "QtyReserved=" & Replace(dblQtyRes, ",", ".")
+                            lstrSQL = lstrSQL & " Where PartNum=" & SQLString(lobjBOMDetRS.Fields("BOMPtNum").Value)
+                            Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+                        Else 'unallocate
+                            lstrSQL = "Update Inventory Set "
+                            lstrSQL = lstrSQL & "QtyInStock=QtyInStock+" & Replace(lobjBOMDetRS.Fields("BOMPtTotAmountReq").Value, ",", ".")
+                            lstrSQL = lstrSQL & " Where PartNum=" & SQLString(lobjBOMDetRS.Fields("BOMPtNum").Value)
+                            Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+                        End If
+                    End If
+                Else
+                    ' No Inventory record exits - DO NOTHING!!!!
+                End If
+            
+                Set lobjINVRS = Nothing
+                lobjBOMDetRS.MoveNext
+                
+            Loop
+            If lobjBOMRS.Fields("BOMReserveDate").Value > 0 Then
+                lstrSQL = "Update BoM Set BOMReserveDate=NULL" '& SQLString(Format(Now(), cstrDateMask))
+                lstrSQL = lstrSQL & ", BOMAlloc=0"
+                lstrSQL = lstrSQL & " where BOMID=" & lngBOMID
+                Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+            Else
+                lstrSQL = "Update BoM Set BOMDoneDate=NULL" '& SQLString(Format(Now(), cstrDateMask))
+                lstrSQL = lstrSQL & ", BOMAlloc=0"
+                lstrSQL = lstrSQL & " where BOMID=" & lngBOMID
+                Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+            End If
+        End If
+    End If
+    CnnBTMS.CommitTrans
+    lblnInTrans = False
+    Set lobjBOMDetRS = Nothing
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    If lblnInTrans = True Then CnnBTMS.RollbackTrans
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+Public Sub UnAllocateQuote(ByVal lngQuoteID As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".UnAllocateBOM()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjINVRS As ADODB.Recordset
+    Dim lobjQuoteDetRS As ADODB.Recordset
+    Dim lblnInTrans As Boolean
+    Dim dblQtyRes As Double
+    Dim dblQtyStk As Double
+    Dim lobjQuoteRS As ADODB.Recordset
+    lblnInTrans = False
+    CnnBTMS.BeginTrans
+    lblnInTrans = True
+    lstrSQL = "select QuoteReserveDate from Quote where QuoteID=" & lngQuoteID
+    Set lobjQuoteRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    
+    'Get BoM Details for part to UnAllocate
+    lstrSQL = "select QuotePtNum, QuoteTotAmountReq from QuoteDetails where QuoteID=" & lngQuoteID
+    Set lobjQuoteDetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjQuoteDetRS Is Nothing Then
+        If Not (lobjQuoteDetRS.BOF And lobjQuoteDetRS.EOF) Then
+            lobjQuoteDetRS.MoveFirst
+            Do While lobjQuoteDetRS.EOF = False
+                ' Find out if Inventory record Exists
+                lstrSQL = "Select PartNum, QtyInStock, QtyReserved From Inventory"
+                lstrSQL = lstrSQL & " where PartNum=" & SQLString(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+                Set lobjINVRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                If Not lobjINVRS Is Nothing Then
+                    If Not (lobjINVRS.BOF And lobjINVRS.EOF) Then
+                        lobjINVRS.MoveFirst
+                        If IsNull(lobjINVRS.Fields("QtyInStock").Value) Then
+                            dblQtyStk = 0
+                        Else
+                            dblQtyStk = DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+                        End If
+                        If IsNull(lobjINVRS.Fields("QtyReserved").Value) Then
+                            dblQtyRes = 0
+                        Else
+                             dblQtyRes = DBLValue(lobjINVRS.Fields("QtyReserved").Value)
+                        End If
+                        
+                        lobjINVRS.Close
+                                                
+                        If lobjQuoteRS.Fields("QuoteReserveDate").Value > 0 Then 'unreserve
+                            lstrSQL = "Update Inventory Set "
+                            lstrSQL = lstrSQL & "QtyReserved=QtyReserved-" & Replace(lobjQuoteDetRS.Fields("QuoteTotAmountReq").Value, ",", ".")
+                            lstrSQL = lstrSQL & " Where PartNum=" & SQLString(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+                            Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+                        Else 'unallocate
+                            lstrSQL = "Update Inventory Set "
+                            lstrSQL = lstrSQL & "QtyInStock=QtyInStock+" & Replace(lobjQuoteDetRS.Fields("QuoteTotAmountReq").Value, ",", ".")
+                            lstrSQL = lstrSQL & " Where PartNum=" & SQLString(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+                            Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+                        End If
+                    End If
+                Else
+                    ' No Inventory record exits - DO NOTHING!!!!
+                End If
+            
+                Set lobjINVRS = Nothing
+                lobjQuoteDetRS.MoveNext
+                
+            Loop
+            If lobjQuoteRS.Fields("QuoteReserveDate").Value > 0 Then
+                lstrSQL = "Update BoM Set BOMReserveDate=NULL"
+                lstrSQL = lstrSQL & ", BOMAlloc=0"
+                lstrSQL = lstrSQL & " where QuoteID=" & lngQuoteID
+                Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+            
+                lstrSQL = "Update Quote Set QuoteReserveDate=NULL"
+                lstrSQL = lstrSQL & ", QuoteAlloc=0"
+                lstrSQL = lstrSQL & " where QuoteID=" & lngQuoteID
+                Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+            Else
+                lstrSQL = "Update BoM Set BOMDoneDate=NULL"
+                lstrSQL = lstrSQL & ", BOMAlloc=0"
+                lstrSQL = lstrSQL & " where QuoteID=" & lngQuoteID
+                Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+            
+                lstrSQL = "Update Quote Set QuoteDoneDate=NULL"
+                lstrSQL = lstrSQL & ", QuoteAlloc=0"
+                lstrSQL = lstrSQL & " where QuoteID=" & lngQuoteID
+                Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+
+            End If
+        End If
+    End If
+    CnnBTMS.CommitTrans
+    lblnInTrans = False
+    Set lobjQuoteDetRS = Nothing
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    If lblnInTrans = True Then CnnBTMS.RollbackTrans
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Public Function GetPartDesc(ByVal strPartNum As String, Optional ByVal strDescType As String = "I")
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetPartDesc()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim lstrDesc As String
+    Dim lstrFieldName As String
+    Dim lobjMainRS As ADODB.Recordset
+    
+    lstrDesc = ""
+    lstrSQLQuery = "select PartNum, DescImp, DescMet, DescOther from Main where PartNum=" & SQLString(strPartNum)
+    Set lobjMainRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjMainRS Is Nothing Then
+        lobjMainRS.ActiveConnection = Nothing
+        If Not (lobjMainRS.BOF And lobjMainRS.EOF) Then
+            lobjMainRS.MoveFirst
+            Select Case UCase(Trim(strDescType))
+                Case "I"
+                            lstrFieldName = "DescImp"
+                            lstrDesc = IIf(IsNull(lobjMainRS.Fields(lstrFieldName).Value), "", Trim(lobjMainRS.Fields(lstrFieldName).Value))
+                Case "M"
+                            lstrFieldName = "DescMet"
+                            lstrDesc = IIf(IsNull(lobjMainRS.Fields(lstrFieldName).Value), "", Trim(lobjMainRS.Fields(lstrFieldName).Value))
+                Case "O"
+                            lstrFieldName = "DescOther"
+                            lstrDesc = IIf(IsNull(lobjMainRS.Fields(lstrFieldName).Value), "", Trim(lobjMainRS.Fields(lstrFieldName).Value))
+            End Select
+            lobjMainRS.Close
+        End If
+    End If
+    Set lobjMainRS = Nothing
+    GetPartDesc = lstrDesc
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Public Function RoundFractionUp(ByVal psngPart As Single) As Single
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".RoundFractionUp()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Select Case psngPart
+    Case Is <= 0
+    RoundFractionUp = 0
+
+    Case Is <= 0.0625
+    RoundFractionUp = 0.0625
+
+    Case Is <= 0.125
+    RoundFractionUp = 0.125
+
+    Case Is <= 0.1875
+    RoundFractionUp = 0.1875
+
+    Case Is <= 0.25
+    RoundFractionUp = 0.25
+
+    Case Is <= 0.3125
+    RoundFractionUp = 0.3125
+
+    Case Is <= 0.375
+    RoundFractionUp = 0.375
+
+    Case Is <= 0.4375
+    RoundFractionUp = 0.4375
+
+    Case Is <= 0.5
+    RoundFractionUp = 0.5
+
+    Case Is <= 0.5625
+    RoundFractionUp = 0.5625
+
+    Case Is <= 0.625
+    RoundFractionUp = 0.625
+
+    Case Is <= 0.6875
+    RoundFractionUp = 0.6875
+
+    Case Is <= 0.75
+    RoundFractionUp = 0.75
+
+    Case Is <= 0.8125
+    RoundFractionUp = 0.8125
+
+    Case Is <= 0.875
+    RoundFractionUp = 0.875
+
+    Case Is <= 0.9375
+    RoundFractionUp = 0.9375
+
+    Case Is <= 1
+    RoundFractionUp = 1
+
+    End Select
+
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function RoundFractionDown(ByVal psngPart As Single) As Single
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".RoundFractionDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Select Case psngPart
+    
+    Case 0
+    RoundFractionDown = 0
+    
+    Case Is >= 0.9375
+    RoundFractionDown = 0.9375
+    
+    Case Is >= 0.8125
+    RoundFractionDown = 0.8125
+    
+    Case Is >= 0.875
+    RoundFractionDown = 0.875
+    
+    Case Is >= 0.75
+    RoundFractionDown = 0.75
+
+    Case Is >= 0.6875
+    RoundFractionDown = 0.6875
+    
+    Case Is >= 0.625
+    RoundFractionDown = 0.625
+    
+    Case Is >= 0.5625
+    RoundFractionDown = 0.5625
+    
+    Case Is >= 0.5
+    RoundFractionDown = 0.5
+    
+    Case Is >= 0.4375
+    RoundFractionDown = 0.4375
+    
+    Case Is >= 0.375
+    RoundFractionDown = 0.375
+    
+    Case Is >= 0.3125
+    RoundFractionDown = 0.3125
+    
+    Case Is >= 0.25
+    RoundFractionDown = 0.25
+    
+    Case Is >= 0.1875
+    RoundFractionDown = 0.1875
+    
+    Case Is >= 0.125
+    RoundFractionDown = 0.125
+    
+    Case Is >= 0.0625
+    RoundFractionDown = 0.0625
+    
+    Case Is >= 1
+    RoundFractionDown = 1
+    
+    End Select
+
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Sub ReserveBOM(ByVal lngBOMID As Long, ByVal ldtReserve As Date)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ReserveBOM()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjINVRS As ADODB.Recordset
+    Dim lobjMainRS As ADODB.Recordset
+    Dim lobjBOMDetRS As ADODB.Recordset
+    Dim lblnInTrans As Boolean
+    Dim dblQtyReq As Double
+    
+    lblnInTrans = False
+
+    ' Get BoM Details for part to Allocate
+    lstrSQL = "select BOMPtNum, BOMPtQtyReq,BOMPttotamountReq from BOMDetails"
+    lstrSQL = lstrSQL & " where BOMID=" & lngBOMID
+    Set lobjBOMDetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjBOMDetRS Is Nothing Then
+        If Not (lobjBOMDetRS.BOF And lobjBOMDetRS.EOF) Then
+            lobjBOMDetRS.MoveFirst
+            CnnBTMS.BeginTrans
+            lblnInTrans = True
+            
+            Do While lobjBOMDetRS.EOF = False
+                ' Find out if Inventory record Exists
+                lstrSQL = "Select PartNum, QtyReserved From Inventory"
+                lstrSQL = lstrSQL & " where PartNum=" & SQLString(lobjBOMDetRS.Fields("BOMPtNum").Value)
+                Set lobjINVRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                If Not lobjINVRS Is Nothing Then
+                    If Not (lobjINVRS.BOF And lobjINVRS.EOF) Then
+                        lobjINVRS.MoveFirst
+                        If IsNull(lobjBOMDetRS.Fields("BOMPttotamountReq").Value) Then
+                            dblQtyReq = 0
+                        Else
+                             dblQtyReq = DBLValue(lobjBOMDetRS.Fields("BOMPttotamountReq").Value)
+                        End If
+                        lstrSQL = "Update Inventory Set "
+                        lstrSQL = lstrSQL & "QtyReserved=QtyReserved+" & Replace(dblQtyReq, ",", ".")
+                        lstrSQL = lstrSQL & " Where PartNum=" & SQLString(lobjBOMDetRS.Fields("BOMPtNum").Value)
+                        Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+                            
+                    End If
+                Else
+                    ' No Inventory record exits - DO NOTHING!!!!
+                End If
+                Set lobjINVRS = Nothing
+                lobjBOMDetRS.MoveNext
+            Loop
+                    
+            lstrSQL = "Update BoM Set BOMReserveDate=" & SQLString(ldtReserve)
+            lstrSQL = lstrSQL & ",BOMRemindDate=" & SQLString(ldtReserve) & " where BOMID=" & lngBOMID
+            Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+            
+            lobjBOMDetRS.Close
+            CnnBTMS.CommitTrans
+            lblnInTrans = False
+        End If
+    End If
+    Set lobjBOMDetRS = Nothing
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    If lblnInTrans = True Then CnnBTMS.RollbackTrans
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Public Sub ReserveQuote(ByVal lngQuoteID As Long, ByVal ldtReserve As Date)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ReserveBOM()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjINVRS As ADODB.Recordset
+    Dim lobjMainRS As ADODB.Recordset
+    Dim lobjQuoteDetRS As ADODB.Recordset
+    Dim lblnInTrans As Boolean
+    Dim dblQtyRes As Double
+    Dim dblQtyReq As Double
+    Dim dblQtyStk As Double
+    Dim dblQtyOrd As Double
+    Dim lblnStockable As Boolean
+    
+    lblnInTrans = False
+
+    ' Get Details for part to Allocate
+    lstrSQL = "select QuotePtNum, QuotePtQty,QuoteTotAmountReq from QuoteDetails"
+    lstrSQL = lstrSQL & " where QuoteID=" & lngQuoteID
+    Set lobjQuoteDetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjQuoteDetRS Is Nothing Then
+        If Not (lobjQuoteDetRS.BOF And lobjQuoteDetRS.EOF) Then
+            lobjQuoteDetRS.MoveFirst
+            CnnBTMS.BeginTrans
+            lblnInTrans = True
+            
+            Do While lobjQuoteDetRS.EOF = False
+                ' Find out if Inventory record Exists
+                lstrSQL = "Select PartNum, QtyReserved From Inventory"
+                lstrSQL = lstrSQL & " where PartNum=" & SQLString(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+                Set lobjINVRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                If Not lobjINVRS Is Nothing Then
+                    If Not (lobjINVRS.BOF And lobjINVRS.EOF) Then
+                        lobjINVRS.MoveFirst
+                                                
+                        If IsNull(lobjQuoteDetRS.Fields("QuoteTotAmountReq").Value) Then
+                            dblQtyReq = 0
+                        Else
+                            dblQtyReq = DBLValue(lobjQuoteDetRS.Fields("QuoteTotAmountReq").Value)
+                        End If
+    
+                        lstrSQL = "Update Inventory Set "
+                        lstrSQL = lstrSQL & "QtyReserved=QtyReserved+" & Replace(dblQtyReq, ",", ".")
+                        lstrSQL = lstrSQL & " Where PartNum=" & SQLString(lobjQuoteDetRS.Fields("QuotePtNum").Value)
+                        Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+                            
+                    End If
+                Else
+                    ' No Inventory record exits - DO NOTHING!!!!
+                End If
+                Set lobjINVRS = Nothing
+                lobjQuoteDetRS.MoveNext
+            Loop
+             
+            lstrSQL = "Update Quote Set "
+            lstrSQL = lstrSQL & " QuoteReserveDate=" & SQLString(ldtReserve)
+            lstrSQL = lstrSQL & ",QuoteRemindDate=" & SQLString(ldtReserve) & " where QuoteID=" & lngQuoteID
+            Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+            
+            lobjQuoteDetRS.Close
+            CnnBTMS.CommitTrans
+            lblnInTrans = False
+        End If
+    End If
+    Set lobjQuoteDetRS = Nothing
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    If lblnInTrans = True Then CnnBTMS.RollbackTrans
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+'Public Sub CheckBOMforAllocation(ByVal lngBOMID As Long, ByRef pstrPN() As String)
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".CheckBOMforAllocation()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim lstrSQL As String
+'    Dim llngAffected As Long
+'    Dim lobjInvRS As ADODB.Recordset
+'    Dim lobjMainRS As ADODB.Recordset
+'    Dim lobjBOMDetRS As ADODB.Recordset
+'    Dim lblnInTrans As Boolean
+'    Dim dblQtyReq As Double
+'    Dim dblQtyStk As Double
+'
+'    lblnInTrans = False
+'
+'    ' Get BoM Details for part to Allocate
+'    lstrSQL = "select BOMPtNum, BOMPtQtyReq from BOMDetails"
+'    lstrSQL = lstrSQL & " where BOMID=" & lngBOMID
+'    Set lobjBOMDetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+'    If Not lobjBOMDetRS Is Nothing Then
+'        If Not (lobjBOMDetRS.BOF And lobjBOMDetRS.EOF) Then
+'            lobjBOMDetRS.MoveFirst
+'            CnnBTMS.BeginTrans
+'            lblnInTrans = True
+'
+'            Do While lobjBOMDetRS.EOF = False
+'                ' Find out if Inventory record Exists
+'                lstrSQL = "Select PartNum, QtyInStock, QtyReserved From Inventory"
+'                lstrSQL = lstrSQL & " where PartNum=" & SQLString(lobjBOMDetRS.Fields("BOMPtNum").Value)
+'                Set lobjInvRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+'                If Not lobjInvRS Is Nothing Then
+'                    If Not (lobjInvRS.BOF And lobjInvRS.EOF) Then
+'                        lobjInvRS.MoveFirst
+'                        dblQtyStk = IIf(IsNull(lobjInvRS.Fields("QtyInStock").Value), 0, lobjInvRS.Fields("QtyInStock").Value)
+'                        lobjInvRS.Close
+'
+'                        dblQtyReq = IIf(IsNull(lobjBOMDetRS.Fields("BOMPtQtyReq").Value), 0, lobjBOMDetRS.Fields("BOMPtQtyReq").Value)
+'                        If dblQtyReq > dblQtyStk Then
+'                            MsgBox "Unsuficient stock to allocate this BoM at this time.", vbApplicationModal + vbOKOnly + vbInformation, "Unable to allocate BoM"
+'                            CnnBTMS.RollbackTrans
+'                            Exit Sub
+'                        End If
+'
+'                        If dblQtyStk - lobjInvRS.Fields("QtyReserved").Value - dblQtyReq < 0 Then
+'                            If MsgBox("You have enough stock of part number: " & lobjInvRS.Fields("PartNum").Value & _
+'                                ". But you have " & lobjInvRS.Fields("InvQtyReserved").Value & _
+'                                " already reserved, you need " & dblQtyReq & " and only " & dblQtyStk & " in stock." _
+'                                & vbCrLf & "Do you wish to continue?", vbInformation + vbApplicationModal + vbYesNo, "Part Reserved") = vbNo Then
+'                                CnnBTMS.RollbackTrans
+'                                Exit Sub
+'                            End If
+'                        End If
+'
+'                        If dblQtyReq > 0 Then
+'                            lstrSQL = "Update Inventory Set "
+'                            lstrSQL = lstrSQL & "QtyInStock=QtyInStock-" & Replace(dblQtyReq, ",", ".")
+'                            lstrSQL = lstrSQL & " Where PartNum=" & SQLString(lobjBOMDetRS.Fields("BOMPtNum").Value)
+'                            Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+'                        End If
+'                    End If
+'                Else
+'                    ' No Inventory record exits - DO NOTHING!!!!
+'                End If
+'                Set lobjInvRS = Nothing
+'                lobjBOMDetRS.MoveNext
+'            Loop
+'
+'            lobjBOMDetRS.Close
+'            CnnBTMS.CommitTrans
+'            lblnInTrans = False
+'        End If
+'    End If
+'    Set lobjBOMDetRS = Nothing
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    If lblnInTrans = True Then CnnBTMS.RollbackTrans
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'End Sub
+
+Public Sub SetCustYTD(ByVal lngBOMID As Long, ByVal dblYTD As Double)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetCustYTD()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lobjBOMRS As ADODB.Recordset
+    Dim llngAffected As Long
+
+    lstrSQL = "select BOMID, CustNum from BoM where BOMID=" & lngBOMID
+    Set lobjBOMRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjBOMRS Is Nothing Then
+        If Not (lobjBOMRS.EOF = True And lobjBOMRS.BOF = True) Then
+            lstrSQL = "update CustomerInformation set CustYTD=CustYTD+" & Replace(dblYTD, ",", ".")
+            lstrSQL = lstrSQL & " where custnum=" & lobjBOMRS.Fields("custnum").Value
+            Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+        End If
+    End If
+    Set lobjBOMRS = Nothing
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+Public Sub Un_SetCustYTD(ByVal lngBOMID As Long, ByVal dblYTD As Double)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Un_SetCustYTD()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lobjBOMRS As ADODB.Recordset
+    Dim llngAffected As Long
+
+    lstrSQL = "select BOMID, CustNum from BoM where BOMID=" & lngBOMID
+    Set lobjBOMRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjBOMRS Is Nothing Then
+        If Not (lobjBOMRS.EOF = True And lobjBOMRS.BOF = True) Then
+            lstrSQL = "update CustomerInformation set CustYTD=CustYTD-" & Replace(dblYTD, ",", ".")
+            lstrSQL = lstrSQL & " where custnum=" & lobjBOMRS.Fields("custnum").Value
+            Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+        End If
+    End If
+    Set lobjBOMRS = Nothing
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub SetCustYTDQ(ByVal lngQuoteID As Long, ByVal dblYTD As Double)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetCustYTDQ()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lobjQuoteRS As ADODB.Recordset
+    Dim llngAffected As Long
+
+    lstrSQL = "select QuoteID, CustNum from Quote where QuoteID=" & lngQuoteID
+    Set lobjQuoteRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjQuoteRS Is Nothing Then
+        If Not (lobjQuoteRS.EOF = True And lobjQuoteRS.BOF = True) Then
+            lstrSQL = "update CustomerInformation set CustYTD=CustYTD+" & Replace(dblYTD, ",", ".")
+            lstrSQL = lstrSQL & " where custnum=" & lobjQuoteRS.Fields("custnum").Value
+            Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+        End If
+    End If
+    Set lobjQuoteRS = Nothing
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+Public Sub Un_SetCustYTDQ(ByVal lngQuoteID As Long, ByVal dblYTD As Double)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Un_SetCustYTDQ()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lobjQuoteRS As ADODB.Recordset
+    Dim llngAffected As Long
+
+    lstrSQL = "select QuoteID, CustNum from Quote where QuoteID=" & lngQuoteID
+    Set lobjQuoteRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjQuoteRS Is Nothing Then
+        If Not (lobjQuoteRS.EOF = True And lobjQuoteRS.BOF = True) Then
+            lstrSQL = "update CustomerInformation set CustYTD=CustYTD-" & Replace(dblYTD, ",", ".")
+            lstrSQL = lstrSQL & " where custnum=" & lobjQuoteRS.Fields("custnum").Value
+            Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+        End If
+    End If
+    Set lobjQuoteRS = Nothing
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub SetRestockingLevels(ByVal lngPOID As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetRestockingLevels()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lobjINVRS As ADODB.Recordset
+    Dim llngAffected As Long
+    Dim lobjPODetRS As ADODB.Recordset
+    Dim lobjMainRS As ADODB.Recordset
+    Dim lobjCategoryRS As ADODB.Recordset
+    Dim ldblOrd As Double
+    Dim lstrCat As String
+    
+    lstrSQL = "select PartNum,QtyMin,QtyInStock,RestockingLevel, InvUM from Inventory"
+    Set lobjINVRS = New ADODB.Recordset
+    lobjINVRS.CursorType = adOpenForwardOnly
+    lobjINVRS.CursorLocation = adUseClient
+    lobjINVRS.Open lstrSQL, CnnBTMS, adOpenForwardOnly, adLockOptimistic
+    lstrSQL = "select POPtNum, POPtQtyOrd, POPtUM, POID from PODetails where POID=" & lngPOID
+    Set lobjPODetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    
+    lstrSQL = "select PartNum,SubCategory from Main"
+    Set lobjMainRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    lstrSQL = "select SubCategory, MinQty from CatSub"
+    Set lobjCategoryRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    
+    If Not lobjPODetRS Is Nothing Then
+        If Not (lobjPODetRS.EOF = True And lobjPODetRS.BOF = True) Then
+            lobjPODetRS.MoveFirst
+            Do While lobjPODetRS.EOF = False
+                    
+                lobjINVRS.MoveFirst
+                lobjINVRS.Find "PartNum=" & SQLString(lobjPODetRS.Fields("POPtNum").Value)
+                If lobjINVRS.EOF = False And lobjINVRS.BOF = False Then
+                    If lobjPODetRS.Fields("POPtUM").Value = "EACH" And lobjINVRS.Fields("InvUM").Value = "INCHES" Then
+                        ldblOrd = DBLValue(lobjPODetRS.Fields("POPtQtyOrd").Value) * GetLengthFromMain(lobjPODetRS.Fields("POPtNum").Value)
+                    ElseIf lobjPODetRS.Fields("POPtUM").Value = "LFT" Then
+                        ldblOrd = DBLValue(lobjPODetRS.Fields("POPtQtyOrd").Value) * 12
+                    Else
+                        ldblOrd = DBLValue(lobjPODetRS.Fields("POPtQtyOrd").Value)
+                    End If
+
+                    lobjMainRS.MoveFirst
+                    lobjMainRS.Find "PartNum=" & SQLString(lobjPODetRS.Fields("POPtNum").Value)
+                    If lobjMainRS.EOF = False And lobjMainRS.BOF = False Then
+                        lobjCategoryRS.MoveFirst
+                        lobjCategoryRS.Find "SubCategory=" & SQLString(lobjMainRS.Fields("SubCategory").Value)
+                        If lobjCategoryRS.EOF = False And lobjCategoryRS.BOF = False Then
+                            
+                            lobjINVRS.Fields("QtyMin").Value = RoundUp(ldblOrd * IIf(IsNull(lobjCategoryRS.Fields("MinQty").Value), 0, lobjCategoryRS.Fields("MinQty").Value))
+                            lobjINVRS.Fields("RestockingLevel").Value = RoundUp(ldblOrd - lobjINVRS.Fields("QtyMin").Value)
+                            If lobjINVRS.Fields("RestockingLevel").Value = 0 Then
+                                lobjINVRS.Fields("RestockingLevel").Value = lobjINVRS.Fields("QtyMin").Value
+                            End If
+                            
+                            lobjINVRS.Update
+                        End If
+                    End If
+                End If
+                lobjPODetRS.MoveNext
+            Loop
+        End If
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+Public Sub UpdateOnOrder(ByVal lngPOID As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".UpdateOnOrder()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lobjINVRS As ADODB.Recordset
+    Dim llngAffected As Long
+    Dim lobjPODetRS As ADODB.Recordset
+    Dim ldblOrd As Double
+    
+    lstrSQL = "select PartNum,InvUM,QtyOnOrder from Inventory"
+    Set lobjINVRS = New ADODB.Recordset
+    lobjINVRS.CursorType = adOpenForwardOnly
+    lobjINVRS.CursorLocation = adUseClient
+    lobjINVRS.Open lstrSQL, CnnBTMS, adOpenForwardOnly, adLockOptimistic
+    
+    lstrSQL = "select POPtNum,POPtUM, POPtQtyOrd, POID from PODetails where POID=" & lngPOID
+    Set lobjPODetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    
+    If Not lobjPODetRS Is Nothing Then
+        If Not (lobjPODetRS.EOF = True And lobjPODetRS.BOF = True) Then
+            lobjPODetRS.MoveFirst
+            
+            Do While lobjPODetRS.EOF = False
+                lobjINVRS.MoveFirst
+                lobjINVRS.Find "PartNum=" & SQLString(lobjPODetRS.Fields("POPtNum").Value)
+                If lobjINVRS.EOF = False And lobjINVRS.BOF = False Then
+                    If lobjPODetRS.Fields("POPtUM").Value = "EACH" And lobjINVRS.Fields("InvUM").Value = "INCHES" Then
+                        ldblOrd = DBLValue(lobjPODetRS.Fields("POPtQtyOrd").Value) * GetLengthFromMain(lobjPODetRS.Fields("POPtNum").Value)
+                    ElseIf lobjPODetRS.Fields("POPtUM").Value = "LFT" Then
+                        ldblOrd = DBLValue(lobjPODetRS.Fields("POPtQtyOrd").Value) * 12
+                    Else
+                        ldblOrd = DBLValue(lobjPODetRS.Fields("POPtQtyOrd").Value)
+                    End If
+                    lobjINVRS.Fields("QtyOnOrder").Value = lobjINVRS.Fields("QtyOnOrder").Value + ldblOrd
+                    lobjINVRS.Update
+                End If
+                lobjPODetRS.MoveNext
+            Loop
+        End If
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Function CheckIfQuoteAvailable(ByVal lngQuoteID As Long) As Boolean
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".CheckIfQuoteAvailable()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim lstrSQL As String
+    Dim lobjRS As ADODB.Recordset
+    Dim llngAffected As Long
+    
+    lstrSQL = "select quoteid, quotealloc,Quotedonedate,quotereservedate from Quote where QuoteID=" & lngQuoteID & " and quotedonedate>0 and quotereservedate>0 and quotealloc=true"
+    Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjRS Is Nothing Then
+        If (lobjRS.EOF = True And lobjRS.BOF = True) Then
+            CheckIfQuoteAvailable = True
+        End If
+    End If
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+Public Function CheckIfPOAvailable(ByVal lngPOID As Long) As Boolean
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".CheckIfPOAvailable()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim lstrSQL As String
+    Dim lobjRS As ADODB.Recordset
+    Dim llngAffected As Long
+    
+    lstrSQL = "select POID, POStatus from PO where POID=" & lngPOID
+    Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjRS Is Nothing Then
+        If Not (lobjRS.EOF = True And lobjRS.BOF = True) Then
+            If lobjRS.Fields("POStatus").Value = "Active" Then
+                CheckIfPOAvailable = True
+            End If
+        End If
+    End If
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Sub UpdateInvBO(ByVal PN As String, BO As Double) 'called when items are cancelled and never received.
+                                                            'not called right now
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".UpdateInvBO()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String, lobjINVRS As ADODB.Recordset
+    lstrSQL = "select PartNum,QtyBkOrder,QtyOnOrder from Inventory"
+    Set lobjINVRS = New ADODB.Recordset
+    lobjINVRS.CursorType = adOpenForwardOnly
+    lobjINVRS.CursorLocation = adUseClient
+    lobjINVRS.Open lstrSQL, CnnBTMS, adOpenForwardOnly, adLockOptimistic
+    
+    lobjINVRS.MoveFirst
+    lobjINVRS.Find "PartNum=" & SQLString(PN)
+    If lobjINVRS.EOF = False And lobjINVRS.BOF = False Then
+        lobjINVRS.Fields("QtyBkOrder").Value = DBLValue(lobjINVRS.Fields("QtyBkOrder").Value) - BO
+        lobjINVRS.Fields("QtyOnOrder").Value = DBLValue(lobjINVRS.Fields("QtyOnOrder").Value) - BO
+       lobjINVRS.Update
+    End If
+    Set lobjINVRS = Nothing
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub CancelInventory(ByVal plngPOID As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".CancelInventory()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjINVRS As ADODB.Recordset
+    Dim lobjPODetRS As ADODB.Recordset
+    Set lobjINVRS = New ADODB.Recordset
+    
+    lstrSQL = "select * from podetails where POID=" & plngPOID
+    Set lobjPODetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjPODetRS Is Nothing Then
+        If Not (lobjPODetRS.EOF And lobjPODetRS.BOF) Then
+            lobjPODetRS.MoveFirst
+            Do While lobjPODetRS.EOF = False
+                lstrSQL = "select * from Inventory where PartNum=" & SQLString(lobjPODetRS.Fields("POPtNum").Value)
+                lobjINVRS.Open lstrSQL, CnnBTMS, adOpenForwardOnly, adLockOptimistic
+                If Not lobjINVRS Is Nothing Then
+                    If Not (lobjINVRS.EOF And lobjINVRS.BOF) Then
+                        If lobjINVRS.Fields("InvUM").Value = "INCHES" And lobjPODetRS.Fields("POPtUM").Value = "EACH" Then
+                            lobjINVRS.Fields("QtyOnOrder").Value = DBLValue(lobjINVRS.Fields("QtyOnOrder").Value) - (DBLValue(lobjPODetRS.Fields("POPtQtyBO").Value) * GetLengthFromMain(lobjPODetRS.Fields("POPtNum").Value))
+                            If WasPOPreviouslyReceived(plngPOID) = True Then lobjINVRS.Fields("QtyBkOrder").Value = DBLValue(lobjINVRS.Fields("QtyBkOrder").Value) - (DBLValue(lobjPODetRS.Fields("POPtQtyBO").Value) * GetLengthFromMain(lobjPODetRS.Fields("POPtNum").Value))
+                        ElseIf lobjPODetRS.Fields("POPtUM").Value = "LFT" Then
+                            lobjINVRS.Fields("QtyOnOrder").Value = DBLValue(lobjINVRS.Fields("QtyOnOrder").Value) - (DBLValue(lobjPODetRS.Fields("POPtQtyBO").Value) * 12)
+                            If lobjINVRS.Fields("QtyOnOrder").Value < 0 Then lobjINVRS.Fields("QtyOnOrder").Value = 0 'again the rounding issue with VB. (see note in frmInvPOReceipts, BuildRS)
+                            If WasPOPreviouslyReceived(plngPOID) = True Then
+                                lobjINVRS.Fields("QtyBkOrder").Value = DBLValue(lobjINVRS.Fields("QtyBkOrder").Value) - (DBLValue(lobjPODetRS.Fields("POPtQtyBO").Value) * 12)
+                                If lobjINVRS.Fields("QtyBkOrder").Value < 0 Then lobjINVRS.Fields("QtyBkOrder").Value = 0
+                            End If
+                        Else
+                            lobjINVRS.Fields("QtyOnOrder").Value = DBLValue(lobjINVRS.Fields("QtyOnOrder").Value) - DBLValue(lobjPODetRS.Fields("POPtQtyBO").Value)
+                            If WasPOPreviouslyReceived(plngPOID) = True Then lobjINVRS.Fields("QtyBkOrder").Value = DBLValue(lobjINVRS.Fields("QtyBkOrder").Value) - DBLValue(lobjPODetRS.Fields("POPtQtyBO").Value)
+                        End If
+                        lobjINVRS.Update
+                    End If
+                End If
+                lobjINVRS.Close
+                lobjPODetRS.MoveNext
+            Loop
+            Set lobjINVRS = Nothing
+            Set lobjPODetRS = Nothing
+        End If
+    End If
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Function WasPOPreviouslyReceived(ByVal lngPOID As Long) As Boolean
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".WasPOPreviouslyReceived()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjPORS As ADODB.Recordset
+    
+    lstrSQL = "select POID, POfirstreceive from PO where POID=" & lngPOID
+    Set lobjPORS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjPORS Is Nothing Then
+        If Not (lobjPORS.EOF And lobjPORS.BOF) Then
+            WasPOPreviouslyReceived = lobjPORS.Fields("POFirstReceive").Value
+        End If
+    End If
+    Set lobjPORS = Nothing
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Sub ResetInventory(ByVal plngPOID As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ResetInventory()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjINVRS As ADODB.Recordset
+    Dim lobjPODetRS As ADODB.Recordset
+    Set lobjINVRS = New ADODB.Recordset
+    
+    lstrSQL = "select * from podetails where POID=" & plngPOID
+    Set lobjPODetRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjPODetRS Is Nothing Then
+        If Not (lobjPODetRS.EOF And lobjPODetRS.BOF) Then
+            lobjPODetRS.MoveFirst
+            Do While lobjPODetRS.EOF = False
+                lstrSQL = "select * from Inventory where PartNum=" & SQLString(lobjPODetRS.Fields("POPtNum").Value)
+                lobjINVRS.Open lstrSQL, CnnBTMS, adOpenForwardOnly, adLockOptimistic
+                If Not lobjINVRS Is Nothing Then
+                    If Not (lobjINVRS.EOF And lobjINVRS.BOF) Then
+                        If lobjINVRS.Fields("InvUM").Value = "INCHES" And lobjPODetRS.Fields("POPtUM").Value = "EACH" Then
+                            lobjINVRS.Fields("QtyOnOrder").Value = DBLValue(lobjINVRS.Fields("QtyOnOrder").Value) + (DBLValue(lobjPODetRS.Fields("POPtQtyOrd").Value) * GetLengthFromMain(lobjPODetRS.Fields("POPtNum").Value))
+                            lobjINVRS.Fields("QtyInStock").Value = DBLValue(lobjINVRS.Fields("QtyInStock").Value) - (DBLValue(lobjPODetRS.Fields("POPtQtyRcvd").Value) * GetLengthFromMain(lobjPODetRS.Fields("POPtNum").Value))
+                        ElseIf lobjPODetRS.Fields("POPtUM").Value = "LFT" Then
+                            lobjINVRS.Fields("QtyOnOrder").Value = DBLValue(lobjINVRS.Fields("QtyOnOrder").Value) + (DBLValue(lobjPODetRS.Fields("POPtQtyOrd").Value) * 12)
+                            lobjINVRS.Fields("QtyInStock").Value = DBLValue(lobjINVRS.Fields("QtyInStock").Value) - (DBLValue(lobjPODetRS.Fields("POPtQtyRcvd").Value) * 12)
+                            If DBLValue(lobjINVRS.Fields("QtyInStock").Value) < 0 Then lobjINVRS.Fields("QtyInStock").Value = 0 'see note in frmInvPOReceipts, BuildRs regarding rounding in VB.
+                        Else
+                            lobjINVRS.Fields("QtyOnOrder").Value = DBLValue(lobjINVRS.Fields("QtyOnOrder").Value) + DBLValue(lobjPODetRS.Fields("POPtQtyOrd").Value)
+                            lobjINVRS.Fields("QtyInStock").Value = DBLValue(lobjINVRS.Fields("QtyInStock").Value) - DBLValue(lobjPODetRS.Fields("POPtQtyRcvd").Value)
+                        End If
+                        lobjINVRS.Update
+                    End If
+                End If
+                lobjINVRS.Close
+                lobjPODetRS.MoveNext
+            Loop
+            Set lobjINVRS = Nothing
+            Set lobjPODetRS = Nothing
+        End If
+    End If
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Function GetQtyOnActivePOs(ByVal plstrPartNum As String) As Double
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetQtyOnActivePOs()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    ' will return the total qty sitting on active purchase orders for the passed part number.
+    'the qty returned will be transfered to the UM in the inventory table: PVC bushing is each on the PO but the total number of inches will be returned.
+    
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjPOActiveRS As ADODB.Recordset
+    Dim lobjPODetailsRS As ADODB.Recordset
+    Dim ldblQty As Double
+    Dim MainUM As String
+    Dim InvUM As String
+    
+    lstrSQL = lstrSQL & "(select sum(POPtQtyOrd) from PODetails where poptnum=" & SQLString(plstrPartNum)
+    lstrSQL = lstrSQL & " and poid IN ( select POID from PO where POStatus='Active' and PORunThroughInventory=true))"
+    Set lobjPOActiveRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjPOActiveRS Is Nothing Then
+        If Not (lobjPOActiveRS.EOF And lobjPOActiveRS.BOF) Then
+            lobjPOActiveRS.ActiveConnection = Nothing
+            If IsNull(lobjPOActiveRS.Fields(0).Value) Then
+                ldblQty = 0
+            Else
+                ldblQty = DBLValue(lobjPOActiveRS.Fields(0).Value)
+            End If
+        End If
+    End If
+            
+    lstrSQL = "select POPtUM from PODetails where POPtNum=" & SQLString(plstrPartNum)
+    Set lobjPODetailsRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjPODetailsRS Is Nothing Then
+        If Not (lobjPODetailsRS.EOF And lobjPODetailsRS.BOF) Then
+            lobjPODetailsRS.ActiveConnection = Nothing
+            MainUM = lobjPODetailsRS.Fields("POptUM").Value
+        End If
+    End If
+    
+    Set lobjPODetailsRS = Nothing
+    Set lobjPOActiveRS = Nothing
+    
+    lstrSQL = "select InvUM from Inventory where PartNum=" & SQLString(plstrPartNum)
+    Set lobjPODetailsRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjPODetailsRS Is Nothing Then
+        If Not (lobjPODetailsRS.EOF And lobjPODetailsRS.BOF) Then
+            lobjPODetailsRS.ActiveConnection = Nothing
+            InvUM = lobjPODetailsRS.Fields("InvUM").Value
+        End If
+    End If
+    Set lobjPODetailsRS = Nothing
+    
+    If (InvUM = "INCHES" Or InvUM = "") And MainUM = "EACH" Then
+        ldblQty = ldblQty * GetLengthFromMain(plstrPartNum)
+    ElseIf MainUM = "LFT" Then
+        ldblQty = ldblQty * 12
+    End If
+    
+    GetQtyOnActivePOs = ldblQty
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+''''''''''Change in .NET''''''''''''''''
+
+Public Function GetQtyOnOrder(ByVal plstrPartNum As String) As Double
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetQtyOnOrder()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    ' will return the total qty sitting on issued purchase orders for the passed part number.
+    'the qty returned will be transfered to the UM in the inventory table: PVC bushing is each on the PO but the total number of inches will be returned.
+    
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjPOIssuedRS As ADODB.Recordset
+    Dim lobjPODetailsRS As ADODB.Recordset
+    Dim ldblQty As Double
+    Dim MainUM As String
+    Dim InvUM As String
+    
+    lstrSQL = lstrSQL & "(select sum(POPtQtyOrd) from PODetails where poptnum=" & SQLString(plstrPartNum)
+    lstrSQL = lstrSQL & " and poid IN ( select POID from PO where POStatus='Issued' and PORunThroughInventory=true))"
+    Set lobjPOIssuedRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjPOIssuedRS Is Nothing Then
+        If Not (lobjPOIssuedRS.EOF And lobjPOIssuedRS.BOF) Then
+            lobjPOIssuedRS.ActiveConnection = Nothing
+            If IsNull(lobjPOIssuedRS.Fields(0).Value) Then
+                ldblQty = 0
+            Else
+                ldblQty = DBLValue(lobjPOIssuedRS.Fields(0).Value)
+            End If
+        End If
+    End If
+            
+    lstrSQL = "select POPtUM from PODetails where POPtNum=" & SQLString(plstrPartNum)
+    Set lobjPODetailsRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjPODetailsRS Is Nothing Then
+        If Not (lobjPODetailsRS.EOF And lobjPODetailsRS.BOF) Then
+            lobjPODetailsRS.ActiveConnection = Nothing
+            MainUM = lobjPODetailsRS.Fields("POptUM").Value
+        End If
+    End If
+    
+    Set lobjPODetailsRS = Nothing
+    Set lobjPOIssuedRS = Nothing
+    
+    lstrSQL = "select InvUM from Inventory where PartNum=" & SQLString(plstrPartNum)
+    Set lobjPODetailsRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjPODetailsRS Is Nothing Then
+        If Not (lobjPODetailsRS.EOF And lobjPODetailsRS.BOF) Then
+            lobjPODetailsRS.ActiveConnection = Nothing
+            InvUM = lobjPODetailsRS.Fields("InvUM").Value
+        End If
+    End If
+    Set lobjPODetailsRS = Nothing
+    
+    If (InvUM = "INCHES" Or InvUM = "") And MainUM = "EACH" Then
+        ldblQty = ldblQty * GetLengthFromMain(plstrPartNum)
+    ElseIf MainUM = "LFT" Then
+        ldblQty = ldblQty * 12
+    End If
+    
+    GetQtyOnOrder = ldblQty
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+''''''''''END Change in .NET
+
+Public Function CheckPORunInventory(ByVal plngPOID As Long) As Boolean
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".CheckPORunInventory()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lstrSQL As String
+    Dim lobjRunRs As ADODB.Recordset
+    Dim llngAffected As Long
+    
+    lstrSQL = "Select PORunThroughInventory from PO where POID=" & plngPOID
+    Set lobjRunRs = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjRunRs Is Nothing And (Not (lobjRunRs.EOF And lobjRunRs.BOF)) Then
+        CheckPORunInventory = lobjRunRs.Fields(0).Value
+    End If
+    
+    Set lobjRunRs = Nothing
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Sub UpdateOnPOsForPN(ByVal lstrPN As String, ByVal ldblQty As Double)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".UpdateOnPOsForPN()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    'to decrease the qty onPOs, send negative qty.
+    
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    
+    lstrSQL = "update Inventory set qtyonpos=qtyonpos+" & Replace(ldblQty, ",", ".") & " where PartNum=" & SQLString(lstrPN)
+    Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub UpdateOnPOsForPO(ByVal llngPOID As Long, lblnClr As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".UpdateOnPOsForPO()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjPORS As ADODB.Recordset
+    Dim lobjINVUM As ADODB.Recordset
+    Dim ldblQty As Double
+    
+    'routine receives POID and lblnclr=true if removing the PO qtys from inventory, or False if adding to inventory
+    
+    lstrSQL = "select * from PODetails where POID=" & llngPOID
+    Set lobjPORS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    
+    If Not lobjPORS Is Nothing Then
+        If lobjPORS.EOF = False And lobjPORS.BOF = False Then
+            lobjPORS.MoveFirst
+            Do While lobjPORS.EOF = False
+                lstrSQL = "select INVUM from Inventory where PartNum=" & SQLString(lobjPORS.Fields("POPtNum").Value)
+                Set lobjINVUM = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                If Not lobjINVUM Is Nothing Then
+                    If lobjINVUM.EOF = False And lobjINVUM.BOF = False Then
+                        If lobjPORS.Fields("POPtUM").Value = "EACH" And lobjINVUM.Fields("INVUM").Value = "EACH" Then
+                            ldblQty = DBLValue(lobjPORS.Fields("POPtQtyOrd").Value)
+                        ElseIf lobjPORS.Fields("POPtUM").Value = "EACH" And lobjINVUM.Fields("INVUM").Value = "INCHES" Then
+                            ldblQty = DBLValue(lobjPORS.Fields("POPtQtyOrd").Value) * GetLengthFromMain(lobjPORS.Fields("POPtNum").Value)
+                        ElseIf lobjPORS.Fields("POPtUM").Value = "LFT" And lobjINVUM.Fields("INVUM").Value = "INCHES" Then
+                            ldblQty = DBLValue(lobjPORS.Fields("POPtQtyOrd").Value) * 12
+                        End If
+                        If lblnClr = True Then
+                            lstrSQL = "update Inventory set qtyonpos=qtyonpos-" & Replace(ldblQty, ",", ".") & " where PartNum=" & SQLString(lobjPORS.Fields("POPtNum").Value)
+                        Else
+                            lstrSQL = "update Inventory set qtyonpos=qtyonpos+" & Replace(ldblQty, ",", ".") & " where PartNum=" & SQLString(lobjPORS.Fields("POPtNum").Value)
+                        End If
+                        Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                    End If
+                End If
+                lobjPORS.MoveNext
+            Loop
+        End If
+    End If
+    Set lobjPORS = Nothing
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Function GetUMfromInventory(ByVal pstrPartNum) As String
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetUMfromInventory()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjRS As ADODB.Recordset
+        
+    lstrSQL = "select InvUM from Inventory where PartNum= " & SQLString(pstrPartNum)
+    Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjRS Is Nothing Then
+        If Not (lobjRS.EOF And lobjRS.BOF) Then
+            GetUMfromInventory = lobjRS.Fields(0).Value
+        End If
+    End If
+    Set lobjRS = Nothing
+
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+Public Function GetUMfromMain(ByVal pstrPartNum) As String
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetUMfromMain()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjRS As ADODB.Recordset
+        
+    lstrSQL = "select UM from Main where PartNum= " & SQLString(pstrPartNum)
+    Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjRS Is Nothing Then
+        If Not (lobjRS.EOF And lobjRS.BOF) Then
+            GetUMfromMain = lobjRS.Fields(0).Value
+        End If
+    End If
+    Set lobjRS = Nothing
+
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Sub UpdateBOMTotal(ByVal lngBOMID As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & ".UpdateBOMTotal()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngRow As Long
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim ldblCost As Double
+    Dim lobjADORS As ADODB.Recordset
+    
+    lstrSQLQuery = "select sum(BOMPtMtCost * BOMPtTotAmountReq) from BOMdetails"
+    lstrSQLQuery = lstrSQLQuery & " where BOMID=" & lngBOMID
+    Set lobjADORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjADORS Is Nothing Then
+        If Not (lobjADORS.BOF And lobjADORS.EOF) Then
+            If IsNull(lobjADORS.Fields(0).Value) Then
+                ldblCost = 0
+            Else
+                ldblCost = DBLValue(lobjADORS.Fields(0).Value)
+            End If
+        End If
+        lobjADORS.Close
+    End If
+    Set lobjADORS = Nothing
+    
+    lstrSQLQuery = "Update BoM"
+    lstrSQLQuery = lstrSQLQuery & " Set BOMPrice=" & Replace(ldblCost, ",", ".")
+    lstrSQLQuery = lstrSQLQuery & " where BOMID=" & lngBOMID
+    Call CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText And adExecuteNoRecords)
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Public Sub UpdateQuoteTotal(ByVal plngQuoteID)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".UpdateQuoteTotal()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim ldblCost As Double
+    Dim lobjADORS As ADODB.Recordset
+    
+    lstrSQLQuery = "select sum(IIf(IsNull(QuoteTotAmountReq),0,QuoteTotAmountReq*QuotePtCost)) from quotedetails"
+    
+    'lstrSQLQuery = "select sum(IIf(IsNull(quotetotalcost),0,QuoteTotalCost)) from quotedetails"
+    lstrSQLQuery = lstrSQLQuery & " where quoteid=" & plngQuoteID
+    Set lobjADORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjADORS Is Nothing Then
+        If Not (lobjADORS.BOF And lobjADORS.EOF) Then
+            If IsNull(lobjADORS.Fields(0).Value) Then
+                ldblCost = 0
+            Else
+                ldblCost = DBLValue(lobjADORS.Fields(0).Value)
+            End If
+        End If
+        lobjADORS.Close
+    End If
+    Set lobjADORS = Nothing
+    
+    lstrSQLQuery = "Update quote"
+    lstrSQLQuery = lstrSQLQuery & " Set quoteDealerCost=" & Replace(ldblCost, ",", ".")
+'    lstrSQLQuery = lstrSQLQuery & ", quoteTotPrice=" & Replace(ldblTotal, ",", ".")
+    lstrSQLQuery = lstrSQLQuery & ", QuotePriceLock=false"
+    lstrSQLQuery = lstrSQLQuery & " where quoteid=" & plngQuoteID
+    Call CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText And adExecuteNoRecords)
+    
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Public Sub UpdateQuoteTotalPrice(ByVal plngQuoteID As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".UpdateQuoteTotalPrice()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim ldblTotal As Double
+    Dim lobjQuoteRS As ADODB.Recordset
+    Dim ldblTemp As Double
+    '''''''''
+    lstrSQLQuery = "select QuoteDealerCost,QuoteLabourCost,QuoteOverheadCost,QuoteCurrency,QuoteValue1,QuoteValue2,QuoteValue3,QuoteValue4,QuoteMiscCharges,QuoteMarkup,QuoteshipCharges"
+    lstrSQLQuery = lstrSQLQuery & " from Quote where quoteid=" & plngQuoteID
+    Set lobjQuoteRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjQuoteRS Is Nothing Then
+        If Not (lobjQuoteRS.EOF And lobjQuoteRS.BOF) Then
+            ldblTotal = IIf(DBLValue(lobjQuoteRS.Fields("QuoteCurrency").Value) = 0, DBLValue(lobjQuoteRS.Fields("QuoteDealerCost").Value) + DBLValue(lobjQuoteRS.Fields("QuoteLabourCost").Value) + DBLValue(lobjQuoteRS.Fields("QuoteOverheadCost").Value), (DBLValue(lobjQuoteRS.Fields("QuoteDealerCost").Value) + DBLValue(lobjQuoteRS.Fields("QuoteLabourCost").Value) + DBLValue(lobjQuoteRS.Fields("QuoteOverheadCost").Value)) * DBLValue(lobjQuoteRS.Fields("QuoteCurrency").Value))
+            ldblTemp = ldblTotal * DBLValue(lobjQuoteRS.Fields("QuoteValue1").Value) + ldblTotal * DBLValue(lobjQuoteRS.Fields("QuoteValue2").Value) + ldblTotal * DBLValue(lobjQuoteRS.Fields("QuoteValue3").Value) + ldblTotal * DBLValue(lobjQuoteRS.Fields("QuoteValue4").Value)
+            ldblTotal = ldblTemp + ldblTotal + DBLValue(lobjQuoteRS.Fields("QuoteMiscCharges").Value)
+            ldblTemp = ldblTotal * DBLValue(lobjQuoteRS.Fields("QuoteMarkup").Value)
+            ldblTotal = ldblTemp + ldblTotal + DBLValue(lobjQuoteRS.Fields("QuoteMiscCharges").Value)
+            ldblTotal = ldblTotal + DBLValue(lobjQuoteRS.Fields("QuoteShipCharges").Value)
+        End If
+    End If
+    
+    lstrSQLQuery = "Update quote set quoteTotPrice=" & Replace(ldblTotal, ",", ".")
+    lstrSQLQuery = lstrSQLQuery & " where quoteid=" & plngQuoteID
+    Call CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText And adExecuteNoRecords)
+    
+    Set lobjQuoteRS = Nothing
+''''''''''''
+Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Public Function IsBOMReserved(ByVal lngBOMID) As Boolean
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".IsBOMReserved"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjRS As ADODB.Recordset
+    
+    IsBOMReserved = False
+    
+    lstrSQL = "select BOMReserveDate from BoM where BOMID=" & lngBOMID
+    Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjRS Is Nothing Then
+        If Not (lobjRS.EOF And lobjRS.BOF) Then
+            If Not IsNull(lobjRS.Fields("BOMReserveDate").Value) Then
+                IsBOMReserved = True
+            End If
+        End If
+    End If
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+
+Public Function GetQuoteTotal(ByVal plngQuoteID As Long) As Double
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetQuoteTotal()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim ldblCost As Double
+    Dim lobjADORS As ADODB.Recordset
+    
+    lstrSQLQuery = "select sum(IIf(IsNull(QuoteTotAmountReq),0,QuoteTotAmountReq*QuotePtCost)) from quotedetails"
+    
+    'lstrSQLQuery = "select sum(IIf(IsNull(quotetotalcost),0,QuoteTotalCost)) from quotedetails"
+    lstrSQLQuery = lstrSQLQuery & " where quoteid=" & plngQuoteID
+    Set lobjADORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjADORS Is Nothing Then
+        If Not (lobjADORS.BOF And lobjADORS.EOF) Then
+            If IsNull(lobjADORS.Fields(0).Value) Then
+                ldblCost = 0
+            Else
+                ldblCost = DBLValue(lobjADORS.Fields(0).Value)
+            End If
+        End If
+        lobjADORS.Close
+    End If
+    Set lobjADORS = Nothing
+    
+    GetQuoteTotal = ldblCost
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+Public Function GetBoMTotal(ByVal plngBOMID As Long) As Double
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetBoMTotal()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim ldblCost As Double
+    Dim lobjADORS As ADODB.Recordset
+    
+    lstrSQLQuery = "select BoMPrice from BoM"
+    
+    lstrSQLQuery = lstrSQLQuery & " where BoMid=" & plngBOMID
+    Set lobjADORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjADORS Is Nothing Then
+        If Not (lobjADORS.BOF And lobjADORS.EOF) Then
+            If IsNull(lobjADORS.Fields(0).Value) Then
+                ldblCost = 0
+            Else
+                ldblCost = DBLValue(lobjADORS.Fields(0).Value)
+            End If
+        End If
+        lobjADORS.Close
+    End If
+    Set lobjADORS = Nothing
+    
+    GetBoMTotal = ldblCost
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Function GetCustBoMYTD(ByVal plngBOMID As Long) As Double
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetCustBoMYTD()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim ldblCost As Double
+    Dim lobjADORS As ADODB.Recordset
+    
+    lstrSQLQuery = "select BoMCustYTD from BoM"
+    
+    lstrSQLQuery = lstrSQLQuery & " where BoMid=" & plngBOMID
+    Set lobjADORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjADORS Is Nothing Then
+        If Not (lobjADORS.BOF And lobjADORS.EOF) Then
+            If IsNull(lobjADORS.Fields(0).Value) Then
+                ldblCost = 0
+            Else
+                ldblCost = DBLValue(lobjADORS.Fields(0).Value)
+            End If
+        End If
+        lobjADORS.Close
+    End If
+    Set lobjADORS = Nothing
+    
+    GetCustBoMYTD = ldblCost
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Sub UpdateLabourOnQuote(ByVal plngQuoteID As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".UpdateLabourOnQuote()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim lobjQuoteRS As ADODB.Recordset
+    Dim lobjBOMRS As ADODB.Recordset
+    Dim ldblLBR As Double
+    Dim ldblOH As Double
+    
+    lstrSQL = "select sum (BoMLabourCost) from BoM where QuoteID=" & plngQuoteID
+    Set lobjBOMRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjBOMRS Is Nothing Then
+        If Not (lobjBOMRS.EOF And lobjBOMRS.BOF) Then
+            Set lobjBOMRS.ActiveConnection = Nothing
+            If Not IsNull(lobjBOMRS.Fields(0).Value) Then
+                ldblLBR = lobjBOMRS.Fields(0).Value
+            Else
+                ldblLBR = 0
+            End If
+        End If
+    End If
+    lstrSQL = "select sum (BoMOverheadCost) from BoM where QuoteID=" & plngQuoteID
+    Set lobjBOMRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjBOMRS Is Nothing Then
+        If Not (lobjBOMRS.EOF And lobjBOMRS.BOF) Then
+            Set lobjBOMRS.ActiveConnection = Nothing
+            If Not IsNull(lobjBOMRS.Fields(0).Value) Then
+                ldblOH = lobjBOMRS.Fields(0).Value
+            Else
+                ldblOH = 0
+            End If
+        End If
+    End If
+    lstrSQL = "update Quote set QuoteLabourCost=" & Replace(ldblLBR, ",", ".")
+    lstrSQL = lstrSQL & " , QuoteOverheadCost=" & Replace(ldblOH, ",", ".")
+    lstrSQL = lstrSQL & " where QuoteID=" & plngQuoteID
+    Call CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText And adExecuteNoRecords)
+    
+    Set lobjBOMRS = Nothing
+    Set lobjQuoteRS = Nothing
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub ExportToText(ByVal lstrFilepath As String, lstrExcluedDesc As String, lstrExcludedPN As String)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ExportToText()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lobjRS As ADODB.Recordset
+    Dim llngAffected As Long
+    Dim i As Integer
+    Dim lstrLine As String
+    Dim lstrPriceField As String
+    Dim ldblPrice As Double
+    
+    Select Case intCheck
+    Case 1: lstrPriceField = "G"
+    Case 2: lstrPriceField = "I"
+    Case 3: lstrPriceField = "N"
+    Case 4: lstrPriceField = "T"
+    
+        
+    Case 5: lstrPriceField = "J"
+    Case 6: lstrPriceField = "M"
+    Case 7: lstrPriceField = "S"
+    Case 8: lstrPriceField = "V"
+
+    
+    End Select
+    
+    lstrSQL = "Select INV.PartNum as PN ,MAIN.PartNLocal as PNL,"
+    lstrSQL = lstrSQL & IIf(MeasU = 0, "MAIN.DescMet as D1", "MAIN.DescImp as D1")
+    lstrSQL = lstrSQL & ",MAIN.DescOther as DescO, INV.InvUM as UM, INV.QtyInStock as InStock ,INV.QtyOnPOs as OnPos"
+    lstrSQL = lstrSQL & ",INV.QtyOnOrder  as OnOrder, Inv.QtyBkOrder as BO, INV.QtyReserved as ReservedQ, Main.UM as UMM, Main.Length as Length, Inv.QtyMin as MinQty, Inv.RestockingLevel as RestckLev,Main." & lstrPriceField & " as Cost From Inventory INV"
+    lstrSQL = lstrSQL & " LEFT JOIN Main Main ON MAIN.PartNum = INV.PartNum"
+    lstrSQL = lstrSQL & " order by Inv.PartNum"
+    Set lobjRS = New ADODB.Recordset
+    
+    lobjRS.CursorLocation = adUseClient 'open disconnected recordset
+    lobjRS.Open lstrSQL, CnnBTMS, , adLockBatchOptimistic, adCmdText
+    If Not lobjRS Is Nothing Then
+        If Not (lobjRS.EOF And lobjRS.BOF) Then
+            Set lobjRS.ActiveConnection = Nothing
+            Open lstrFilepath For Output As #1   ' Open file for output.
+            lstrLine = "Part Number"
+            lstrLine = lstrLine & vbTab & "Description"
+            lstrLine = lstrLine & vbTab & "UM"
+            lstrLine = lstrLine & vbTab & "In Stock"
+            lstrLine = lstrLine & vbTab & "On POs"
+            lstrLine = lstrLine & vbTab & "On Order"
+            lstrLine = lstrLine & vbTab & "B.O."
+            lstrLine = lstrLine & vbTab & "Reserved"
+            lstrLine = lstrLine & vbTab & "Minimum"
+            lstrLine = lstrLine & vbTab & "Restocking Level"
+            lstrLine = lstrLine & vbTab & "Inventory Value"
+            Print #1, lstrLine
+            lobjRS.MoveFirst
+            Do While lobjRS.EOF = False
+                lstrLine = ""
+                
+                ldblPrice = Decrypt(GetSym(lobjRS.Fields("PN").Value), lobjRS.Fields("Cost").Value)
+
+                If lobjRS.Fields("UMM").Value = "LFT" Then
+                    ldblPrice = (ldblPrice / 12) * DBLValue(lobjRS.Fields("InStock").Value)
+                ElseIf lobjRS.Fields("UM").Value = "INCHES" And lobjRS.Fields("UMM").Value = "EACH" Then
+                    ldblPrice = (ldblPrice / DBLValue(lobjRS.Fields("Length").Value)) * DBLValue(lobjRS.Fields("InStock").Value)
+                Else
+                    ldblPrice = ldblPrice * DBLValue(lobjRS.Fields("InStock").Value)
+                End If
+                lobjRS.Fields("Cost").Value = ldblPrice
+                lobjRS.Update
+            lobjRS.MoveNext
+            Loop
+            
+            lobjRS.MoveFirst
+            Do While lobjRS.EOF = False
+                lstrLine = ""
+                For i = 0 To lobjRS.Fields.Count - 1
+                    
+                    If lobjRS.Fields.Item(i).Name <> lstrExcludedPN And _
+                    lobjRS.Fields.Item(i).Name <> lstrExcluedDesc And _
+                    lobjRS.Fields.Item(i).Name <> "UMM" And _
+                    lobjRS.Fields.Item(i).Name <> "Length" Then
+                        If lstrLine <> "" Then lstrLine = lstrLine & vbTab
+                        lstrLine = lstrLine & lobjRS.Fields(i)
+                    End If
+                Next
+                Print #1, lstrLine
+                lobjRS.MoveNext
+            Loop
+            Close #1
+        End If
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+Public Function RoundFraction(ByVal psngPart As Single) As Single
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".RoundFraction()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    'Currently we have kept the function name (RoundFraction) same but added medium point (hard coded). That's why where ever we are calculating medium point through equation, I have replaced the function with RoundFractionUp because we need to use RoundFractionUp and RoundFractionDown ALWAYS together.
+    'Fraction amounts are taken from RWConverter program. Now for each fraction, we take a medium point (hard coded) and compare it with the fraction to round up or down
+    'The other way is to use roundFractionUp and roundFractionDowm funtions to get to the medium point (equation)
+    'In  future, we will one way through the program - Eventullay this function would replace both the functions (RoundFractionUp, RoundFractionDown)
+    
+    Select Case psngPart
+    Case Is <= 0.0312
+    RoundFraction = 0
+
+    Case Is <= 0.0937
+    RoundFraction = 0.0625
+
+    Case Is <= 0.1562
+    RoundFraction = 0.125
+
+    Case Is <= 0.2187
+    RoundFraction = 0.1875
+
+    Case Is <= 0.2812
+    RoundFraction = 0.25
+
+    Case Is <= 0.3437
+    RoundFraction = 0.3125
+
+    Case Is <= 0.4062
+    RoundFraction = 0.375
+
+    Case Is <= 0.4687
+    RoundFraction = 0.4375
+
+    Case Is <= 0.5312
+    RoundFraction = 0.5
+
+    Case Is <= 0.5937
+    RoundFraction = 0.5625
+
+    Case Is <= 0.6562
+    RoundFraction = 0.625
+
+    Case Is <= 0.7187
+    RoundFraction = 0.6875
+
+    Case Is <= 0.7812
+    RoundFraction = 0.75
+
+    Case Is <= 0.8437
+    RoundFraction = 0.8125
+
+    Case Is <= 0.9062
+    RoundFraction = 0.875
+
+    Case Is <= 0.9687
+    RoundFraction = 0.9375
+
+    Case Is <= 1
+    RoundFraction = 1
+
+    End Select
+
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+
+Public Sub ExportToText_PriceLookup(ByVal lstrFilepath As String, lstrExcluedDesc As String, lstrExcludedPN As String)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ExportToText()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lobjRS As ADODB.Recordset
+    Dim llngAffected As Long
+    Dim i As Integer
+    Dim lstrLine As String
+    Dim lstrPriceField As String
+    Dim ldblPrice As Double
+    Dim lsngQty As Single
+    Dim TempIntCheck As Integer
+    Dim ldblCost As Double
+    
+    Select Case intCheck
+    Case 1: lstrPriceField = "G"
+    Case 2: lstrPriceField = "I"
+    Case 3: lstrPriceField = "N"
+    Case 4: lstrPriceField = "T"
+    
+    Case 5: lstrPriceField = "J"
+    Case 6: lstrPriceField = "M"
+    Case 7: lstrPriceField = "S"
+    Case 8: lstrPriceField = "V"
+
+    
+    End Select
+         '-- Mod Hanobver  MultId changed to strMultId -- Because New MultId is alias as MultId, No need to change to strMultId.
+'If aCryp.GetOption(16, 7) = CKOptionOff Then
+If strMultId = "MultId" Then
+
+    lstrSQL = "Select Main.PartNum as PN,MAIN.PartNLocal as PNL,"
+    lstrSQL = lstrSQL & IIf(MeasU = 0, "MAIN.DescMet as D1", "MAIN.DescImp as D1")
+    lstrSQL = lstrSQL & ",MAIN.DescOther as DescO, INV.InvUM as UM, INV.QtyInStock as InStock "
+    lstrSQL = lstrSQL & ", Main.UM as UMM, Main.Length as Length, Main.G as G, Main.I as I, Main.N as N, Main.T as T, Main.MultID as MultID, Main.SpecialMult as SpecialMult, Main.Obsolete as Obsolete, Main.PhantomPN as PhantomPN From Main "
+    lstrSQL = lstrSQL & " LEFT JOIN Inventory Inv ON INV.PartNum = MAIN.PartNum where Main.Obsolete=False and Main.PhantomPN=False"
+    lstrSQL = lstrSQL & " order by Main.PartNum"
+    
+Else
+    
+    
+    lstrSQL = "Select Main.PartNum as PN,MAIN.PartNLocal as PNL,"
+    lstrSQL = lstrSQL & IIf(MeasU = 0, "MAIN.DescMet as D1", "MAIN.DescImp as D1")
+    lstrSQL = lstrSQL & ",MAIN.DescOther as DescO, INV.InvUM as UM, INV.QtyInStock as InStock "
+    lstrSQL = lstrSQL & ", Main.UM as UMM, Main.Length as Length, Main.J as J, Main.M as M, Main.S as S, Main.V as V, Main.NewMultID as MultID, Main.SpecialMult as SpecialMult, Main.Obsolete as Obsolete, Main.PhantomPN as PhantomPN From Main "
+    lstrSQL = lstrSQL & " LEFT JOIN Inventory Inv ON INV.PartNum = MAIN.PartNum where Main.Obsolete=False and Main.PhantomPN=False"
+    lstrSQL = lstrSQL & " order by Main.PartNum"
+
+    
+End If
+    
+    Set lobjRS = New ADODB.Recordset
+    
+    lobjRS.CursorLocation = adUseClient 'open disconnected recordset
+    lobjRS.Open lstrSQL, CnnBTMS, , adLockBatchOptimistic, adCmdText
+    If Not lobjRS Is Nothing Then
+        If Not (lobjRS.EOF And lobjRS.BOF) Then
+            Set lobjRS.ActiveConnection = Nothing
+            Open lstrFilepath For Output As #1   ' Open file for output.
+            lstrLine = "Part No."
+            lstrLine = lstrLine & vbTab & "Description"
+            lstrLine = lstrLine & vbTab & "UM"
+            lstrLine = lstrLine & vbTab & "Price"
+            
+            Print #1, lstrLine
+            lobjRS.MoveFirst
+            Do While lobjRS.EOF = False
+                lstrLine = ""
+                lsngQty = 0
+                TempIntCheck = intCheck
+                
+'                If aCryp.GetOption(16, 7) = CKOptionOff Then  'New MutId is Off
+            If strMultId = "MultId" Then
+
+                
+                intCheck = 1
+                ldblCost = DBLValue(lobjRS.Fields("G").Value)
+                ldblCost = Decrypt(GetSym(lobjRS.Fields("PN").Value), ldblCost)
+                If DBLValue(lobjRS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(lobjRS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(lobjRS.Fields("MultID").Value))
+                End If
+                lobjRS.Fields("G").Value = ldblCost
+                
+                intCheck = 2
+                ldblCost = DBLValue(lobjRS.Fields("I").Value)
+                ldblCost = Decrypt(GetSym(lobjRS.Fields("PN").Value), ldblCost)
+                If DBLValue(lobjRS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(lobjRS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(lobjRS.Fields("MultID").Value))
+                End If
+                lobjRS.Fields("I").Value = ldblCost
+                
+                intCheck = 3
+                ldblCost = DBLValue(lobjRS.Fields("N").Value)
+                ldblCost = Decrypt(GetSym(lobjRS.Fields("PN").Value), ldblCost)
+                If DBLValue(lobjRS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(lobjRS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(lobjRS.Fields("MultID").Value))
+                End If
+                lobjRS.Fields("N").Value = ldblCost
+                
+                intCheck = 4
+                ldblCost = DBLValue(lobjRS.Fields("T").Value)
+                ldblCost = Decrypt(GetSym(lobjRS.Fields("PN").Value), ldblCost)
+                If DBLValue(lobjRS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(lobjRS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(lobjRS.Fields("MultID").Value))
+                End If
+                lobjRS.Fields("T").Value = ldblCost
+                
+                Else  ' New MultId
+                
+                 intCheck = 5
+                ldblCost = DBLValue(lobjRS.Fields("J").Value)
+                ldblCost = Decrypt(GetSym(lobjRS.Fields("PN").Value), ldblCost)
+                If DBLValue(lobjRS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(lobjRS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(lobjRS.Fields("MultID").Value))
+                End If
+                lobjRS.Fields("J").Value = ldblCost
+                
+                 intCheck = 6
+                ldblCost = DBLValue(lobjRS.Fields("M").Value)
+                ldblCost = Decrypt(GetSym(lobjRS.Fields("PN").Value), ldblCost)
+                If DBLValue(lobjRS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(lobjRS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(lobjRS.Fields("MultID").Value))
+                End If
+                lobjRS.Fields("M").Value = ldblCost
+           
+                intCheck = 7
+                ldblCost = DBLValue(lobjRS.Fields("S").Value)
+                ldblCost = Decrypt(GetSym(lobjRS.Fields("PN").Value), ldblCost)
+                If DBLValue(lobjRS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(lobjRS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(lobjRS.Fields("MultID").Value))
+                End If
+                lobjRS.Fields("S").Value = ldblCost
+            
+                
+                 intCheck = 8
+                ldblCost = DBLValue(lobjRS.Fields("V").Value)
+                ldblCost = Decrypt(GetSym(lobjRS.Fields("PN").Value), ldblCost)
+                If DBLValue(lobjRS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(lobjRS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(lobjRS.Fields("MultID").Value))
+                End If
+                lobjRS.Fields("V").Value = ldblCost
+             
+                
+            End If
+                
+                intCheck = TempIntCheck
+                If Not IsNull(lobjRS.Fields("InStock").Value) Then
+                    'perform standard to metric conversion
+                    If MeasU = 0 Then
+                        ClearConObj
+                        If lobjRS.Fields("UM").Value = "INCHES" Then
+    
+                            If lobjRS.Fields("UMM").Value = "EACH" Then
+                            
+'                             If aCryp.GetOption(16, 7) = CKOptionOff Then
+                             If strMultId = "MultId" Then
+
+                                ldblCost = DBLValue(lobjRS.Fields("G").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value)) * 0.03937008
+                                lobjRS.Fields("G").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("I").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value)) * 0.03937008
+                                lobjRS.Fields("I").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("N").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value)) * 0.03937008
+                                lobjRS.Fields("N").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("T").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value)) * 0.03937008
+                                lobjRS.Fields("T").Value = ldblCost
+                                
+                                
+                                
+                           Else ' New MultId
+                           
+                            ldblCost = DBLValue(lobjRS.Fields("J").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value)) * 0.03937008
+                                lobjRS.Fields("J").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("M").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value)) * 0.03937008
+                                lobjRS.Fields("M").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("S").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value)) * 0.03937008
+                                lobjRS.Fields("S").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("V").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value)) * 0.03937008
+                                lobjRS.Fields("V").Value = ldblCost
+
+                           
+                           End If
+                                
+                                
+                                
+                                
+                            Else
+                            
+'                           ' If aCryp.GetOption(16, 7) = CKOptionOff Then
+                            If strMultId = "MultId" Then
+
+                                ldblCost = DBLValue(lobjRS.Fields("G").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                lobjRS.Fields("G").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("I").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                lobjRS.Fields("I").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("N").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                lobjRS.Fields("N").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("T").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                lobjRS.Fields("T").Value = ldblCost
+                                
+                                Else 'New MultId
+                                
+                                ldblCost = DBLValue(lobjRS.Fields("J").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                lobjRS.Fields("J").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("M").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                lobjRS.Fields("M").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("S").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                lobjRS.Fields("S").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("V").Value)
+                                ldblCost = (ldblCost / 12) * 0.03937008
+                                lobjRS.Fields("V").Value = ldblCost
+
+                                
+                                
+                                
+                                End If
+                                
+                                
+                                
+                                
+                            End If
+                            
+                            lobjRS.Fields("UM").Value = "MM"
+    
+                            If lobjRS.Fields("InStock").Value > 0 Then
+                                aCon.Inch = DBLValue(lobjRS.Fields("InStock").Value)
+                                aCon.mmcalc
+                                lobjRS.Fields("InStock").Value = Round(aCon.mm, 0)
+                            End If
+    
+                        Else
+'                            lobjrs.Fields("G").Value = ldblCost ' Round(ldblCost, 2)
+'                            lobjrs.Fields("I").Value = ldblCost ' Round(ldblCost, 2)
+'                            lobjrs.Fields("N").Value = ldblCost ' Round(ldblCost, 2)
+'                            lobjrs.Fields("T").Value = ldblCost ' Round(ldblCost, 2)
+                        End If
+                    Else ' imperial
+    
+                        If lobjRS.Fields("UM").Value = "INCHES" Then
+                            If lobjRS.Fields("UMM").Value = "EACH" Then
+                            
+                             ' If aCryp.GetOption(16, 7) = CKOptionOff Then
+                            If strMultId = "MultId" Then
+
+                                ldblCost = DBLValue(lobjRS.Fields("G").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value))
+                                lobjRS.Fields("G").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("I").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value))
+                                lobjRS.Fields("I").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("N").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value))
+                                lobjRS.Fields("N").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("T").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value))
+                                lobjRS.Fields("T").Value = ldblCost
+                            
+                            Else
+                                ldblCost = DBLValue(lobjRS.Fields("J").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value))
+                                lobjRS.Fields("J").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("M").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value))
+                                lobjRS.Fields("M").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("S").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value))
+                                lobjRS.Fields("S").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("V").Value)
+                                ldblCost = (ldblCost / DBLValue(lobjRS.Fields("Length").Value))
+                                lobjRS.Fields("V").Value = ldblCost
+
+                            
+                            
+                            End If
+                            
+                            
+                            
+                            Else
+                            
+                             ' If aCryp.GetOption(16, 7) = CKOptionOff Then
+    
+                               If strMultId = "MultId" Then
+
+                                ldblCost = DBLValue(lobjRS.Fields("G").Value)
+                                ldblCost = (ldblCost / 12)
+                                lobjRS.Fields("G").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("I").Value)
+                                ldblCost = (ldblCost / 12)
+                                lobjRS.Fields("I").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("N").Value)
+                                ldblCost = (ldblCost / 12)
+                                lobjRS.Fields("N").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("T").Value)
+                                ldblCost = (ldblCost / 12)
+                                lobjRS.Fields("T").Value = ldblCost
+                                
+                                
+                                
+                                
+                            Else
+                            
+                                ldblCost = DBLValue(lobjRS.Fields("J").Value)
+                                ldblCost = (ldblCost / 12)
+                                lobjRS.Fields("J").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("M").Value)
+                                ldblCost = (ldblCost / 12)
+                                lobjRS.Fields("M").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("S").Value)
+                                ldblCost = (ldblCost / 12)
+                                lobjRS.Fields("S").Value = ldblCost
+    
+                                ldblCost = DBLValue(lobjRS.Fields("V").Value)
+                                ldblCost = (ldblCost / 12)
+                                lobjRS.Fields("V").Value = ldblCost
+
+                            
+                            End If
+                            
+                            End If
+                        Else
+'                            lobjrs.Fields("G").Value = ldblCost ' Round(ldblCost, 2)
+'                            lobjrs.Fields("I").Value = ldblCost ' Round(ldblCost, 2)
+'                            lobjrs.Fields("N").Value = ldblCost ' Round(ldblCost, 2)
+'                            lobjrs.Fields("T").Value = ldblCost ' Round(ldblCost, 2)
+                        End If
+                    End If
+                Else
+                    'springs not in invenory:
+                    
+                    
+                  'If aCryp.GetOption(16, 7) = CKOptionOff Then
+                    
+                   If strMultId = "MultId" Then
+
+                    lobjRS.Fields("G").Value = DBLValue(lobjRS.Fields("G").Value) * DBLValue(lobjRS.Fields("Length").Value)
+                    lobjRS.Fields("I").Value = DBLValue(lobjRS.Fields("I").Value) * DBLValue(lobjRS.Fields("Length").Value)
+                    lobjRS.Fields("N").Value = DBLValue(lobjRS.Fields("N").Value) * DBLValue(lobjRS.Fields("Length").Value)
+                    lobjRS.Fields("T").Value = DBLValue(lobjRS.Fields("T").Value) * DBLValue(lobjRS.Fields("Length").Value)
+                    lobjRS.Fields("UM").Value = "EACH"
+                    
+                    Else
+                    
+                    lobjRS.Fields("J").Value = DBLValue(lobjRS.Fields("J").Value) * DBLValue(lobjRS.Fields("Length").Value)
+                    lobjRS.Fields("M").Value = DBLValue(lobjRS.Fields("M").Value) * DBLValue(lobjRS.Fields("Length").Value)
+                    lobjRS.Fields("S").Value = DBLValue(lobjRS.Fields("S").Value) * DBLValue(lobjRS.Fields("Length").Value)
+                    lobjRS.Fields("V").Value = DBLValue(lobjRS.Fields("V").Value) * DBLValue(lobjRS.Fields("Length").Value)
+                    lobjRS.Fields("UM").Value = "EACH"
+
+                    End If
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                End If
+                
+               'If aCryp.GetOption(16, 7) = CKOptionOff Then
+                
+               If strMultId = "MultId" Then
+
+                lobjRS.Fields("G").Value = IIf(DBLValue(lobjRS.Fields("G").Value) < 0.01, Round(lobjRS.Fields("G").Value, 4), Round(lobjRS.Fields("G").Value, 2))
+                lobjRS.Fields("I").Value = IIf(DBLValue(lobjRS.Fields("I").Value) < 0.01, Round(lobjRS.Fields("I").Value, 4), Round(lobjRS.Fields("I").Value, 2))
+                lobjRS.Fields("N").Value = IIf(DBLValue(lobjRS.Fields("N").Value) < 0.01, Round(lobjRS.Fields("N").Value, 4), Round(lobjRS.Fields("N").Value, 2))
+                lobjRS.Fields("T").Value = IIf(DBLValue(lobjRS.Fields("T").Value) < 0.01, Round(lobjRS.Fields("T").Value, 4), Round(lobjRS.Fields("T").Value, 2))
+                lobjRS.Update
+                lobjRS.MoveNext
+            
+            
+            
+            Else
+            
+                lobjRS.Fields("J").Value = IIf(DBLValue(lobjRS.Fields("J").Value) < 0.01, Round(lobjRS.Fields("J").Value, 4), Round(lobjRS.Fields("J").Value, 2))
+                lobjRS.Fields("M").Value = IIf(DBLValue(lobjRS.Fields("M").Value) < 0.01, Round(lobjRS.Fields("M").Value, 4), Round(lobjRS.Fields("M").Value, 2))
+                lobjRS.Fields("S").Value = IIf(DBLValue(lobjRS.Fields("S").Value) < 0.01, Round(lobjRS.Fields("S").Value, 4), Round(lobjRS.Fields("S").Value, 2))
+                lobjRS.Fields("V").Value = IIf(DBLValue(lobjRS.Fields("V").Value) < 0.01, Round(lobjRS.Fields("V").Value, 4), Round(lobjRS.Fields("V").Value, 2))
+                lobjRS.Update
+                lobjRS.MoveNext
+
+            
+            End If
+               
+            Loop
+            
+            lobjRS.MoveFirst
+            Do While lobjRS.EOF = False
+                lstrLine = ""
+                If intCheck = 1 Then
+                    For i = 0 To lobjRS.Fields.Count - 1
+                        If lobjRS.Fields.Item(i).Name <> lstrExcludedPN And _
+                            lobjRS.Fields.Item(i).Name <> lstrExcluedDesc And _
+                            lobjRS.Fields.Item(i).Name <> "UMM" And _
+                            lobjRS.Fields.Item(i).Name <> "MultID" And _
+                            lobjRS.Fields.Item(i).Name <> "SpecialMult" And _
+                            lobjRS.Fields.Item(i).Name <> "Obsolete" And _
+                            lobjRS.Fields.Item(i).Name <> "PhantomPN" And _
+                            lobjRS.Fields.Item(i).Name <> "CallPrice" And _
+                            lobjRS.Fields.Item(i).Name <> "Length" And _
+                            lobjRS.Fields.Item(i).Name <> "InStock" And _
+                            lobjRS.Fields.Item(i).Name <> "I" And _
+                            lobjRS.Fields.Item(i).Name <> "N" And _
+                            lobjRS.Fields.Item(i).Name <> "T" Then
+                            
+                            If lstrLine <> "" Then lstrLine = lstrLine & vbTab
+                            lstrLine = lstrLine & lobjRS.Fields(i)
+                        End If
+                    Next
+                ElseIf intCheck = 2 Then
+                    For i = 0 To lobjRS.Fields.Count - 1
+                        
+                        If lobjRS.Fields.Item(i).Name <> lstrExcludedPN And _
+                            lobjRS.Fields.Item(i).Name <> lstrExcluedDesc And _
+                            lobjRS.Fields.Item(i).Name <> "UMM" And _
+                            lobjRS.Fields.Item(i).Name <> "MultID" And _
+                            lobjRS.Fields.Item(i).Name <> "SpecialMult" And _
+                            lobjRS.Fields.Item(i).Name <> "Obsolete" And _
+                            lobjRS.Fields.Item(i).Name <> "PhantomPN" And _
+                            lobjRS.Fields.Item(i).Name <> "CallPrice" And _
+                            lobjRS.Fields.Item(i).Name <> "Length" And _
+                            lobjRS.Fields.Item(i).Name <> "InStock" And _
+                            lobjRS.Fields.Item(i).Name <> "G" And _
+                            lobjRS.Fields.Item(i).Name <> "N" And _
+                            lobjRS.Fields.Item(i).Name <> "T" Then
+                            
+                            If lstrLine <> "" Then lstrLine = lstrLine & vbTab
+                            lstrLine = lstrLine & lobjRS.Fields(i)
+                        End If
+                    Next
+                
+                ElseIf intCheck = 3 Then
+                    For i = 0 To lobjRS.Fields.Count - 1
+                        
+                        If lobjRS.Fields.Item(i).Name <> lstrExcludedPN And _
+                            lobjRS.Fields.Item(i).Name <> lstrExcluedDesc And _
+                            lobjRS.Fields.Item(i).Name <> "UMM" And _
+                            lobjRS.Fields.Item(i).Name <> "MultID" And _
+                            lobjRS.Fields.Item(i).Name <> "SpecialMult" And _
+                            lobjRS.Fields.Item(i).Name <> "Obsolete" And _
+                            lobjRS.Fields.Item(i).Name <> "PhantomPN" And _
+                            lobjRS.Fields.Item(i).Name <> "CallPrice" And _
+                            lobjRS.Fields.Item(i).Name <> "Length" And _
+                            lobjRS.Fields.Item(i).Name <> "InStock" And _
+                            lobjRS.Fields.Item(i).Name <> "G" And _
+                            lobjRS.Fields.Item(i).Name <> "I" And _
+                            lobjRS.Fields.Item(i).Name <> "T" Then
+                            
+                            If lstrLine <> "" Then lstrLine = lstrLine & vbTab
+                            lstrLine = lstrLine & lobjRS.Fields(i)
+                        End If
+                    Next
+                
+                ElseIf intCheck = 4 Then
+                    For i = 0 To lobjRS.Fields.Count - 1
+                        
+                        If lobjRS.Fields.Item(i).Name <> lstrExcludedPN And _
+                            lobjRS.Fields.Item(i).Name <> lstrExcluedDesc And _
+                            lobjRS.Fields.Item(i).Name <> "UMM" And _
+                            lobjRS.Fields.Item(i).Name <> "MultID" And _
+                            lobjRS.Fields.Item(i).Name <> "SpecialMult" And _
+                            lobjRS.Fields.Item(i).Name <> "Obsolete" And _
+                            lobjRS.Fields.Item(i).Name <> "PhantomPN" And _
+                            lobjRS.Fields.Item(i).Name <> "CallPrice" And _
+                            lobjRS.Fields.Item(i).Name <> "Length" And _
+                            lobjRS.Fields.Item(i).Name <> "InStock" And _
+                            lobjRS.Fields.Item(i).Name <> "G" And _
+                            lobjRS.Fields.Item(i).Name <> "I" And _
+                            lobjRS.Fields.Item(i).Name <> "N" Then
+                            
+                            If lstrLine <> "" Then lstrLine = lstrLine & vbTab
+                            lstrLine = lstrLine & lobjRS.Fields(i)
+                        End If
+                    Next
+                    
+                    
+                    'Mod New Mult & New Pricing levels
+                    
+                    
+                ElseIf intCheck = 5 Then  ' Field J -  Cdn Rvsd
+                    For i = 0 To lobjRS.Fields.Count - 1
+                        
+                        If lobjRS.Fields.Item(i).Name <> lstrExcludedPN And _
+                            lobjRS.Fields.Item(i).Name <> lstrExcluedDesc And _
+                            lobjRS.Fields.Item(i).Name <> "UMM" And _
+                            lobjRS.Fields.Item(i).Name <> "MultID" And _
+                            lobjRS.Fields.Item(i).Name <> "SpecialMult" And _
+                            lobjRS.Fields.Item(i).Name <> "Obsolete" And _
+                            lobjRS.Fields.Item(i).Name <> "PhantomPN" And _
+                            lobjRS.Fields.Item(i).Name <> "CallPrice" And _
+                            lobjRS.Fields.Item(i).Name <> "Length" And _
+                            lobjRS.Fields.Item(i).Name <> "InStock" And _
+                            lobjRS.Fields.Item(i).Name <> "M" And _
+                            lobjRS.Fields.Item(i).Name <> "S" And _
+                            lobjRS.Fields.Item(i).Name <> "V" Then
+                            
+                            If lstrLine <> "" Then lstrLine = lstrLine & vbTab
+                            lstrLine = lstrLine & lobjRS.Fields(i)
+                        End If
+                    Next
+                    
+                    
+                       
+                ElseIf intCheck = 6 Then  'Field  M  -  US21 Rvsd
+                    For i = 0 To lobjRS.Fields.Count - 1
+                        
+                        If lobjRS.Fields.Item(i).Name <> lstrExcludedPN And _
+                            lobjRS.Fields.Item(i).Name <> lstrExcluedDesc And _
+                            lobjRS.Fields.Item(i).Name <> "UMM" And _
+                            lobjRS.Fields.Item(i).Name <> "MultID" And _
+                            lobjRS.Fields.Item(i).Name <> "SpecialMult" And _
+                            lobjRS.Fields.Item(i).Name <> "Obsolete" And _
+                            lobjRS.Fields.Item(i).Name <> "PhantomPN" And _
+                            lobjRS.Fields.Item(i).Name <> "CallPrice" And _
+                            lobjRS.Fields.Item(i).Name <> "Length" And _
+                            lobjRS.Fields.Item(i).Name <> "InStock" And _
+                            lobjRS.Fields.Item(i).Name <> "j" And _
+                            lobjRS.Fields.Item(i).Name <> "S" And _
+                            lobjRS.Fields.Item(i).Name <> "V" Then
+                            
+                            If lstrLine <> "" Then lstrLine = lstrLine & vbTab
+                            lstrLine = lstrLine & lobjRS.Fields(i)
+                        End If
+                    Next
+                    
+                     
+                ElseIf intCheck = 7 Then  ' Field S - US22 Rvsd.
+                    For i = 0 To lobjRS.Fields.Count - 1
+                        
+                        If lobjRS.Fields.Item(i).Name <> lstrExcludedPN And _
+                            lobjRS.Fields.Item(i).Name <> lstrExcluedDesc And _
+                            lobjRS.Fields.Item(i).Name <> "UMM" And _
+                            lobjRS.Fields.Item(i).Name <> "MultID" And _
+                            lobjRS.Fields.Item(i).Name <> "SpecialMult" And _
+                            lobjRS.Fields.Item(i).Name <> "Obsolete" And _
+                            lobjRS.Fields.Item(i).Name <> "PhantomPN" And _
+                            lobjRS.Fields.Item(i).Name <> "CallPrice" And _
+                            lobjRS.Fields.Item(i).Name <> "Length" And _
+                            lobjRS.Fields.Item(i).Name <> "InStock" And _
+                            lobjRS.Fields.Item(i).Name <> "J" And _
+                            lobjRS.Fields.Item(i).Name <> "M" And _
+                            lobjRS.Fields.Item(i).Name <> "V" Then
+                            
+                            If lstrLine <> "" Then lstrLine = lstrLine & vbTab
+                            lstrLine = lstrLine & lobjRS.Fields(i)
+                        End If
+                    Next
+                    
+                    
+                       
+                ElseIf intCheck = 8 Then  'Field V - US23 RVSD
+                    For i = 0 To lobjRS.Fields.Count - 1
+                        
+                        If lobjRS.Fields.Item(i).Name <> lstrExcludedPN And _
+                            lobjRS.Fields.Item(i).Name <> lstrExcluedDesc And _
+                            lobjRS.Fields.Item(i).Name <> "UMM" And _
+                            lobjRS.Fields.Item(i).Name <> "MultID" And _
+                            lobjRS.Fields.Item(i).Name <> "SpecialMult" And _
+                            lobjRS.Fields.Item(i).Name <> "Obsolete" And _
+                            lobjRS.Fields.Item(i).Name <> "PhantomPN" And _
+                            lobjRS.Fields.Item(i).Name <> "CallPrice" And _
+                            lobjRS.Fields.Item(i).Name <> "Length" And _
+                            lobjRS.Fields.Item(i).Name <> "InStock" And _
+                            lobjRS.Fields.Item(i).Name <> "J" And _
+                            lobjRS.Fields.Item(i).Name <> "M" And _
+                            lobjRS.Fields.Item(i).Name <> "S" Then
+                            
+                            If lstrLine <> "" Then lstrLine = lstrLine & vbTab
+                            lstrLine = lstrLine & lobjRS.Fields(i)
+                        End If
+                    Next
+                    
+                End If
+                Print #1, lstrLine
+                lobjRS.MoveNext
+            Loop
+            Close #1
+        End If
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+

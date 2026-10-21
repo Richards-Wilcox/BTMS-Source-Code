@@ -1,0 +1,188 @@
+Option Explicit
+Const cstrModuleName As String = "frmOperatorShaftOptions"
+Public mobjParent As Object
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    mobjParent.mdblOpChange = 1
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdDeleteFromBoM_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdDeleteFromBoM_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If varPassDoor.strPN <> "" Then
+        If varDoorData.OperatorType > 5 And Not (varDoorData.OperatorType = 7 Or varDoorData.OperatorType = 8) And Not (varDoorData.OperatorType = 11) Then
+            frmTrackEntry.chkISwitch.Value = 0
+        End If
+    End If
+    
+    If varDoorData.OperatorType = 6 Then
+        frmTrackEntry.chkPSpring.Value = 0
+        frmTrackEntry.chkBSpring.Value = 0
+        frmTrackEntry.chkFlangeBearing = 0
+        varDoorData.FlangeBearing = False
+    End If
+    
+    varDoorData.OperatorType = 1
+    
+    Call frmTrackEntry.LoadData
+    mobjParent.mdblOpChange = 2
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdDifferentShaft_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdDifferentShaft_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    mobjParent.mdblOpChange = 1
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdReselectOperator_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdReselectOperator_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    mobjParent.mdblOpChange = -1
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdUpgradeOperator_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdUpgradeOperator_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    mobjParent.mdblOpChange = 3
+    varDoorData.OperatorType = 3
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SubName()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+    Me.Move (Screen.Width - Me.Width) / 2, (Screen.Height - Me.Height) / 2
+
+    lblReselectOp.Caption = "Click Yes to reselect the operator. " & vbNewLine & _
+                            "Note: You will lose your current selections and return to the first screen."
+    
+    cmdDifferentShaft.Enabled = False
+    cmdUpgradeOperator.Enabled = False
+    cmdDeleteFromBoM.Enabled = False
+    cmdReselectOperator.Enabled = False
+    
+    If varDoorData.Track.ShaftsInList > 1 Then
+        cmdDifferentShaft.Enabled = True
+    End If
+
+    'operator JR/200d direct drive does n't work with 1-1/4"
+    'EU ADCA does n't work 1-1/4"
+    
+    'we disable button because click back from springing screen, we don't need to ask again.
+    'solution : they can either re-select shaft, reselect mount type
+    'For example, if operator is OK but mount type = EU ADCA given 1 1/4" - reselect shaft only
+                 'if operator is not OK(JR/JRG/200) but mount type is OK given 1 1/4" - upgrade operator
+                 'if operator not OK also mount type not OK given 1 1/4"  - reselect shaft only
+    
+    If (varDoorData.OperatorType = 4 Or varDoorData.OperatorType = 9) Or _
+        varDoorData.OperatorType = 11 Then
+        
+        cmdUpgradeOperator.Enabled = True
+        cmdDeleteFromBoM.Enabled = True
+        cmdReselectOperator.Enabled = True
+        
+    ElseIf varDoorData.OperatorType = 6 Then
+        cmdDeleteFromBoM.Enabled = True
+        cmdReselectOperator.Enabled = True
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub

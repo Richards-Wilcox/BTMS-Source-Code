@@ -1,0 +1,907 @@
+Option Explicit
+Const cstrModuleName As String = "frmInventory"
+Const cstrTableName As String = "Inventory"
+
+Public mstrPartNum As String
+Public mblnStockFlag As Boolean
+Public mintMode As Integer
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        If mintMode = MODE_VIEW Then ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdEdit_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdEdit_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If mintMode = MODE_EDIT Then
+        mintMode = MODE_VIEW
+        Call LoadData
+        Exit Sub
+    End If
+    
+    mintMode = MODE_EDIT
+    Call SetControls(mintMode)
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdBack_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdBack_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Unload Me
+    If mblnStockFlag = True Then
+        frmInvStock.Show
+    Else
+        frmInvList.Show
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdPrint_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdPrint_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+'    CommonDialog1.CancelError = True
+'    CommonDialog1.ShowPrinter
+    Call ShowTaskbar(False) 'will hide the widows taskbar for the time of printing
+    
+    Set Picture1.Picture = CaptureScreen()
+    PrintPictureToFitPage Printer, Picture1.Picture
+    
+    Printer.EndDoc
+    
+    Call ShowTaskbar(True)
+    Exit Sub
+
+Error_Handler:
+    If Err.Number = 32755 Then
+        Call ShowTaskbar(True)
+        Exit Sub
+    End If
+    
+    If Err.Number = 482 Or Err.Number = 484 Then 'Make sure all connections between computer and printer are solid. Most printers provide a display for error information such as "Out of paper," "Offline," and so on.
+        MsgBox Err.Number & ":" & " Printer error!", vbCritical + vbApplicationModal, "Printer Error."
+        Exit Sub
+    End If
+    
+    If Err.Number = 9 Then  'no printer installed
+        MsgBox Err.Number & ":" & " Printer error!", vbCritical + vbApplicationModal, "Printer Error."
+        Exit Sub
+    End If
+    
+    Call ShowTaskbar(True)
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdSave_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSave_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    If MsgBox("Save Data?", vbApplicationModal + vbYesNo + vbQuestion, "Save Data.") = vbYes Then
+        Screen.MousePointer = vbHourglass
+        Call SaveData
+        Call LoadData
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Initialize()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Initialize()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    mintMode = MODE_VIEW
+    mblnStockFlag = False
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    
+    If mintMode = MODE_ADD Then
+        mintMode = MODE_VIEW
+        'Call cmdAdd_Click
+    Else
+        Call LoadData
+    End If
+    LoadHelpText Me
+    MousePos1.Init Me
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub LoadData()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim lobjInventoryRS As ADODB.Recordset
+    
+    mintMode = MODE_VIEW
+    Call SetControls(mintMode)
+    Call ClearScreen
+    
+    If Trim(mstrPartNum) = "" Then Exit Sub
+    
+    lstrSQLQuery = "Select MAIN.PartNum,MAIN.PartNLocal,"
+    lstrSQLQuery = lstrSQLQuery & IIf(MeasU = 0, "MAIN.DescMet", "MAIN.DescImp")
+    lstrSQLQuery = lstrSQLQuery & ", Main.DescOther ,MAIN.Length,MAIN.Height,MAIN.SpringingWeight,MAIN.ShipWeight,"
+    lstrSQLQuery = lstrSQLQuery & "MAIN.LbrCost,MAIN.PkgQty,INV.QtyInStock,INV.QtyBkOrder,INV.INVUM, "
+    lstrSQLQuery = lstrSQLQuery & "MAIN.Obsolete,MAIN.PhantomPN,MAIN.CallPrice,"
+    lstrSQLQuery = lstrSQLQuery & "INV.QtyReserved,INV.QtyMin,INV.QtyOnOrder"
+    lstrSQLQuery = lstrSQLQuery & " From main MAIN"
+    lstrSQLQuery = lstrSQLQuery & " LEFT JOIN Inventory INV ON MAIN.PartNum = INV.PartNum"
+    lstrSQLQuery = lstrSQLQuery & " WHERE MAIN.PartNum=" & SQLString(Trim(mstrPartNum))
+    Set lobjInventoryRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjInventoryRS Is Nothing Then
+        lobjInventoryRS.ActiveConnection = Nothing
+        If Not (lobjInventoryRS.BOF And lobjInventoryRS.EOF) Then
+            lobjInventoryRS.MoveFirst
+            Dim lstrFieldName As String
+            
+            lstrFieldName = "PartNum"
+            lblPartNum.Caption = IIf(IsNull(lobjInventoryRS.Fields(lstrFieldName).Value), "", Trim(lobjInventoryRS.Fields(lstrFieldName).Value))
+            lstrFieldName = IIf(MeasU = 0, "DescMet", "DescImp")
+            lblDescr.Caption = IIf(IsNull(lobjInventoryRS.Fields(lstrFieldName).Value), "", Trim(lobjInventoryRS.Fields(lstrFieldName).Value))
+            lstrFieldName = "DescOther"
+            Label19.Caption = IIf(IsNull(lobjInventoryRS.Fields(lstrFieldName).Value), "", Trim(lobjInventoryRS.Fields(lstrFieldName).Value))
+            lstrFieldName = "Obsolete"
+            chkObsolete.Value = IIf(lobjInventoryRS.Fields(lstrFieldName).Value = True, 1, 0)
+            lstrFieldName = "PhantomPN"
+            chkPhantom.Value = IIf(lobjInventoryRS.Fields(lstrFieldName).Value = True, 1, 0)
+            lstrFieldName = "CallPrice"
+            chkCall.Value = IIf(lobjInventoryRS.Fields(lstrFieldName).Value = True, 1, 0)
+            lstrFieldName = "INVUM"
+            txtUM.Text = IIf(IsNull(lobjInventoryRS.Fields(lstrFieldName).Value), "", Trim(lobjInventoryRS.Fields(lstrFieldName).Value))
+            If MeasU = 0 And txtUM.Text = "INCHES" Then txtUM.Text = "MM"
+            
+            lstrFieldName = "SpringingWeight"
+            If Not IsNull(lobjInventoryRS.Fields(lstrFieldName).Value) Then
+                If MeasU = 0 Then
+                    ClearConObj
+                    aCon.LB = lobjInventoryRS.Fields(lstrFieldName).Value
+                    aCon.KGcalc
+                    lblWeight.Caption = Format(aCon.KG, cstrQtyMask)
+                Else
+                    lblWeight.Caption = Format(lobjInventoryRS.Fields(lstrFieldName).Value, cstrQtyMask)
+                End If
+            Else
+                lblWeight.Caption = Format(0, "Fixed")
+            End If
+            
+            lstrFieldName = "Height"
+            If Not IsNull(lobjInventoryRS.Fields(lstrFieldName).Value) Then
+                If MeasU = 0 Then
+                    ClearConObj
+                    aCon.Inch = lobjInventoryRS.Fields(lstrFieldName).Value
+                    aCon.mmcalc
+                    lblHeight.Caption = Round(aCon.mm, 0)
+                Else
+                    lblHeight.Caption = Format(lobjInventoryRS.Fields(lstrFieldName).Value, cstrQtyMask)
+                End If
+            Else
+                lblHeight.Caption = Format(0, "Fixed")
+            End If
+                    
+            lstrFieldName = "Length"
+            If Not IsNull(lobjInventoryRS.Fields(lstrFieldName).Value) Then
+                If MeasU = 0 Then
+                    ClearConObj
+                    aCon.Inch = lobjInventoryRS.Fields(lstrFieldName).Value
+                    aCon.mmcalc
+                    lblLength.Caption = Round(aCon.mm, 0)
+                Else
+                    lblLength.Caption = Format(lobjInventoryRS.Fields(lstrFieldName).Value, cstrQtyMask)
+                End If
+            Else
+                lblLength.Caption = Format(0, "Fixed")
+            End If
+            
+            lstrFieldName = "ShipWeight"
+            If Not IsNull(lobjInventoryRS.Fields(lstrFieldName).Value) Then
+                If MeasU = 0 Then
+                    ClearConObj
+                    aCon.LB = lobjInventoryRS.Fields(lstrFieldName).Value
+                    aCon.KGcalc
+                    lblShip.Caption = Format(aCon.KG, cstrQtyMask)
+                Else
+                    lblShip.Caption = Format(lobjInventoryRS.Fields(lstrFieldName).Value, cstrQtyMask)
+                End If
+            Else
+                lblShip.Caption = Format(0, "Fixed")
+            End If
+            
+            lstrFieldName = "PkgQty"
+            txtPkgQty.Text = Format(IIf(IsNull(lobjInventoryRS.Fields(lstrFieldName).Value), 0, lobjInventoryRS.Fields(lstrFieldName).Value), cstrQtyMask)
+            lstrFieldName = "LbrCost"
+            lblLabour.Caption = Format(IIf(IsNull(lobjInventoryRS.Fields(lstrFieldName).Value), 0, lobjInventoryRS.Fields(lstrFieldName).Value), cstrDollarMask)
+            
+            aReg.OpenKey LocalMachine, "\software\Richards-Wilcox Canada", True
+            
+            lblOH.Caption = Format(DBLValue(lblLabour.Caption) * IIf(DBLValue(aReg.ReadValue("OHCost")) = 0, 0.2, DBLValue(aReg.ReadValue("OHCost"))), cstrDollarMask)
+            
+            aReg.CloseKey
+            
+            lstrFieldName = "PartNLocal"
+            lblLocal.Caption = IIf(IsNull(lobjInventoryRS.Fields(lstrFieldName).Value), "", Trim(lobjInventoryRS.Fields(lstrFieldName).Value))
+            lstrFieldName = "QtyMin"
+            If Not IsNull(lobjInventoryRS.Fields(lstrFieldName).Value) Then
+                If MeasU = 0 And lobjInventoryRS.Fields("INVUM").Value = "INCHES" Then
+                    ClearConObj
+                    aCon.Inch = lobjInventoryRS.Fields(lstrFieldName).Value
+                    aCon.mmcalc
+                    txtMinQty.Text = Round(aCon.mm, 0)
+                Else
+                    txtMinQty.Text = Format(lobjInventoryRS.Fields(lstrFieldName).Value, cstrQtyMask)
+                End If
+            Else
+                txtMinQty.Text = Format(0, "Fixed")
+            End If
+            
+            lstrFieldName = "QtyInStock"
+            If Not IsNull(lobjInventoryRS.Fields(lstrFieldName).Value) Then
+                If MeasU = 0 And lobjInventoryRS.Fields("INVUM").Value = "INCHES" Then
+                    ClearConObj
+                    aCon.Inch = lobjInventoryRS.Fields(lstrFieldName).Value
+                    aCon.mmcalc
+                    txtInStock.Text = Round(aCon.mm, 0)
+                Else
+                    txtInStock.Text = Format(lobjInventoryRS.Fields(lstrFieldName).Value, cstrQtyMask)
+                End If
+            Else
+                txtInStock.Text = Format(0, "Fixed")
+            End If
+            
+            lstrFieldName = "QtyBkOrder"
+            If Not IsNull(lobjInventoryRS.Fields(lstrFieldName).Value) Then
+                If MeasU = 0 And lobjInventoryRS.Fields("INVUM").Value = "INCHES" Then
+                    ClearConObj
+                    aCon.Inch = lobjInventoryRS.Fields(lstrFieldName).Value
+                    aCon.mmcalc
+                    txtBackOrder.Text = Round(aCon.mm, 0)
+                Else
+                    txtBackOrder.Text = Format(lobjInventoryRS.Fields(lstrFieldName).Value, cstrQtyMask)
+                End If
+            Else
+                txtBackOrder.Text = Format(0, "Fixed")
+            End If
+            
+            lstrFieldName = "QtyOnOrder"
+            If Not IsNull(lobjInventoryRS.Fields(lstrFieldName).Value) Then
+                If MeasU = 0 And lobjInventoryRS.Fields("INVUM").Value = "INCHES" Then
+                    ClearConObj
+                    aCon.Inch = lobjInventoryRS.Fields(lstrFieldName).Value
+                    aCon.mmcalc
+                    txtOnOrder.Text = Round(aCon.mm, 0)
+                Else
+                    txtOnOrder.Text = Format(lobjInventoryRS.Fields(lstrFieldName).Value, cstrQtyMask)
+                End If
+            Else
+                txtOnOrder.Text = Format(0, "Fixed")
+            End If
+            
+            lstrFieldName = "QtyReserved"
+            If Not IsNull(lobjInventoryRS.Fields(lstrFieldName).Value) Then
+                If MeasU = 0 And lobjInventoryRS.Fields("INVUM").Value = "INCHES" Then
+                    ClearConObj
+                    aCon.Inch = lobjInventoryRS.Fields(lstrFieldName).Value
+                    aCon.mmcalc
+                    txtReserved.Text = Round(aCon.mm, 0)
+                Else
+                    txtReserved.Text = Format(lobjInventoryRS.Fields(lstrFieldName).Value, cstrQtyMask)
+                End If
+            Else
+                txtReserved.Text = Format(0, "Fixed")
+            End If
+        
+        End If
+        lobjInventoryRS.Close
+    End If
+    Set lobjInventoryRS = Nothing
+    
+    If MeasU = 0 Then
+        Label15.Caption = "MM"
+        Label17.Caption = "MM"
+        Label16.Caption = "kg"
+        Label18.Caption = "kg"
+    Else
+        Label15.Caption = """"
+        Label17.Caption = """"
+        Label16.Caption = "lb"
+        Label18.Caption = "lb"
+End If
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub SetControls(ByVal intMode)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetControls()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Select Case intMode
+        Case MODE_EDIT
+                        cmdEdit.Caption = "Cancel &Edit"
+                        If IsInvMaint = 0 Then cmdEdit.Enabled = True
+                        cmdSave.Enabled = True
+                        cmdPrint.Enabled = False
+                        cmdBack.Enabled = False
+                        txtPkgQty.Enabled = False
+                        txtUM.Enabled = False
+                        'lbllocal.Enabled = True
+                        'txtMinQty.Enabled = True
+                        txtInStock.Enabled = True
+                        'txtBackOrder.Enabled = True
+                        'txtOnOrder.Enabled = True
+                        'txtReserved.Enabled = True
+                        txtInStock.BackColor = &HFFFFFF
+                        'lblLocal.BackColor = &HE0E0E0
+                        txtMinQty.BackColor = &HE0E0E0
+                        txtBackOrder.BackColor = &HE0E0E0
+                        txtOnOrder.BackColor = &HE0E0E0
+                        txtReserved.BackColor = &HE0E0E0
+                        txtPkgQty.BackColor = &HE0E0E0
+                        txtUM.BackColor = &HE0E0E0
+        Case Else
+                        cmdEdit.Caption = "&Edit Detail"
+                        If IsInvMaint = 0 Then cmdEdit.Enabled = True
+                        cmdSave.Enabled = False
+                        cmdPrint.Enabled = True
+                        cmdBack.Enabled = True
+                        txtPkgQty.Enabled = False
+                        txtUM.Enabled = False
+                        'lblLocal.Enabled = False
+                        txtMinQty.Enabled = False
+                        txtInStock.Enabled = False
+                        txtBackOrder.Enabled = False
+                        txtOnOrder.Enabled = False
+                        txtReserved.Enabled = False
+                        
+                        'lblLocal.BackColor = &HE0E0E0
+                        txtMinQty.BackColor = &HE0E0E0
+                        txtInStock.BackColor = &HE0E0E0
+                        txtBackOrder.BackColor = &HE0E0E0
+                        txtOnOrder.BackColor = &HE0E0E0
+                        txtReserved.BackColor = &HE0E0E0
+                        txtPkgQty.BackColor = &HE0E0E0
+                        txtUM.BackColor = &HE0E0E0
+    End Select
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub SaveData()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SaveData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lstrWhereClause As String
+    Dim lstrExcludeFieldList As String
+    Dim llngAffected As Long
+    Dim lobjADORS As ADODB.Recordset
+    
+    ' Copy the fields from the screen to an ADO Recordset
+    Set lobjADORS = BuildRS()
+    
+    ' Process through the recordset and insert or update rows
+    If Not lobjADORS Is Nothing Then
+        If Not (lobjADORS.BOF And lobjADORS.EOF) Then
+            lobjADORS.MoveFirst
+            lstrExcludeFieldList = "InventoryID"
+            Do While lobjADORS.EOF = False
+                ' Check to see if the record exists in the
+                ' Inventory table already
+                Dim lobjParentRS As ADODB.Recordset
+                mintMode = MODE_ADD
+                lstrSQL = "select PartNum from Inventory where PartNum=" & SQLString(mstrPartNum)
+                Set lobjParentRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                If Not lobjParentRS Is Nothing Then
+                    If Not (lobjParentRS.BOF And lobjParentRS.EOF) Then
+                        lobjParentRS.MoveFirst
+                        ' Reset the Mode so that we do an update of the existing part
+                        mintMode = MODE_EDIT
+                    End If
+                    lobjParentRS.Close
+                End If
+                Set lobjParentRS = Nothing
+            
+                If mintMode = MODE_ADD Then
+                    lstrErrDescr = "Error building insert statement for " & cstrTableName
+                    lstrSQL = Build_Insert(lobjADORS, cstrTableName, lstrExcludeFieldList)
+                    lstrErrDescr = "Error inserting data into " & cstrTableName
+                Else
+                    lstrErrDescr = "Error building update statement for " & cstrTableName
+                    lstrWhereClause = "PartNum=" & SQLString(mstrPartNum)
+                    lstrSQL = Build_Update(lobjADORS, cstrTableName, lstrWhereClause, lstrExcludeFieldList)
+                    lstrErrDescr = "Error updating " & cstrTableName
+                End If
+                
+                Call CnnBTMS.Execute(lstrSQL, 0, adCmdText And adExecuteNoRecords)
+                lstrErrDescr = ""
+                lobjADORS.MoveNext
+            Loop
+            
+            lobjADORS.Close
+        End If
+    End If
+    
+    Set lobjADORS = Nothing
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub ClearScreen()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ClearScreen()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    lblPartNum.Caption = ""
+    lblDescr.Caption = ""
+    chkObsolete.Value = 0
+    chkPhantom.Value = 0
+    chkCall.Value = 0
+    
+    lblWeight.Caption = Format(0, cstrQtyMask)
+    lblHeight.Caption = Format(0, cstrQtyMask)
+    lblLength.Caption = Format(0, cstrQtyMask)
+    lblShip.Caption = Format(0, cstrQtyMask)
+    txtPkgQty.Text = Format(0, cstrQtyMask)
+    lblLabour.Caption = Format(0, cstrDollarMask)
+    lblOH.Caption = Format(0, cstrDollarMask)
+    
+    lblLocal.Caption = ""
+    txtMinQty.Text = Format(0, cstrQtyMask)
+    txtInStock.Text = Format(0, cstrQtyMask)
+    txtBackOrder.Text = Format(0, cstrQtyMask)
+    txtOnOrder.Text = Format(0, cstrQtyMask)
+    txtReserved.Text = Format(0, cstrQtyMask)
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Function BuildRS() As ADODB.Recordset
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".BuildRS()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lstrSchema As String
+    Dim llngAffected As Long
+    Dim lobjADORS As ADODB.Recordset
+    
+    ' Get empty recordset
+    lstrErrDescr = "Error getting empty ADO recordset."
+    lstrSQL = "Select * from " & cstrTableName & " where 1=0"
+    Set lobjADORS = New ADODB.Recordset
+    lobjADORS.CursorType = adOpenForwardOnly
+    lobjADORS.CursorLocation = adUseClient
+    lobjADORS.Open lstrSQL, CnnBTMS, adOpenForwardOnly, adLockOptimistic
+    lobjADORS.AddNew
+    Set lobjADORS.ActiveConnection = Nothing
+    lstrErrDescr = ""
+    
+    lobjADORS.Fields("PartNum").Value = Trim(lblPartNum.Caption)
+    'lobjADORS.Fields("PartNLocal").Value = Trim(lbllocal.caption)
+    
+'    lobjADORS.Fields("QtyBkOrder").Value = DBLValue(txtBackOrder.Text)
+'    lobjADORS.Fields("QtyOnOrder").Value = DBLValue(txtOnOrder.Text)
+    lobjADORS.Fields("QtyInStock").Value = DBLValue(txtInStock.Text)
+'    lobjADORS.Fields("QtyMin").Value = DBLValue(txtMinQty.Text)
+'    lobjADORS.Fields("QtyReserved").Value = DBLValue(txtReserved.Text)
+    If Me.txtUM = "MM" Then
+        ClearConObj
+        If DBLValue(txtInStock.Text) > 0 Then
+            aCon.mm = DBLValue(txtInStock.Text)
+            aCon.Inchcalc
+            lobjADORS.Fields("QtyInStock").Value = aCon.Inch
+        End If
+    End If
+    Set BuildRS = lobjADORS
+    Set lobjADORS = Nothing
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Private Sub txtBackOrder_KeyPress(KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtBackOrder_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtBackOrder, KeyAscii, Len(txtBackOrder.Text)) = False Then
+        Beep
+        KeyAscii = 0
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub txtBackOrder_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtBackOrder_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    txtBackOrder.Text = Format(DBLValue(txtBackOrder.Text), cstrQtyMask)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub txtInStock_GotFocus()
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtInStock_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    txtInStock.SelStart = 0
+    txtInStock.SelLength = (Len(txtInStock.Text))
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub txtInStock_KeyPress(KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtDiscount_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtInStock, KeyAscii, Len(txtInStock.Text)) = False Then
+        Beep
+        KeyAscii = 0
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtInStock_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtInStock_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    txtInStock.Text = Format(DBLValue(txtInStock.Text), cstrQtyMask)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub txtMinQty_KeyPress(KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtMinQty_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtMinQty, KeyAscii, Len(txtMinQty.Text)) = False Then
+        Beep
+        KeyAscii = 0
+    End If
+    Exit Sub
+    
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtMinQty_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtMinQty_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    txtMinQty.Text = Format(DBLValue(txtMinQty.Text), cstrQtyMask)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub txtOnOrder_KeyPress(KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtOnOrder_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtOnOrder, KeyAscii, Len(txtOnOrder.Text)) = False Then
+        Beep
+        KeyAscii = 0
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtOnOrder_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtOnOrder_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    txtOnOrder.Text = Format(DBLValue(txtOnOrder.Text), cstrQtyMask)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub txtReserved_KeyPress(KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtReserved_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtReserved, KeyAscii, Len(txtReserved.Text)) = False Then
+        Beep
+        KeyAscii = 0
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtReserved_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtReserved_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    txtReserved.Text = Format(DBLValue(txtReserved.Text), cstrQtyMask)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub

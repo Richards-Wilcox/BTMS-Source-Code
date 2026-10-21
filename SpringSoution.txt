@@ -1,0 +1,3118 @@
+Option Explicit
+'AW, KN
+Const cstrModuleName As String = "frmSprSolutions"
+Private mblnInFocus As Boolean
+Private blnCSBB As Boolean
+''''''''''Change in .NET''''''''''''''''
+'grid1 and grid2, property AllowSelection is set to False.
+'label31, lblRevs set Visible to False in simple mode. lblRevs displays Floor to shaft center.
+'cmdSuggest added
+''''''''''END Change in .NET
+
+
+Private Sub cboCable_Click()
+
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboCable_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim blRound  As Boolean, blSquare As Boolean
+    
+    Call DrumInfoFromTable  'after the selection of cable, drum information get calculated with new springs solutions
+          
+    ReDim varDoorData.arrSpringSolution(0)
+    If frmSprSolutions.chkRound = 1 Then
+        blRound = Springs("Round", True)
+    End If
+    If frmSprSolutions.chkSquare = 1 Then
+        If blRound = False Then
+            blSquare = Springs("Square", True)
+        Else
+            blSquare = Springs("Square", False)
+        End If
+    End If
+    If blSquare = False And blRound = False Then
+        Call NoSolutionsFound
+    End If
+    If blSquare = True Or blRound = True Then
+        Call FoundSolutions
+    End If
+     
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cboMax_Change()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboMax_Change()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Call LimitCBText(cboMax, 3)
+    FraRecalculate.Caption = "Click Recalculate"
+     
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cboMax_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboMax_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Call LimitCBText(cboMax, 3)
+    FraRecalculate.Caption = "Click Recalculate"
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cboMin_Change()
+''''''''''Change in .NET''''''''''''''''
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboMin_Change()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    cboMax.Clear
+    
+    Call LimitCBText(cboMin, 3)
+   
+    Dim z As Integer
+'    For z = 0 To cboMin.ListCount - 1
+'        If cboMin.Text = cboMin.List(z) Then
+'            cboMin.ListIndex = z
+'            Exit For
+'        End If
+'    Next
+    If DBLValue(cboMin.Text) > 9 And DBLValue(cboMin.Text) <= 150 Then
+        For z = DBLValue(cboMin.Text) + 1 To 250
+            cboMax.AddItem z
+            cboMax.ItemData(cboMax.NewIndex) = z
+        Next z
+        
+        For z = 0 To cboMax.ListCount - 1
+            If DBLValue(cboMin.Text) + 80 = cboMax.ItemData(z) Then    '11 being the factor added because of the min value starting from 10
+                cboMax.ListIndex = z
+                Exit For
+            ElseIf DBLValue(cboMin.Text) + 80 > 250 Then
+                cboMax.ListIndex = cboMax.ListCount - 1
+            End If
+        Next
+    End If
+    FraRecalculate.Caption = "Click Recalculate"
+    
+''''''''''END Change in .NET
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cboMin_KeyUp(KeyCode As Integer, Shift As Integer)
+'''''''''''Change in .NET''''''''''''''''
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboMin_KeyPress()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'
+'    cboMax.Clear
+'
+'    Dim z As Integer
+''    For z = 0 To cboMin.ListCount - 1
+''        If cboMin.Text = cboMin.List(z) Then
+''            cboMin.ListIndex = z
+''            Exit For
+''        End If
+''    Next
+'    If DBLValue(cboMin.Text) > 9 And DBLValue(cboMin.Text) < 151 Then
+'        For z = DBLValue(cboMin.Text) + 1 To 250
+'            cboMax.AddItem z
+'            cboMax.ItemData(cboMax.NewIndex) = z
+'        Next z
+'
+'        For z = 0 To cboMax.ListCount - 1
+'            If DBLValue(cboMin.Text) * 6 = cboMax.ItemData(z) Then
+'                cboMax.ListIndex = z
+'            ElseIf DBLValue(cboMin.Text) * 6 > 250 Then
+'                cboMax.ListIndex = cboMax.ListCount - 1
+'            End If
+'        Next
+'    End If
+'''''''''''END Change in .NET
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+'    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+'
+End Sub
+
+Private Sub cmdMM_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdMM_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If MsgBox("Are you sure you want to return to the Main Menu?" & vbCrLf & "All data will be lost.", vbYesNo + vbApplicationModal + vbQuestion, "Return to the Main Menu") = vbYes Then
+        Screen.MousePointer = vbHourglass
+        Call ClearInfo
+        ' Close all Open Forms
+        Dim linti As Integer
+        For linti = Forms.Count - 1 To 0 Step -1
+            If Not Forms(linti).Name = "MDIForm1" Then Unload Forms(linti)
+        Next
+    
+        frmMainMenu.Show
+        Unload Me
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+''''''''''Change in .NET''''''''''''''''
+Private Sub cmdSuggest_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSuggest_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If CECompliant = 1 Then
+         MsgBox "1) select a different drum" & _
+            vbCrLf & "2) change the cycle life range - click on Recalculate" & _
+            vbCrLf & "3) change the wire type - click on Recalculate" & _
+            vbCrLf & "4) check out the mismatched solutions" & _
+            vbCrLf & "5) change from tube shaft to solid shaft on the prior screen" & _
+            vbCrLf & "6) change the size of the shaft on the prior screen" & _
+            vbCrLf & "7) For CE Compliant doors, select Cable Saftey Bottom Bracket on the Sections Option screen", vbApplicationModal + vbInformation, "Springing Suggestions."
+            
+    Else
+        MsgBox "1) select a different drum" & _
+            vbCrLf & "2) change the cycle life range - click on Recalculate" & _
+            vbCrLf & "3) change the wire type - click on Recalculate" & _
+            vbCrLf & "4) check out the mismatched solutions" & _
+            vbCrLf & "5) change from tube shaft to solid shaft on the prior screen" & _
+            vbCrLf & "6) change the size of the shaft on the prior screen", vbApplicationModal + vbInformation, "Springing Suggestions."
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+''''''''''END Change in .NET
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Paint()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Paint()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If blnCSBB = True And CECompliant = 1 Then
+        Call NoSolutionsFound
+        MsgBox "Please return to the Sections Option screen and select the Cable Safety Bottom Brackets or Select a different drum", vbApplicationModal + vbCritical, "CE Complaint hardware"
+        cmdMismatch.Enabled = False
+    Else
+        cmdMismatch.Enabled = True
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+
+Private Sub Grid1_SelChange()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Grid1_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+''''''''''Change in .NET''''''''''''''''
+'    If Grid1.TextMatrix(Grid1.Row, 13) <> "" And Grid1.Row > 0 Then
+    If Grid1.TextMatrix(Grid1.Row, 15) <> "" And Grid1.Row > 0 Then
+
+''''''''''END Change in .NET
+    
+    
+        If DBLValue(Grid1.TextMatrix(Grid1.Row, 2)) > 1 And _
+                DBLValue(Mid(Grid1.TextMatrix(Grid1.Row, 4), 1, Len(Grid1.TextMatrix(Grid1.Row, 4)) - 1)) <= 3.75 And _
+                DBLValue(Mid(Grid1.TextMatrix(Grid1.Row, 4), 1, Len(Grid1.TextMatrix(Grid1.Row, 4)) - 1)) <> 3.625 And _
+                DrWidth <= 170 And CouplNum = 0 Then
+            chkCenterPlates.Enabled = True
+            chkCenterPlates.Value = 0
+        Else
+            chkCenterPlates.Enabled = False
+            chkCenterPlates.Value = 1
+        End If
+        
+        If CECompliant = 1 Then
+            chkCenterPlates.Enabled = True
+            chkCenterPlates.Value = 1
+            chkCenterPlates.Enabled = False
+        End If
+        
+''''''''''Change in .NET''''''''''''''''
+'        PositionSprings (Grid1.TextMatrix(Grid1.Row, 13))
+        PositionSprings (Grid1.TextMatrix(Grid1.Row, 15))
+''''''''''END Change in .NET
+        
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Or mblnInFocus = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub chkMaxLen_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkMaxLen_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    aReg.OpenKey LocalMachine, "software\Richards-Wilcox Canada\Spring", True
+    If chkMaxLen.Value = 1 Then
+        aReg.WriteValue "UseChart", "1"
+    Else
+        aReg.WriteValue "UseChart", "0"
+    End If
+    aReg.CloseKey
+    
+    cmdgowires_Click
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkRound_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkRound_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    cmdGoWires.Enabled = True
+    If chkRound.Value = 0 And chkSquare.Value = 0 Then
+        cmdGoWires.Enabled = False
+''''''''''Change in .NET''''''''''''''''
+        FraRecalculate.Caption = ""
+    Else
+        FraRecalculate.Caption = "Click Recalculate"
+''''''''''END Change in .NET
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkSquare_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkSquare_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    cmdGoWires.Enabled = True
+    If chkRound.Value = 0 And chkSquare.Value = 0 Then
+        cmdGoWires.Enabled = False
+    End If
+''''''''''Change in .NET''''''''''''''''
+    FraRecalculate.Caption = "Click Recalculate"
+    
+''''''''''END Change in .NET
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkVar_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkVar_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    'If Val(cboMin.Text) = 10 Then varianceCalc
+''''''''''Change in .NET''''''''''''''''
+    FraRecalculate.Caption = "Click Recalculate"
+    
+''''''''''END Change in .NET
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cboMin_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboMin_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    cboMax.Clear
+
+''''''''''Change in .NET''''''''''''''''
+'    Dim Rr As Single, Z As Integer
+'    Rr = 250 - (cboMin.ItemData(cboMin.ListIndex) + 1)
+    Dim z As Integer
+    FraRecalculate.Caption = "Click Recalculate"
+''''''''''END Change in .NET
+    
+    For z = cboMin.ItemData(cboMin.ListIndex) + 1 To 250
+        cboMax.AddItem z
+        cboMax.ItemData(cboMax.NewIndex) = z
+    Next z
+    
+    For z = 0 To cboMax.ListCount - 1
+        If cboMin.ItemData(cboMin.ListIndex) + 80 = cboMax.ItemData(z) Then
+            cboMax.ListIndex = z
+        ElseIf cboMin.ItemData(cboMin.ListIndex) + 80 > 250 Then
+            cboMax.ListIndex = cboMax.ListCount - 1
+        End If
+    Next
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cboMin_KeyPress(KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboMin_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+''''''''''Change in .NET''''''''''''''''
+'    Beep
+'    KeyAscii = 0
+If Not IsNumeric(Chr(KeyAscii)) Then KeyAscii = 0
+''''''''''END Change in .NET
+    
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cboMax_KeyPress(KeyAscii As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cboMax_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+''''''''''Change in .NET''''''''''''''''
+'    Beep
+'    KeyAscii = 0
+If Not IsNumeric(Chr(KeyAscii)) Then KeyAscii = 0
+    
+''''''''''END Change in .NET
+    
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub cbostamping_KeyPress(KeyAscii As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cbostamping_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    Beep
+    KeyAscii = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+
+End Sub
+
+Private Sub cmdBack_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdBack_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    Dim lblnRoll As Boolean
+    Dim lstrMsg As String, lintBut As Integer, lintRep As Integer
+    Dim lsngRetValue As Single
+    
+    lstrMsg = "Are you sure you want to return to the previous screen?" & vbCrLf & _
+        "Your selections made on this screen might be lost."
+    lintBut = 4 '(yes,no)
+    
+    If frmGrid.txtSprNotes.Text <> "" Then
+        lstrMsg = "By returning to the previous screen you might loose the selections made on this screen." & vbCrLf & _
+            "Do you wish to clear the Springing Notes?"
+        lintBut = 3 '(yes,no,cancel)
+    End If
+    
+    lintRep = MsgBox(lstrMsg, vbApplicationModal + vbInformation + lintBut, "Return to the Previous Screen.")
+    
+    If lintRep = vbCancel Then Exit Sub
+    
+    If lintRep = vbYes Or (lintBut = 3 And lintRep = vbNo) Then
+        
+        If lintRep = vbYes Then frmGrid.txtSprNotes.Text = ""
+        
+        Erase varDoorData.arrSpringSolution
+        Erase varDoorData.arrSelectedSolution
+        lblnRoll = RollBack("Track", True)
+
+''''''''''Change in .NET''''''''''''''''
+        Call RollBack("Sections", True, "7-3321")
+        Call RollBack("Sections", True, "7-3322")
+        Call RollBack("Sections", True, "7-3323")
+        Call RollBack("Sections", True, "7-3324")
+        Call RollBack("Sections", True, "950-169")
+        Call RollBack("Sections", True, "950-168")
+        
+        'need to put back the the bracket to trigger part number 950-168/950-169
+        'since we are removing these parts(click 'Back' from spring cal) and on track screen these part selection(950-168/950-169) depends on the following routine
+        'if user decided to change the selection on track screen like from EU to ADCA, Clip angle w/CFD will be removed accordingly. see 'savevariable' routine(track)
+        If varDoorData.gblnCableFailure = True Then
+            If Not LiftType = "Low Headroom Rear Mount" Then
+                Call GetBottomRollBrackets(IIf(varDoorData.DblEndHinges = True, True, False))
+            End If
+        End If
+        
+        If varDoorData.gblnCableFailure = True Then
+            If varDoorData.Track.strMountType = "ADCA" Or varDoorData.Track.strMountType = "Clip angle" Then
+                
+                MsgBox "inside cable failure device routine"
+                'to avoid duplicate roller pn
+                Call RollBack("Sections", True, "322-102")
+                Call RollBack("Sections", True, "322-101")
+                Call RollBack("Sections", True, "322-104")
+                Call RollBack("Sections", True, "322-110")
+                Call RollBack("Sections", True, "950-094")
+                Call RollBack("Sections", True, "950-096")
+                Call RollBack("Sections", True, "950-097")
+                Call RollBack("Sections", True, "7-2239")
+                Call RollBack("Sections", True, "7-2240")
+                
+                lsngRetValue = GetRollerWgt(varDoorData.gblnNylonRollers, varDoorData.gintQuickClose, varDoorData.DblEndHinges, False)
+            End If
+        End If
+        
+''''''''''END Change in .NET
+        
+        Screen.MousePointer = vbHourglass
+        frmTrackEntry.Show
+        
+        If varDoorData.AuxillaryShaft = True Then DrWgt = DrWgt * 2   'double up the weight when go back to the track entry scren
+        
+        Unload Me
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+
+Private Sub cmdPrint_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdPrint_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+'    Dim lobjPrinterCnrl As PageSet.PrinterControl
+'    Set lobjPrinterCnrl = New PageSet.PrinterControl
+'    If Printer.Orientation <> 2 Then Printer.Orientation = 2 'lobjPrinterCnrl.ChngOrientationLandscape 'Printer.Orientation = 2
+'
+'    If Grid1.Visible = True Then
+'        Grid1.PrintGrid
+'    ElseIf Grid2.Visible = True Then
+'        Grid2.PrintGrid
+'    End If
+'
+'
+'    lobjPrinterCnrl.ReSetOrientation
+'    Set lobjPrinterCnrl = Nothing
+
+    Dim lstrPaperSize As String
+    
+    frmPrint.mstrReportName = "SpringingSolutions.rpt"
+    frmPrint.mstrTitle = "Springing Solutions"
+    
+    aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada", True 'opens or creates key
+    lstrPaperSize = aReg.ReadValue("PaperSize")
+    aReg.CloseKey
+    
+    If lstrPaperSize = "" Then
+        MsgBox "Default paper is not detected. Please run the Administration program to set the default print option.", vbApplicationModal + vbInformation + vbOKOnly, "Print Option"
+        Unload Me
+        Exit Sub
+    End If
+    
+    frmPrint.Show vbModal
+    Exit Sub
+
+Error_Handler:
+'    If Err.Number = 484 Or Err.Number = 482 Then 'printer isn't online, printer is jammed or out of paper
+'        MsgBox Err.Number & ":" & " Printer error!", vbCritical + vbApplicationModal, "Printer Error."
+'        Set lobjPrinterCnrl = Nothing
+'        Exit Sub
+'    End If
+'
+'    If Err.Number = 9 Then  'no printer installed
+'        MsgBox Err.Number & ":" & " Printer error!", vbCritical + vbApplicationModal, "Printer Error."
+'        Set lobjPrinterCnrl = Nothing
+'        Exit Sub
+'    End If
+'
+'    Set lobjPrinterCnrl = Nothing
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdSelect_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSelect_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim LS As Integer, LB As Integer, rs As Integer, RB As Integer, c As Boolean
+    LS = DBLValue(VSFlexGrid2.TextMatrix(1, 3))
+    rs = DBLValue(VSFlexGrid2.TextMatrix(2, 3))
+    LB = DBLValue(VSFlexGrid2.TextMatrix(3, 3))
+    RB = DBLValue(VSFlexGrid2.TextMatrix(4, 3))
+
+''''''''''Change in .NET''''''''''''''''
+    'make sure the solution fits on the shaft. For one spring and coupler.
+    Dim lsngAvSh As Single, lsngExSh As Single
+    lsngAvSh = GetAvailableShaftSpace(HWType, DrWidth, varDoorData.aDrum.strStamping, CouplNum, 6)
+    lsngExSh = ExtShaft(varDoorData.aDrum.strStamping, HWType)
+    If CouplNum > 0 And LS + rs + LB + RB = 1 Then
+'        KN - add DBLValue function to the below commented line on Dec 10/04
+'        If lsngAvSh - (20 - (lsngExSh / 2)) - (GetDrumWidth(varDoorData.aDrum.strStamping) + 3) <= varDoorData.arrSpringSolution(Grid1.TextMatrix(Grid1.Row, 14)).arrSpring(0).Length Then - 13 Type mismactch error
+        If lsngAvSh - (20 - (lsngExSh / 2)) - (GetDrumWidth(varDoorData.aDrum.strStamping) + 3) <= varDoorData.arrSpringSolution(DBLValue(Grid1.TextMatrix(Grid1.Row, 15))).arrSpring(0).Length Then
+            MsgBox "Since a coupler has been selected, this spring will not fit on the shaft." & vbCrLf & _
+                "Please select a different spring solution or go back to the Track Data Entry screen and deselect the coupler." & vbCrLf & vbCrLf & _
+                "NOTE: Returning to the previous screen will remove all currently selected spring solutions.", vbInformation + vbApplicationModal + vbOKOnly, "One Spring and Coupler."
+            Exit Sub
+        End If
+    End If
+''''''''''END Change in .NET
+    
+    If LS + rs + LB + RB > 1 Then
+        If LS + LB = 0 Or rs + RB = 0 Then
+            c = True
+            If MsgBox("The solution is unbalanced." & vbCrLf & "Are you sure you want to select it?", vbExclamation + vbYesNo, "Unbalanced Springs") = vbNo Then
+                Exit Sub
+            End If
+        End If
+    End If
+    
+    cmdMismatch.Enabled = True
+    If Grid1.Visible = True Then
+        If Grid1.Row > 0 Then
+        
+            'before 2.0.21 upgrade
+'            If c = False Then
+'                If MsgBox("Do you wish to select the solution for this chosen drum?", vbYesNo + vbQuestion, "Spring Selection") = vbNo Then Exit Sub
+'            End If
+
+            'after 2.0.21 upgrade
+            If c = False Then
+                If (varDoorData.aDrum.strStamping = "D400-144" Or varDoorData.aDrum.strStamping = "D400-54") And _
+                    (varDoorData.arrSpringSolution(Grid1.TextMatrix(Grid1.Row, 15)).CL > 25) And _
+                        cboCable.ItemData(cboCable.ListIndex) = 1 Then  '1/8" cable
+                        Dim strMsg As String
+                        strMsg = "For 25M cycles or more, 3/16" & Chr(34) & " cable should be used. For larger cables, reselect drum and cable. " & vbNewLine & vbNewLine & "Do you still wish to select the solution for this chosen drum and cable?"
+                        If MsgBox(strMsg, vbYesNo + vbQuestion, "Spring Selection") = vbNo Then Exit Sub
+                                    
+                Else
+                
+                    If MsgBox("Do you wish to select the solution for this chosen drum and cable?", vbYesNo + vbQuestion, "Spring Selection") = vbNo Then Exit Sub
+                End If
+                
+            End If
+
+''''''''''Change in .NET''''''''''''''''
+'            SelectSolution (Grid1.TextMatrix(Grid1.Row, 13))
+            SelectSolution (Grid1.TextMatrix(Grid1.Row, 15))
+''''''''''END Change in .NET
+            
+            If Grid1.Rows > 2 Then
+                Grid1.RemoveItem (Grid1.Row)
+                lblRecFound.Caption = Grid1.Rows - 1
+
+''''''''''Change in .NET''''''''''''''''
+'                PositionSprings (Grid1.TextMatrix(Grid1.Row, 13))
+                PositionSprings (Grid1.TextMatrix(Grid1.Row, 15))
+''''''''''END Change in .NET
+
+            Else
+                Call NoSolutionsFound
+            End If
+            cmdNext.Enabled = True
+        End If
+    ElseIf Grid2.Visible = True Then
+        If Grid2.Row > 0 Then
+            If c = False Then
+                If MsgBox("Do you wish to select this solution?", vbYesNo + vbQuestion, "Spring Selection") = vbNo Then Exit Sub
+            End If
+
+''''''''''Change in .NET''''''''''''''''
+'            SelectSolution (Grid2.TextMatrix(Grid2.Row, 13))
+            SelectSolution (Grid2.TextMatrix(Grid2.Row, 15))
+''''''''''END Change in .NET
+            
+            If Grid2.Rows > 2 Then
+                Grid2.RemoveItem (Grid2.Row)
+                lblRecFound.Caption = Grid2.Rows - 1
+
+''''''''''Change in .NET''''''''''''''''
+'                PositionSprings (Grid2.TextMatrix(Grid2.Row, 13))
+                PositionSprings (Grid2.TextMatrix(Grid2.Row, 15))
+''''''''''END Change in .NET
+
+            Else
+                If chk = True Then
+                    cmdMismatch.Caption = "&Mismatch"
+                    Call FoundSolutions
+                    Call EnableFrames
+                Else
+                    Call NoSolutionsFound
+                    Call EnableFrames
+                    cmdMismatch.Caption = "&Mismatch"
+                    'cmdMismatch.Enabled = False
+                End If
+            End If
+            cmdNext.Enabled = True
+        End If
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdgowires_Click() 'Go in Wires
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdgowires_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    
+
+''''''''''Change in .NET''''''''''''''''
+    If DBLValue(cboMax.Text) < DBLValue(cboMin.Text) Or DBLValue(cboMax.Text) < DBLValue(cboMin.Text) - 1 Or DBLValue(cboMax.Text) > 250 Then
+        MsgBox "Invalid Cycle Life range selected.", vbExclamation, "Invalid Cycle Life"
+        Exit Sub
+    End If
+    FraRecalculate.Caption = ""
+
+''''''''''END Change in .NET
+    
+    Dim blRound As Boolean, blSquare As Boolean
+    If Val(cboMin.Text) = 10 Then
+        aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\Spring", True 'opens or creates key
+        If chkVar.Value = 0 Then
+            aReg.WriteValue "StandardVariance", 0
+        Else
+            aReg.WriteValue "StandardVariance", 1
+        End If
+        aReg.CloseKey
+        
+    End If
+    
+    StandardVariance = chkVar.Value
+    
+    MinCycLife = Val(cboMin.Text)
+    MaxCycLife = Val(cboMax.Text)
+    
+    Me.Grid1.Visible = False
+    Me.Grid1.Clear
+    Me.Grid1.Rows = 2
+        
+    ReDim varDoorData.arrSpringSolution(0)
+    
+    If frmSprSolutions.chkRound = 1 Then
+        blRound = Springs("Round", True)
+    End If
+    If frmSprSolutions.chkSquare = 1 Then
+        If blRound = False Then
+            blSquare = Springs("Square", True)
+        Else
+            blSquare = Springs("Square", False)
+        End If
+    End If
+    
+    If blSquare = False And blRound = False Then
+        Call NoSolutionsFound
+    End If
+    If blSquare = True Or blRound = True Then
+        Call FoundSolutions
+    End If
+    
+    aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\Spring", True
+    If chkRound.Value = 1 Then
+        aReg.WriteValue "rdWire", 1
+    Else
+        aReg.WriteValue "rdWire", 0
+    End If
+    If chkSquare.Value = 1 Then
+        aReg.WriteValue "sqWire", 1
+    Else
+        aReg.WriteValue "sqWire", 0
+    End If
+    aReg.CloseKey
+    'Me.cmdNext.Enabled = False
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdMismatch_Click() 'mismatch
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdMismatch_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    Screen.MousePointer = vbHourglass
+    Dim Result As Boolean
+    If cmdMismatch.Caption = "&Mismatch" Then
+        Me.Grid2.Clear
+        Me.Grid2.Rows = 2
+
+''''''''''Change in .NET''''''''''''''''
+'        SpringIndex = IIf(Grid1.TextMatrix(Grid1.Rows - 1, 0) <> "", DBLValue(Grid1.TextMatrix(Grid1.Rows - 1, 13)) + 1, 0)
+        SpringIndex = IIf(Grid1.TextMatrix(Grid1.Rows - 1, 0) <> "", DBLValue(Grid1.TextMatrix(Grid1.Rows - 1, 15)) + 1, 0)
+
+''''''''''END Change in .NET
+        Dim i As Integer
+        Dim lblnMismatchExist As Boolean
+        lblnMismatchExist = False
+        
+        For i = 0 To UBound(varDoorData.arrSpringSolution())
+            If varDoorData.arrSpringSolution(i).Mismatched = True Then
+                lblnMismatchExist = True
+                cmdMismatch.Caption = "&Standard"
+                Call FoundSolutions
+                Call DisableFrames
+                Exit For
+            End If
+        Next
+        
+        If lblnMismatchExist = False Then
+            Result = MisMatch(IIf(chk = True, False, True))
+
+            If Result = False Then
+                Screen.MousePointer = vbDefault
+                MsgBox "No mismatched solutions are available.", vbApplicationModal + vbInformation + vbOKOnly, "Mismatch"
+                
+                Screen.MousePointer = vbHourglass
+                If chk = True Then
+                    Call FoundSolutions
+                Else
+                    Call NoSolutionsFound
+                End If
+            Else
+                cmdMismatch.Caption = "&Standard"
+                            
+                Call FoundSolutions
+                Call DisableFrames
+            End If
+        End If
+        
+'        Result = MisMatch(IIf(chk = True, False, True))
+'        If Result = False Then
+'            Screen.MousePointer = vbDefault
+'            MsgBox "No mismatched solutions are available.", vbApplicationModal + vbInformation + vbOKOnly, "Mismatch"
+'
+'            Screen.MousePointer = vbHourglass
+'            If chk = True Then
+'                Call FoundSolutions
+'            Else
+'                Call NoSolutionsFound
+'            End If
+'        Else
+'            cmdMismatch.Caption = "&Standard"
+'
+'            Call FoundSolutions
+'            Call DisableFrames
+'        End If
+    Else
+       
+        cmdMismatch.Caption = "&Mismatch"
+                
+        EnableFrames
+        If chk = True Then
+            Call FoundSolutions
+        Else
+            Call NoSolutionsFound
+        End If
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Public Sub cbostamping_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cbostamping_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    Dim blRound  As Boolean, blSquare As Boolean
+    Dim i As Integer
+    
+'    If Not isEmptySpringSolutionArray Then
+'        For i = 0 To UBound(varDoorData.arrSpringSolution())
+'            If varDoorData.arrSpringSolution(i).Selected = True Then
+'                Exit For
+'            End If
+'        Next
+'
+'        If i <= UBound(varDoorData.arrSpringSolution()) Then
+'            If MsgBox("Changing of drum will clear your previous spring selection." & vbCrLf & _
+'                "Do you wish to continue?", vbQuestion + vbApplicationModal + vbYesNo, "Clear Selection") = vbNo Then
+'
+'                Exit Sub
+'            End If
+'        End If
+'    End If
+    
+    lblRecFound.Caption = "0"
+    Me.Grid1.Clear
+    Me.Grid1.Rows = 2
+       
+    'Call stamping
+    varDoorData.aDrum.strStamping = cboStamping.Text
+    If varDoorData.aDrum.strStamping <> "" Then
+    
+        If LiftType = "High Lift" And varDoorData.sngHeadroom > 0 Then
+            Select Case varDoorData.aDrum.strStamping
+                Case "D400-54"
+                    HILIFT = IIf(HWType < 3, varDoorData.sngHeadroom - 7.49, varDoorData.sngHeadroom - 8.553)
+                Case "D525-54"
+                    HILIFT = IIf(HWType < 3, varDoorData.sngHeadroom - 8.844, varDoorData.sngHeadroom - 10.334)
+                Case "D575-120"
+                    HILIFT = IIf(HWType < 3, varDoorData.sngHeadroom - 10.219, varDoorData.sngHeadroom - 11.969)
+                Case "D6375-164"
+                    HILIFT = varDoorData.sngHeadroom - 17.75
+                Case "D800-120"
+                    HILIFT = varDoorData.sngHeadroom - 18.2
+                Case "D850-132"
+                    HILIFT = IIf(LiftType = "Vertical Lift", DrHgt * 2 + 22, DrHgt * 2 + 10)
+                Case "D1100-216"
+                    HILIFT = IIf(LiftType = "Vertical Lift", DrHgt * 2 + 10, DrHgt * 2 + 22)
+                Case Else
+                    HILIFT = 0
+            End Select
+        End If
+        
+        varDoorData.aDrum.strPN = GetDrumPartN("L")
+        lblPnLeft.Caption = varDoorData.aDrum.strPN
+        lblPnRight.Caption = GetDrumPartN("R")
+'        Call DrumInfoFromTable '2.0.14 - now user select the cable that updates the drum calculations
+        Call ShowPic
+        
+        blnCSBB = False
+        
+        cboCable.Clear
+        If varDoorData.gblnCableFailure = True Then
+            blnCSBB = cableSafetyFactor_5_1       'populate cables
+        Else
+            If CECompliant = 1 Then
+                blnCSBB = cableSafetyFactor_6_1   'populate cables
+            Else
+                blnCSBB = cableSafetyFactor_5_1   'populate cables
+            End If
+        End If
+        If blnCSBB = True And CECompliant = 1 Then
+            Call NoSolutionsFound
+'            MsgBox "Please return to the Sections Option screen and select the Cable Safety Bottom Brackets or Select a different drum", vbApplicationModal + vbCritical, "CE Complaint hardware"
+            cmdMismatch.Enabled = False
+        End If
+        If blnCSBB = True And CECompliant = 0 Then
+            Call NoSolutionsFound
+        End If
+               
+        'place the below code into the combo cable_click() event to trigger the springs solution
+        
+'        ReDim varDoorData.arrSpringSolution(0)
+'        If frmSprSolutions.chkRound = 1 Then
+'            blRound = Springs("Round", True)
+'        End If
+'        If frmSprSolutions.chkSquare = 1 Then
+'            If blRound = False Then
+'                blSquare = Springs("Square", True)
+'            Else
+'                blSquare = Springs("Square", False)
+'            End If
+'        End If
+'        If blSquare = False And blRound = False Then
+'            Call NoSolutionsFound
+'        End If
+'        If blSquare = True Or blRound = True Then
+'            Call FoundSolutions
+'        End If
+    Else
+        If IsUnrestricted = True Then 'unrestricted
+            Call NoSolutionsFound
+            cmdNext.Enabled = True
+        End If
+    End If
+    'cmdNext.Enabled = False
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdNext_Click() 'selection
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdNext_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    'Screen.MousePointer = vbHourglass
+    
+    ModTracks.Calculate
+    
+    If isEmptySpringSolutionArray And isEmptySelectedSpringSolutionArray Then
+        If IsUnrestricted = True Then frmShipInstructions.Show
+    Else
+        If Not isEmptySelectedSpringSolutionArray Then
+            frmSprSelection.Show
+        Else
+            If IsUnrestricted = True Then frmShipInstructions.Show
+        End If
+    End If
+    
+
+''''''''''Change in .NET''''''''''''''''
+'    varDoorData.OneCenterPlatePerSpring = IIf(chkCenterPlates.Value = 1, True, False)
+
+''''''''''END Change in .NET
+    
+    
+    Me.Hide
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Dim yy As Integer
+    Me.Move (MDIForm1.Width / 2 - Me.Width / 2) - 100, (MDIForm1.Height / 2 - Me.Height / 2) - 400
+    'PositionObjects
+    For yy = 0 To 140
+        cboMin.AddItem yy + 10
+        cboMin.ItemData(cboMin.NewIndex) = yy + 10
+    Next yy
+    
+    cboMin.ListIndex = 0
+    
+    aReg.OpenKey LocalMachine, "software\Richards-Wilcox Canada\Spring", True
+    chkRound.Value = DBLValue(aReg.ReadValue("rdWire"))
+    chkSquare.Value = DBLValue(aReg.ReadValue("sqWire"))
+    aReg.CloseKey
+    
+    If chkRound.Value = 0 And chkSquare.Value = 0 Then
+        chkRound.Value = 1
+    End If
+    
+    aReg.OpenKey LocalMachine, "software\Richards-Wilcox Canada\Spring", True
+    StandardVariance = DBLValue(aReg.ReadValue("StandardVariance"))
+    aReg.CloseKey
+    
+    Me.chkVar.Value = StandardVariance
+    aReg.OpenKey LocalMachine, "software\Richards-Wilcox Canada\Spring", True
+    Dim lstrMaxLen As String
+    Dim lstrUseChart As String
+    lstrUseChart = aReg.ReadValue("UseChart")
+    lstrMaxLen = aReg.ReadValue("AllowOverrideMaxLen")
+    aReg.CloseKey
+    
+    If lstrMaxLen = "1" Then
+        chkMaxLen.Enabled = True
+        If lstrUseChart = "1" Or lstrUseChart = "" Then
+            chkMaxLen.Value = 1
+        Else
+            chkMaxLen.Value = 0
+        End If
+    Else
+        chkMaxLen.Value = 1
+        chkMaxLen.Enabled = False
+    End If
+
+''''''''''Change in .NET''''''''''''''''
+    If IsModeComplex = False Then
+        Label31.Visible = False
+        lblRevs.Visible = False
+        lblDrumDia.Top = lblRevs.Top
+        chkleft.Top = lblDia.Top
+        chkright.Top = lblPnLeft.Top
+        Label38.Top = lblPnRight.Top
+                
+        lblDia.Top = lblDrumDia.Top
+        lblPnLeft.Top = chkleft.Top
+        lblPnRight.Top = chkright.Top
+        lblPrice.Top = Label38.Top
+    End If
+''''''''''END Change in .NET
+    
+    If DrWgt < 100 Then Me.cmdMismatch.Enabled = False
+    cmdNext.Enabled = False
+    LoadHelpText Me
+    MousePos1.Init Me
+    mblnInFocus = True
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Unload()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    SpringIndex = 0
+    chk = False
+
+    ReDim varDoorData.arrSpringSolution(0)
+    Erase varDoorData.arrSpringSolution
+    varDoorData.aDrum.CableLen = 0
+    varDoorData.aDrum.Circ = 0
+    varDoorData.aDrum.DrumDia = 0
+    varDoorData.aDrum.FMA = 0
+    varDoorData.aDrum.HMA = 0
+    varDoorData.aDrum.IPPT = 0
+    varDoorData.aDrum.Price = 0
+    varDoorData.aDrum.REVS = 0
+    varDoorData.aDrum.RoR = 0
+    varDoorData.aDrum.sngMaxHgt = 0
+    varDoorData.aDrum.sngMaxWeight = 0
+    varDoorData.aDrum.strDescr = ""
+    varDoorData.aDrum.strPN = ""
+    varDoorData.aDrum.strStamping = ""
+    varDoorData.aDrum.TTDD = 0
+    varDoorData.aDrum.TTDU = 0
+    
+    MaxSpringLength = 0
+    Winds = 0
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Grid1_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Grid1_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If DBLValue(Grid1.TextMatrix(Grid1.Row, 2)) > 1 And _
+            DBLValue(Mid(Grid1.TextMatrix(Grid1.Row, 4), 1, Len(Grid1.TextMatrix(Grid1.Row, 4)) - 1)) <= 3.75 And _
+            DBLValue(Mid(Grid1.TextMatrix(Grid1.Row, 4), 1, Len(Grid1.TextMatrix(Grid1.Row, 4)) - 1)) <> 3.625 And _
+            DrWidth <= 170 And CouplNum = 0 Then
+        chkCenterPlates.Enabled = True
+        chkCenterPlates.Value = 0
+    Else
+        chkCenterPlates.Enabled = False
+        chkCenterPlates.Value = 1
+    End If
+    
+    If CECompliant = 1 Then
+        chkCenterPlates.Enabled = True
+        chkCenterPlates.Value = 1
+        chkCenterPlates.Enabled = False
+    End If
+        
+''''''''''Change in .NET''''''''''''''''
+'    If Grid1.TextMatrix(Grid1.Row, 13) <> "" And Grid1.Row > 0 Then PositionSprings (Grid1.TextMatrix(Grid1.Row, 13))
+    If Grid1.TextMatrix(Grid1.Row, 15) <> "" And Grid1.Row > 0 Then PositionSprings (Grid1.TextMatrix(Grid1.Row, 15))
+
+''''''''''END Change in .NET
+    
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Grid1_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Grid1_MouseDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Button = vbRightButton Then PopupMenu MenuSortDeleteShow
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Grid2_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Grid2_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+''''''''''Change in .NET''''''''''''''''
+'    If Grid2.TextMatrix(Grid2.Row, 13) <> "" And Grid2.Row > 0 Then
+
+    If Grid2.TextMatrix(Grid2.Row, 15) <> "" And Grid2.Row > 0 Then
+''''''''''END Change in .NET
+    
+        If DBLValue(Grid1.TextMatrix(Grid1.Row, 2)) > 1 And _
+                DBLValue(Mid(Grid1.TextMatrix(Grid1.Row, 4), 1, Len(Grid1.TextMatrix(Grid1.Row, 4)) - 1)) <= 3.75 And _
+                DBLValue(Mid(Grid1.TextMatrix(Grid1.Row, 4), 1, Len(Grid1.TextMatrix(Grid1.Row, 4)) - 1)) <> 3.625 And _
+                DrWidth <= 170 And CouplNum = 0 Then
+            chkCenterPlates.Enabled = True
+            chkCenterPlates.Value = 0
+        Else
+            chkCenterPlates.Enabled = False
+            chkCenterPlates.Value = 1
+        End If
+        
+        If CECompliant = 1 Then
+            chkCenterPlates.Enabled = True
+            chkCenterPlates.Value = 1
+            chkCenterPlates.Enabled = False
+        End If
+        
+''''''''''Change in .NET''''''''''''''''
+'        PositionSprings (Grid2.TextMatrix(Grid2.Row, 13))
+        PositionSprings (Grid2.TextMatrix(Grid2.Row, 15))
+
+''''''''''END Change in .NET
+        
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Sub varianceCalc()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".varianceCalc()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Val(cboMin.Text) = 10 Then
+        aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\Spring", True 'opens or creates key
+        If chkVar.Value = 0 Then
+            aReg.WriteValue "StandardVariance", "0"
+        Else
+            aReg.WriteValue "StandardVariance", "1"
+        End If
+        aReg.CloseKey
+        
+        StandardVariance = chkVar.Value
+        If Val(cboMin.Text) = 10 Then cmdgowires_Click
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+''''''''''Change in .NET''''''''''''''''
+
+'never used.
+'Private Sub SetColours()
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetColours()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    chkRound.BackColor = fraWires.BackColor
+'    chkSquare.BackColor = fraWires.BackColor
+'
+'    Label67.BackColor = fraCycleLife.BackColor
+'    Label68.BackColor = fraCycleLife.BackColor
+'    Label66.BackColor = fraCycleLife.BackColor
+'    'Label57.BackColor = fraCycleLife.BackColor
+'    chkVar.BackColor = fraCycleLife.BackColor
+'
+'    Label13.BackColor = fraDrums.BackColor
+'    lblDrumMaxWeight.BackColor = fraDrums.BackColor
+'    lblDrumMaxHeight.BackColor = fraDrums.BackColor
+'    lblDrumDia.BackColor = fraDrums.BackColor
+'    lblDrWght.BackColor = fraDrums.BackColor
+'    lblDrHgt.BackColor = fraDrums.BackColor
+'    Label31.BackColor = fraDrums.BackColor
+'    Label19.BackColor = fraDrums.BackColor
+'    lblRevs.BackColor = fraDrums.BackColor
+'    lblIPPT.BackColor = fraDrums.BackColor
+'    lblDia.BackColor = fraDrums.BackColor
+'    Label38.BackColor = fraDrums.BackColor
+'    lblPnRight.BackColor = fraDrums.BackColor
+'    chkleft.BackColor = fraDrums.BackColor
+'    chkright.BackColor = fraDrums.BackColor
+'    lblPnLeft.BackColor = fraDrums.BackColor
+'    lblPrice.BackColor = fraDrums.BackColor
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'
+'End Sub
+''''''''''END Change in .NET
+
+Private Sub EnableFrames()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".EnableFrames()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    fraDrums.Enabled = True
+    fraWires.Enabled = True
+    fraCycleLife.Enabled = True
+    fraMaxSprLen.Enabled = True
+    chkRound.Enabled = True
+    chkSquare.Enabled = True
+    chkVar.Enabled = True
+    chkMaxLen.Enabled = True
+    'cmdGoCLife.Enabled = True
+    cmdGoWires.Enabled = True
+    cboMin.Enabled = True
+    cboMax.Enabled = True
+    cboStamping.Enabled = True
+    cboCable.Enabled = True
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+Private Sub DisableFrames()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".DisableFrames()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    fraDrums.Enabled = False
+    fraWires.Enabled = False
+    fraCycleLife.Enabled = False
+    fraMaxSprLen.Enabled = False
+    chkRound.Enabled = False
+    chkSquare.Enabled = False
+    chkVar.Enabled = False
+    chkMaxLen.Enabled = False
+    'cmdGoCLife.Enabled = False
+    cmdGoWires.Enabled = False
+    cboMin.Enabled = False
+    cboMax.Enabled = False
+    cboStamping.Enabled = False
+    cboCable.Enabled = False
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub GridTitles()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GridTitles()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Grid1.Row = 0
+    If IsModeComplex = False Then
+
+''''''''''Change in .NET''''''''''''''''
+'        Grid1.ColHidden(8) = True
+'        Grid1.ColHidden(9) = True
+'        Grid1.ColHidden(10) = True
+'        Grid2.ColHidden(8) = True
+'        Grid2.ColHidden(9) = True
+'        Grid2.ColHidden(10) = True
+        
+        Grid1.ColHidden(9) = True
+        Grid1.ColHidden(10) = True 'replace wound spring length
+        Grid1.ColHidden(11) = True
+        Grid2.ColHidden(9) = True
+        Grid2.ColHidden(10) = True
+        Grid2.ColHidden(11) = True
+
+''''''''''END Change in .NET
+    End If
+    
+    Grid1.Col = 0
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Part Number"
+    Grid1.ColWidth(0) = 0
+
+    Grid1.Col = 1
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Wire Size"
+    
+    Grid1.Col = 2
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Qty"
+    
+    Grid1.Col = 3
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Cycle Life"
+    
+    Grid1.Col = 4
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Coil ID"
+    
+    Grid1.Col = 5
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Length"
+
+''''''''''Change in .NET''''''''''''''''
+'    Grid1.Col = 6
+'    Grid1.CellAlignment = 4
+'    Grid1.Text = "Turns"
+'
+'    Grid1.Col = 7
+'    Grid1.CellAlignment = 4
+'    Grid1.Text = "IPPT"
+'
+'    Grid1.Col = 8
+'    Grid1.CellAlignment = 4
+'    Grid1.Text = "Active Coils"
+'
+'    Grid1.Col = 9
+'    Grid1.CellAlignment = 4
+'    Grid1.Text = "Dead Coils"
+'
+'    Grid1.Col = 10
+'    Grid1.CellAlignment = 4
+'    Grid1.Text = "Torten"
+'
+'    Grid1.Col = 11
+'    Grid1.CellAlignment = 4
+'    Grid1.Text = "Wire Type"
+'
+'    Grid1.Col = 12
+'    Grid1.CellAlignment = 4
+'    Grid1.Text = "Price"
+'
+'    Grid1.Col = 13
+'    Grid1.CellAlignment = 4
+'    Grid1.Text = "SprIndex"
+
+    Grid1.Col = 6
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Wt per"
+    
+    Grid1.Col = 7
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Turns"
+    
+    Grid1.Col = 8
+    Grid1.CellAlignment = 4
+    Grid1.Text = "IPPT"
+    
+    Grid1.Col = 9
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Active Coils"
+    
+    Grid1.Col = 10
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Dead Coils"
+    
+    Grid1.Col = 11
+    Grid1.CellAlignment = 4
+    Grid1.Text = "IP/spg" 'torten
+    
+    Grid1.Col = 12
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Wound Length"
+    
+    Grid1.Col = 13
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Type" 'wire type
+    
+    Grid1.Col = 14
+    Grid1.CellAlignment = 4
+    Grid1.Text = "Price"
+
+    Grid1.Col = 15
+    Grid1.CellAlignment = 4
+    Grid1.Text = "SprIndex"
+
+''''''''''END Change in .NET
+    
+
+    Grid2.Row = 0
+        
+    Grid2.Col = 0
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Part Number"
+    Grid2.ColWidth(0) = 0
+
+    Grid2.Col = 1
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Wire Size"
+    
+    Grid2.Col = 2
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Qty"
+    
+    Grid2.Col = 3
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Cycle Life"
+    
+    Grid2.Col = 4
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Coil ID"
+    
+    Grid2.Col = 5
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Length"
+
+''''''''''Change in .NET''''''''''''''''
+'    Grid2.Col = 6
+'    Grid2.CellAlignment = 4
+'    Grid2.Text = "Turns"
+'
+'    Grid2.Col = 7
+'    Grid2.CellAlignment = 4
+'    Grid2.Text = "IPPT"
+'
+'    Grid2.Col = 8
+'    Grid2.CellAlignment = 4
+'    Grid2.Text = "Active Coils"
+'
+'    Grid2.Col = 9
+'    Grid2.CellAlignment = 4
+'    Grid2.Text = "Dead Coils"
+'
+'    Grid2.Col = 10
+'    Grid2.CellAlignment = 4
+'    Grid2.Text = "Torten"
+'
+'    Grid2.Col = 11
+'    Grid2.CellAlignment = 4
+'    Grid2.Text = "Wire Type"
+'
+'    Grid2.Col = 12
+'    Grid2.CellAlignment = 4
+'    Grid2.Text = "Price"
+'
+'    Grid2.Col = 13
+'    Grid2.CellAlignment = 4
+'    Grid2.Text = "SprIndex"
+'    Grid2.ColWidth(13) = 0
+'    Grid1.ColWidth(13) = 0
+
+    Grid2.Col = 6
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Wt per"
+
+    Grid2.Col = 7
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Turns"
+    
+    Grid2.Col = 8
+    Grid2.CellAlignment = 4
+    Grid2.Text = "IPPT"
+    
+    Grid2.Col = 9
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Active Coils"
+    
+    Grid2.Col = 10
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Dead Coils"
+    
+    Grid2.Col = 11
+    Grid2.CellAlignment = 4
+    Grid2.Text = "IP/spg" 'Torten
+    
+    Grid2.Col = 12
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Wound Length"
+    
+    Grid2.Col = 13
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Type" 'wire type
+    
+    Grid2.Col = 14
+    Grid2.CellAlignment = 4
+    Grid2.Text = "Price"
+    
+    Grid2.Col = 15
+    Grid2.CellAlignment = 4
+    Grid2.Text = "SprIndex"
+    Grid2.ColWidth(15) = 0
+    Grid1.ColWidth(15) = 0
+
+''''''''''END Change in .NET
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+''''''''''Change in .NET''''''''''''''''
+'Private Sub ResizeCol()
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ResizeCol()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim Rr As Integer
+'    For Rr = 0 To Grid1.Cols - 1
+'        Grid1.Col = Rr
+'
+'        If IsModeComplex = True Then
+'            If Rr = 1 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 11
+'            End If
+'
+'            If Rr = 9 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 17.7
+'            End If
+'
+'            If Rr = 3 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 9
+'            End If
+'
+'            If Rr = 8 Or Rr = 4 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 13.5
+'            End If
+'
+'            If Rr = 11 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 10
+'            End If
+'
+'            If Rr = 6 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 15
+'            End If
+'
+'            If Rr = 10 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 12.4
+'            End If
+'
+'            If Rr = 12 Or Rr = 7 Or Rr = 2 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 12.6
+'            End If
+'
+'            If Rr = 5 Then 'Or Rr = 13
+'                Grid1.ColWidth(Rr) = Grid1.Width / 10 '.3
+'            End If
+'
+'            If Not (Grid1.RowIsVisible(Grid1.Rows - 1)) Then
+'                If Rr = 2 Then
+'                    Grid1.ColWidth(Rr) = Grid1.Width / 14
+'                End If
+'                If Rr = 3 Then
+'                    Grid1.ColWidth(Rr) = Grid1.Width / 11
+'                End If
+'            End If
+'
+'        Else
+'            If Rr = 1 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 9
+'            End If
+'
+'            If Rr = 9 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 17.7
+'            End If
+'
+'            If Rr = 3 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 8
+'            End If
+'
+'            If Rr = 8 Or Rr = 4 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 10
+'            End If
+'
+'            If Rr = 11 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 8
+'            End If
+'
+'            If Rr = 6 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 14
+'            End If
+'
+'            If Rr = 10 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 12.4
+'            End If
+'
+'            If Rr = 12 Or Rr = 7 Or Rr = 2 Then
+'                Grid1.ColWidth(Rr) = Grid1.Width / 10
+'            End If
+'
+'            If Rr = 5 Then 'Or Rr = 13
+'                Grid1.ColWidth(Rr) = Grid1.Width / 10 '.3
+'            End If
+'        End If
+'    Next Rr
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'
+'End Sub
+'Private Sub ResizeColMM()
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ResizeColMM()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim Rr As Integer
+'    For Rr = 0 To Grid2.Cols - 1
+'        Grid2.Col = Rr
+'        If IsModeComplex = True Then
+'            If Rr = 1 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 11
+'            End If
+'
+'            If Rr = 9 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 17.7
+'            End If
+'
+'            If Rr = 3 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 9
+'            End If
+'
+'            If Rr = 8 Or Rr = 4 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 13.5
+'            End If
+'
+'            If Rr = 11 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 10
+'            End If
+'
+'            If Rr = 6 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 15
+'            End If
+'
+'            If Rr = 10 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 12.4
+'            End If
+'
+'            If Rr = 12 Or Rr = 7 Or Rr = 2 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 12.6
+'            End If
+'
+'            If Rr = 5 Then 'Or Rr = 13
+'                Grid2.ColWidth(Rr) = Grid2.Width / 10 '.3
+'            End If
+'
+'            If Not (Grid2.RowIsVisible(Grid2.Rows - 1)) Then
+'                If Rr = 2 Then
+'                    Grid2.ColWidth(Rr) = Grid2.Width / 14
+'                End If
+'                If Rr = 3 Then
+'                    Grid2.ColWidth(Rr) = Grid2.Width / 11
+'                End If
+'            End If
+'
+'        Else
+'            If Rr = 1 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 9
+'            End If
+'
+'            If Rr = 9 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 17.7
+'            End If
+'
+'            If Rr = 3 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 8
+'            End If
+'
+'            If Rr = 8 Or Rr = 4 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 10
+'            End If
+'
+'            If Rr = 11 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 8
+'            End If
+'
+'            If Rr = 6 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 14
+'            End If
+'
+'            If Rr = 10 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 12.4
+'            End If
+'
+'            If Rr = 12 Or Rr = 7 Or Rr = 2 Then
+'                Grid2.ColWidth(Rr) = Grid2.Width / 10
+'            End If
+'
+'            If Rr = 5 Then 'Or Rr = 13
+'                Grid2.ColWidth(Rr) = Grid2.Width / 10 '.3
+'            End If
+'        End If
+'    Next Rr
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'
+'End Sub
+Private Sub ResizeCol()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ResizeCol()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If IsModeComplex = True Then
+        Grid1.ColWidth(1) = Grid1.Width / 11
+        Grid1.ColWidth(2) = Grid1.Width / 17
+        Grid1.ColWidth(3) = Grid1.Width / 12
+        Grid1.ColWidth(4) = Grid1.Width / 13.5
+        Grid1.ColWidth(5) = Grid1.Width / 12
+        Grid1.ColWidth(6) = Grid1.Width / 14
+        Grid1.ColWidth(7) = Grid1.Width / 15
+        Grid1.ColWidth(8) = Grid1.Width / 13
+        Grid1.ColWidth(9) = Grid1.Width / 13.6
+        Grid1.ColWidth(10) = Grid1.Width / 17.7
+        Grid1.ColWidth(11) = Grid1.Width / 11.4
+        Grid1.ColWidth(12) = Grid1.Width / 9 'wound spring length - match solutions
+        Grid1.ColWidth(13) = Grid1.Width / 14
+        Grid1.ColWidth(14) = Grid1.Width / 13
+        
+    Else
+        Grid1.ColWidth(1) = Grid1.Width / 9
+        Grid1.ColWidth(2) = Grid1.Width / 11
+        Grid1.ColWidth(3) = Grid1.Width / 9
+        Grid1.ColWidth(4) = Grid1.Width / 10
+        Grid1.ColWidth(5) = Grid1.Width / 10
+        Grid1.ColWidth(6) = Grid1.Width / 12
+        Grid1.ColWidth(7) = Grid1.Width / 14
+        Grid1.ColWidth(8) = Grid1.Width / 10
+        Grid1.ColWidth(10) = Grid1.Width / 9 'wound spring length - match solutions
+        Grid1.ColWidth(12) = Grid1.Width / 8
+        Grid1.ColWidth(13) = Grid1.Width / 10
+    End If
+    
+    If Not (Grid1.RowIsVisible(Grid1.Rows - 1)) Then
+        If IsModeComplex = True Then
+            Grid1.ColWidth(2) = Grid1.Width / 18
+            Grid1.ColWidth(3) = Grid1.Width / 13
+            Grid1.ColWidth(14) = Grid1.Width / 15.5
+        Else
+            Grid1.ColWidth(2) = Grid1.Width / 12
+            Grid1.ColWidth(3) = Grid1.Width / 10
+        End If
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+Private Sub ResizeColMM()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ResizeColMM()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If IsModeComplex = True Then
+        Grid2.ColWidth(1) = Grid2.Width / 11
+        Grid2.ColWidth(2) = Grid2.Width / 17
+        Grid2.ColWidth(3) = Grid2.Width / 12
+        Grid2.ColWidth(4) = Grid2.Width / 13.5
+        Grid2.ColWidth(5) = Grid2.Width / 12
+        Grid2.ColWidth(6) = Grid2.Width / 11
+        Grid2.ColWidth(7) = Grid2.Width / 15
+        Grid2.ColWidth(8) = Grid2.Width / 13
+        Grid2.ColWidth(9) = Grid2.Width / 13.6
+        Grid2.ColWidth(10) = Grid2.Width / 17.7
+        Grid2.ColWidth(11) = Grid2.Width / 13.4
+        Grid2.ColWidth(12) = Grid2.Width / 9  'wound spring length - mismatch solutions
+        Grid2.ColWidth(13) = Grid2.Width / 14
+        Grid2.ColWidth(14) = Grid2.Width / 13
+        
+    Else
+        Grid2.ColWidth(1) = Grid2.Width / 9
+        Grid2.ColWidth(2) = Grid2.Width / 11
+        Grid2.ColWidth(3) = Grid2.Width / 9
+        Grid2.ColWidth(4) = Grid2.Width / 10
+        Grid2.ColWidth(5) = Grid2.Width / 10
+        Grid2.ColWidth(6) = Grid2.Width / 12
+        Grid2.ColWidth(7) = Grid2.Width / 14
+        Grid2.ColWidth(8) = Grid2.Width / 10
+        Grid1.ColWidth(10) = Grid1.Width / 9 'wound spring length - mismatch solutions
+        Grid2.ColWidth(12) = Grid2.Width / 8
+        Grid2.ColWidth(13) = Grid2.Width / 10
+    End If
+    
+    If Not (Grid2.RowIsVisible(Grid2.Rows - 1)) Then
+        If IsModeComplex = True Then
+            Grid2.ColWidth(2) = Grid2.Width / 18
+            Grid2.ColWidth(3) = Grid2.Width / 13
+            Grid2.ColWidth(14) = Grid2.Width / 15.5
+        Else
+            Grid2.ColWidth(2) = Grid2.Width / 12
+            Grid2.ColWidth(3) = Grid2.Width / 10
+        End If
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+''''''''''END Change in .NET
+
+Public Sub SelectSolution(ByVal pintInd As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SelectSolution()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim LS As Integer, Ws As Single, LB As Integer, rs As Integer, RB As Integer
+    Dim i As Integer, j As Integer
+    LS = DBLValue(VSFlexGrid2.TextMatrix(1, 3))
+    rs = DBLValue(VSFlexGrid2.TextMatrix(2, 3))
+    LB = DBLValue(VSFlexGrid2.TextMatrix(3, 3))
+    RB = DBLValue(VSFlexGrid2.TextMatrix(4, 3))
+    
+    For i = 0 To LS - 1
+        varDoorData.arrSpringSolution(pintInd).arrSpring(i).Left = True
+    Next
+
+    If varDoorData.arrSpringSolution(pintInd).Mismatched = True Then
+        Ws = DBLValue(VSFlexGrid2.TextMatrix(3, 2))
+        For i = 0 To LB - 1
+            If varDoorData.arrSpringSolution(pintInd).arrSpring(i + LS + rs).WireSize = Ws Then
+                varDoorData.arrSpringSolution(pintInd).arrSpring(i + LS + rs).Left = True
+            End If
+        Next
+    End If
+    
+    'previous idea. (still needed)
+    varDoorData.arrSpringSolution(pintInd).Selected = True
+    
+    'new idea: transfer the selected solution to a separate array.
+    If isEmptySelectedSpringSolutionArray = True Then
+        i = 0
+    Else
+        i = UBound(varDoorData.arrSelectedSolution) + 1
+    End If
+    ReDim Preserve varDoorData.arrSelectedSolution(i)
+
+    varDoorData.arrSelectedSolution(i).strDrumStamping = varDoorData.aDrum.strStamping
+    varDoorData.arrSelectedSolution(i).strDrumPN = varDoorData.aDrum.strPN
+    varDoorData.arrSelectedSolution(i).strDrumDescr = varDoorData.aDrum.strDescr
+    varDoorData.arrSelectedSolution(i).sngMaxHgt = varDoorData.aDrum.sngMaxHgt
+    varDoorData.arrSelectedSolution(i).sngMaxWeight = varDoorData.aDrum.sngMaxWeight
+    varDoorData.arrSelectedSolution(i).sngMaxHiLift = varDoorData.sngMaxHiLift
+    varDoorData.arrSelectedSolution(i).sngDrumDia = varDoorData.aDrum.DrumDia
+    varDoorData.arrSelectedSolution(i).sngDrumPrice = varDoorData.aDrum.Price
+    varDoorData.arrSelectedSolution(i).sngTTDD = varDoorData.aDrum.TTDD
+    varDoorData.arrSelectedSolution(i).sngTTDU = varDoorData.aDrum.TTDU
+    varDoorData.arrSelectedSolution(i).sngFMA = varDoorData.aDrum.FMA
+    varDoorData.arrSelectedSolution(i).sngHMA = varDoorData.aDrum.HMA
+    varDoorData.arrSelectedSolution(i).sngIPPT = varDoorData.aDrum.IPPT
+    varDoorData.arrSelectedSolution(i).sngCableLen = varDoorData.aDrum.CableLen
+    
+    varDoorData.arrSelectedSolution(i).sngREVS = varDoorData.aDrum.REVS
+    varDoorData.arrSelectedSolution(i).sngRoR = varDoorData.aDrum.RoR
+    varDoorData.arrSelectedSolution(i).sngCirc = varDoorData.aDrum.Circ
+    
+    varDoorData.arrSelectedSolution(i).sngShaftSpace = varDoorData.arrSpringSolution(pintInd).ShaftSpace
+    varDoorData.arrSelectedSolution(i).sngSpringCL = varDoorData.arrSpringSolution(pintInd).CL
+    varDoorData.arrSelectedSolution(i).sngSpringCoilID = varDoorData.arrSpringSolution(pintInd).CoilID
+    varDoorData.arrSelectedSolution(i).sngSpringDC = varDoorData.arrSpringSolution(pintInd).DC
+    varDoorData.arrSelectedSolution(i).strSpringWireType = varDoorData.arrSpringSolution(pintInd).WireType
+    varDoorData.arrSelectedSolution(i).blnMismatched = varDoorData.arrSpringSolution(pintInd).Mismatched
+
+''''''''''Change in .NET''''''''''''''''
+    varDoorData.arrSelectedSolution(i).OneCenterPlatePerSpring = IIf(chkCenterPlates.Value = 1, True, False)
+
+''''''''''END Change in .NET
+    
+    
+    ReDim varDoorData.arrSelectedSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(pintInd).arrSpring))
+    For j = 0 To UBound(varDoorData.arrSpringSolution(pintInd).arrSpring)
+        varDoorData.arrSelectedSolution(i).arrSpring(j).AC = varDoorData.arrSpringSolution(pintInd).arrSpring(j).AC
+        varDoorData.arrSelectedSolution(i).arrSpring(j).IPPT = varDoorData.arrSpringSolution(pintInd).arrSpring(j).IPPT
+        varDoorData.arrSelectedSolution(i).arrSpring(j).Left = varDoorData.arrSpringSolution(pintInd).arrSpring(j).Left
+        varDoorData.arrSelectedSolution(i).arrSpring(j).Length = varDoorData.arrSpringSolution(pintInd).arrSpring(j).Length
+        varDoorData.arrSelectedSolution(i).arrSpring(j).Price = varDoorData.arrSpringSolution(pintInd).arrSpring(j).Price
+        varDoorData.arrSelectedSolution(i).arrSpring(j).PVC = varDoorData.arrSpringSolution(pintInd).arrSpring(j).PVC
+        varDoorData.arrSelectedSolution(i).arrSpring(j).strPN = varDoorData.arrSpringSolution(pintInd).arrSpring(j).strPN
+        varDoorData.arrSelectedSolution(i).arrSpring(j).WireSize = varDoorData.arrSpringSolution(pintInd).arrSpring(j).WireSize
+        varDoorData.arrSelectedSolution(i).arrSpring(j).Turns = varDoorData.arrSpringSolution(pintInd).arrSpring(j).Turns
+        varDoorData.arrSelectedSolution(i).arrSpring(j).WoundSpringLength = varDoorData.arrSpringSolution(pintInd).arrSpring(j).WoundSpringLength
+        
+    Next
+    
+    Exit Sub
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub PositionSprings(ByVal lintInd As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".PositionSprings()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim NSpr As Integer
+    Dim Small As Integer
+    Dim Big As Integer
+    'sets the default number of left and right wound springs
+    
+    NSpr = UBound(varDoorData.arrSpringSolution(lintInd).arrSpring()) + 1
+    'wiresize
+    
+    VSFlexGrid2.TextMatrix(1, 2) = varDoorData.arrSpringSolution(lintInd).arrSpring(0).WireSize
+    VSFlexGrid2.TextMatrix(2, 2) = varDoorData.arrSpringSolution(lintInd).arrSpring(0).WireSize
+    VSFlexGrid2.TextMatrix(3, 2) = IIf(varDoorData.arrSpringSolution(lintInd).Mismatched = True, varDoorData.arrSpringSolution(lintInd).arrSpring(UBound(varDoorData.arrSpringSolution(lintInd).arrSpring())).WireSize, "")
+    VSFlexGrid2.TextMatrix(4, 2) = IIf(varDoorData.arrSpringSolution(lintInd).Mismatched = True, varDoorData.arrSpringSolution(lintInd).arrSpring(UBound(varDoorData.arrSpringSolution(lintInd).arrSpring())).WireSize, "")
+    
+    'PN
+    VSFlexGrid2.TextMatrix(1, 0) = varDoorData.arrSpringSolution(lintInd).arrSpring(0).strPN
+    VSFlexGrid2.TextMatrix(2, 0) = Swap(varDoorData.arrSpringSolution(lintInd).arrSpring(0).strPN, True)
+    VSFlexGrid2.TextMatrix(3, 0) = IIf(varDoorData.arrSpringSolution(lintInd).Mismatched = True, varDoorData.arrSpringSolution(lintInd).arrSpring(UBound(varDoorData.arrSpringSolution(lintInd).arrSpring())).strPN, "")
+    VSFlexGrid2.TextMatrix(4, 0) = IIf(varDoorData.arrSpringSolution(lintInd).Mismatched = True, Swap(varDoorData.arrSpringSolution(lintInd).arrSpring(UBound(varDoorData.arrSpringSolution(lintInd).arrSpring())).strPN, True), "")
+    
+    'Qty
+    If varDoorData.arrSpringSolution(lintInd).Mismatched = False Then
+        If NSpr / 2 = NSpr \ 2 Then 'even
+            'LH
+            VSFlexGrid2.TextMatrix(1, 3) = NSpr / 2
+            VSFlexGrid2.TextMatrix(1, 1) = "LH"
+            'RH
+            VSFlexGrid2.TextMatrix(2, 3) = NSpr / 2
+            VSFlexGrid2.TextMatrix(2, 1) = "RH"
+        Else
+            'LH
+            VSFlexGrid2.TextMatrix(1, 3) = RoundUp(NSpr / 2)
+            VSFlexGrid2.TextMatrix(1, 1) = "LH"
+            'RH
+            VSFlexGrid2.TextMatrix(2, 3) = NSpr \ 2
+            VSFlexGrid2.TextMatrix(2, 1) = "RH"
+        End If
+    Else
+        
+        Small = GetSprQtyPerGauge(lintInd, varDoorData.arrSpringSolution(lintInd).arrSpring(0).WireSize)
+        Big = GetSprQtyPerGauge(lintInd, varDoorData.arrSpringSolution(lintInd).arrSpring(UBound(varDoorData.arrSpringSolution(lintInd).arrSpring())).WireSize)
+        Dim LeftIPPT1 As Single
+        Dim RightIPPT1 As Single
+        Dim LeftIPPT2 As Single
+        Dim RightIPPT2 As Single
+        Dim i As Integer
+        Dim LS As Integer, LB As Integer, rs As Integer, RB As Integer
+        Dim SmallIPPT As Single
+        Dim BigIPPT As Single
+        Dim Diff As Single
+        
+        If NSpr / 2 = NSpr \ 2 Then 'even
+                    
+            'LH Small
+            VSFlexGrid2.TextMatrix(1, 3) = RoundDown(Small / 2)
+            VSFlexGrid2.TextMatrix(1, 1) = "LH"
+            'LH Big
+            VSFlexGrid2.TextMatrix(2, 3) = Small - DBLValue(VSFlexGrid2.TextMatrix(1, 3))
+            VSFlexGrid2.TextMatrix(2, 1) = "RH"
+            
+            'RH small
+            VSFlexGrid2.TextMatrix(3, 3) = RoundUp(NSpr / 2) - RoundDown(Small / 2)
+            VSFlexGrid2.TextMatrix(3, 1) = "LH"
+            'RH Big
+            VSFlexGrid2.TextMatrix(4, 3) = Big - DBLValue(VSFlexGrid2.TextMatrix(3, 3))
+            VSFlexGrid2.TextMatrix(4, 1) = "RH"
+
+        Else
+            Dim Temp As Single
+            Temp = Small / 2
+            If Temp = Int(Temp) Then
+                LS = Temp + 1
+            Else
+                LS = RoundUp(Temp)
+            End If
+        
+            LB = RoundUp(NSpr / 2) - LS
+            rs = Small - LS
+            RB = Big - LB
+            
+            'LH
+            VSFlexGrid2.TextMatrix(1, 3) = LS
+            VSFlexGrid2.TextMatrix(1, 1) = "LH"
+            VSFlexGrid2.TextMatrix(2, 3) = rs
+            VSFlexGrid2.TextMatrix(2, 1) = "RH"
+
+            'RH
+            VSFlexGrid2.TextMatrix(3, 3) = LB
+            VSFlexGrid2.TextMatrix(3, 1) = "LH"
+            VSFlexGrid2.TextMatrix(4, 3) = RB
+            VSFlexGrid2.TextMatrix(4, 1) = "RH"
+        End If
+        
+    End If
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub mnuDeleteS_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".mnuDeleteS_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Grid1.RemoveItem (Grid1.Row)
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub mnuSortD_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".mnuSortD_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    'Grid1.IsSelected(Grid1.Row) = False
+    mblnInFocus = False
+    frmSort.Show vbModal
+    mblnInFocus = True
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub VSFlexGrid2_click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".VSFlexGrid2_click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If VSFlexGrid2.Col = 3 And VSFlexGrid2.Row > 0 Then
+        If VSFlexGrid2.TextMatrix(VSFlexGrid2.Row, 0) <> "" Then
+            VSFlexGrid2.EditCell
+        End If
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Public Sub SetUpSpringsGrid()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetUpSpringsGrid()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    VSFlexGrid2.Left = fraSprings.Width / 2 - VSFlexGrid2.Width / 2
+    VSFlexGrid2.ColWidth(0) = VSFlexGrid2.Width / 2.8
+    VSFlexGrid2.ColWidth(1) = VSFlexGrid2.Width / 4.5
+    VSFlexGrid2.ColWidth(2) = VSFlexGrid2.Width / 3.8
+    VSFlexGrid2.ColWidth(3) = VSFlexGrid2.Width / 6.7
+    
+    VSFlexGrid2.Clear
+    VSFlexGrid2.TextMatrix(0, 0) = "Part N"
+    VSFlexGrid2.TextMatrix(0, 1) = "Wound"
+    VSFlexGrid2.TextMatrix(0, 2) = "WSize"
+    VSFlexGrid2.TextMatrix(0, 3) = "Qty"
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub FoundSolutions()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".FoundSolutions()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim i As Integer
+
+    Call SetUpSpringsGrid
+    VSFlexGrid2.Enabled = True
+    cmdPrint.Enabled = True
+
+    Call GridTitles
+    If cmdMismatch.Caption = "&Standard" Then
+        Call Fill_MM_Grid
+        If DBLValue(Grid1.TextMatrix(Grid1.Row, 2)) > 1 And _
+                DBLValue(Mid(Grid1.TextMatrix(Grid1.Row, 4), 1, Len(Grid1.TextMatrix(Grid1.Row, 4)) - 1)) <= 3.75 And _
+                DBLValue(Mid(Grid1.TextMatrix(Grid1.Row, 4), 1, Len(Grid1.TextMatrix(Grid1.Row, 4)) - 1)) <> 3.625 And _
+                DrWidth <= 170 And CouplNum = 0 Then
+            chkCenterPlates.Enabled = True
+            chkCenterPlates.Value = 0
+        Else
+            chkCenterPlates.Enabled = False
+            chkCenterPlates.Value = 1
+        End If
+        
+        If CECompliant = 1 Then
+            chkCenterPlates.Enabled = True
+            chkCenterPlates.Value = 1
+            chkCenterPlates.Enabled = False
+        End If
+        
+        Me.Grid2.Visible = True
+        Grid1.Visible = False
+        Me.lblRecFound = Me.Grid2.Rows - 1
+        Grid2.Col = 1
+
+''''''''''Change in .NET''''''''''''''''
+'        If Grid2.TextMatrix(Grid2.Row, 13) <> "" And Grid2.Row > 0 Then PositionSprings (Grid2.TextMatrix(Grid2.Row, 13))
+        If Grid2.TextMatrix(Grid2.Row, 15) <> "" And Grid2.Row > 0 Then PositionSprings (Grid2.TextMatrix(Grid2.Row, 15))
+''''''''''END Change in .NET
+        
+        Call ResizeColMM
+    Else
+        Call Fill_Grid
+        If DBLValue(Grid1.TextMatrix(Grid1.Row, 2)) > 1 And _
+                DBLValue(Mid(Grid1.TextMatrix(Grid1.Row, 4), 1, Len(Grid1.TextMatrix(Grid1.Row, 4)) - 1)) <= 3.75 And _
+                DBLValue(Mid(Grid1.TextMatrix(Grid1.Row, 4), 1, Len(Grid1.TextMatrix(Grid1.Row, 4)) - 1)) <> 3.625 And _
+                DrWidth <= 170 And CouplNum = 0 Then
+            chkCenterPlates.Enabled = True
+            chkCenterPlates.Value = 0
+        Else
+            chkCenterPlates.Enabled = False
+            chkCenterPlates.Value = 1
+        End If
+        
+        If CECompliant = 1 Then
+            chkCenterPlates.Enabled = True
+            chkCenterPlates.Value = 1
+            chkCenterPlates.Enabled = False
+        End If
+        
+        Me.Grid1.Visible = True
+        Grid2.Visible = False
+        Me.lblRecFound = Me.Grid1.Rows - 1
+        Me.Label53.Visible = False
+        Grid1.Col = 1
+
+''''''''''Change in .NET''''''''''''''''
+'        If Grid1.TextMatrix(Grid1.Row, 13) <> "" And Grid1.Row > 0 Then PositionSprings (Grid1.TextMatrix(Grid1.Row, 13))
+
+        If Grid1.TextMatrix(Grid1.Row, 15) <> "" And Grid1.Row > 0 Then PositionSprings (Grid1.TextMatrix(Grid1.Row, 15))
+''''''''''END Change in .NET
+        
+        Call ResizeCol
+        chk = True
+        'If frmSprSolutions.Grid1.RowIsVisible(frmSprSolutions.Grid1.Row) = False Then
+        frmSprSolutions.Grid1.TopRow = frmSprSolutions.Grid1.Row
+        'End If
+        
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub NoSolutionsFound()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".NoSolutionsFound()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+        
+'    If Grid1.Visible = True Then
+        
+        chk = False
+        
+'    End If
+    Grid2.Visible = False
+    Grid1.Visible = False
+    Me.lblRecFound = "0"
+    Label53.Visible = True
+    Call SetUpSpringsGrid
+    VSFlexGrid2.Enabled = False
+    cmdPrint.Enabled = False
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub VSFlexGrid2_KeyPressEdit(ByVal Row As Long, ByVal Col As Long, KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".VSFlexGrid2_KeyPressEdit()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Len(VSFlexGrid2.EditText) > 2 Then
+        Beep
+        KeyAscii = 0
+        Exit Sub
+    End If
+
+    If Not IsNumeric(Chr(KeyAscii)) Xor KeyAscii = 8 Then
+        Beep
+        KeyAscii = 0
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub VSFlexGrid2_ValidateEdit(ByVal Row As Long, ByVal Col As Long, Cancel As Boolean)
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".VSFlexGrid2_ValidateEdit()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim NSpr As Integer, lintDiff As Integer, Ind As Integer
+
+''''''''''Change in .NET''''''''''''''''
+'    If Grid1.Visible = True Then
+'        Ind = DBLValue(Grid1.TextMatrix(Grid1.Row, 13))
+'    Else
+'        Ind = DBLValue(Grid2.TextMatrix(Grid2.Row, 13))
+'    End If
+    If Grid1.Visible = True Then
+        Ind = DBLValue(Grid1.TextMatrix(Grid1.Row, 15))
+    Else
+        Ind = DBLValue(Grid2.TextMatrix(Grid2.Row, 15))
+    End If
+
+''''''''''END Change in .NET
+    NSpr = UBound(varDoorData.arrSpringSolution(Ind).arrSpring()) + 1
+    
+    If varDoorData.arrSpringSolution(Ind).Mismatched = False Then
+        lintDiff = NSpr - DBLValue(VSFlexGrid2.EditText)
+        If lintDiff >= 0 Then
+            If Row = 1 Then
+                VSFlexGrid2.TextMatrix(Row + 1, Col) = lintDiff
+            ElseIf Row = 2 Then
+                VSFlexGrid2.TextMatrix(Row - 1, Col) = lintDiff
+            End If
+        Else
+            MsgBox "Invalid number of springs. Please reconfigure.", vbApplicationModal + vbInformation + vbOKOnly, "Invalid Springs"
+            Cancel = True
+        End If
+    Else 'mismatch
+        lintDiff = GetSprQtyPerGauge(Ind, VSFlexGrid2.TextMatrix(Row, 2)) - DBLValue(VSFlexGrid2.EditText)
+        If lintDiff >= 0 Then
+            If Row = 1 Or Row = 3 Then
+                VSFlexGrid2.TextMatrix(Row + 1, Col) = lintDiff
+            Else
+                VSFlexGrid2.TextMatrix(Row - 1, Col) = lintDiff
+            End If
+        Else
+            MsgBox "Invalid number of springs. Please reconfigure.", vbApplicationModal + vbInformation + vbOKOnly, "Invalid Springs"
+            Cancel = True
+        End If
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+''''''''''Change in .NET''''''''''''''''
+'Fill_Grid and FillMM_Grid moved from modSprings.
+''''''''''END Change in .NET
+Public Sub Fill_Grid()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Fill_Grid()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim i As Integer
+    Dim cnt As Integer
+    Dim lintSel As Integer
+    Dim lsngWgt As Single
+    lintSel = -1
+    Call SortSpringsArray
+    Grid1.Rows = 1
+    For i = 0 To UBound(varDoorData.arrSpringSolution())
+        If varDoorData.arrSpringSolution(i).Mismatched = False And varDoorData.arrSpringSolution(i).Selected = False Then
+            
+            Grid1.Rows = cnt + 2
+            cnt = cnt + 1
+            Grid1.TextMatrix(cnt, 0) = Mid(varDoorData.arrSpringSolution(i).arrSpring(0).strPN, 1, Len(varDoorData.arrSpringSolution(i).arrSpring(0).strPN) - 1) & "x"
+            Grid1.TextMatrix(cnt, 2) = UBound(varDoorData.arrSpringSolution(i).arrSpring()) + 1
+            If lintSel = -1 Then 'have to select first even qty of springs that is least expansive
+                If DBLValue(Grid1.TextMatrix(cnt, 2)) Mod 2 = 0 Then
+                    lintSel = cnt
+                End If
+            End If
+            Grid1.TextMatrix(cnt, 3) = Format(varDoorData.arrSpringSolution(i).CL, "Fixed")
+            Grid1.TextMatrix(cnt, 1) = Round(varDoorData.arrSpringSolution(i).arrSpring(0).WireSize, 5)
+            Grid1.TextMatrix(cnt, 4) = Format(varDoorData.arrSpringSolution(i).CoilID, "Fixed") & Chr(34)
+            If MeasU = 1 Then
+                Grid1.TextMatrix(cnt, 5) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).Length, "####.0") & IIf(varDoorData.arrSpringSolution(i).WireType = "Round", Chr(34), " c")
+            Else
+                If varDoorData.arrSpringSolution(i).WireType = "Round" Then
+                    aCon.Inch = varDoorData.arrSpringSolution(i).arrSpring(0).Length
+                    aCon.mmcalc
+                    Grid1.TextMatrix(cnt, 5) = Round(aCon.mm, 0) & " mm"
+                Else
+                    Grid1.TextMatrix(cnt, 5) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).Length, "####.0") & " c"
+                End If
+            End If
+
+''''''''''Change in .NET''''''''''''''''
+'            Grid1.TextMatrix(cnt, 6) = Format(Winds, "Fixed")
+'            Grid1.TextMatrix(cnt, 7) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).IPPT, "Fixed")
+'            Grid1.TextMatrix(cnt, 8) = varDoorData.arrSpringSolution(i).arrSpring(0).AC
+'            Grid1.TextMatrix(cnt, 9) = varDoorData.arrSpringSolution(i).DC
+'            Grid1.TextMatrix(cnt, 10) = Format(varDoorData.arrSpringSolution(i).Torten, "Fixed")
+'            Grid1.TextMatrix(cnt, 11) = varDoorData.arrSpringSolution(i).WireType
+'            Grid1.TextMatrix(cnt, 12) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).Price * (DBLValue(UBound(varDoorData.arrSpringSolution(i).arrSpring())) + 1), "Fixed")
+'            Grid1.TextMatrix(cnt, 13) = i
+            
+            lsngWgt = GetSpringWeight(varDoorData.arrSpringSolution(i).arrSpring(0).strPN, varDoorData.arrSpringSolution(i).arrSpring(0).Length)
+            
+            If MeasU = 0 Then
+                ClearConObj
+                aCon.LB = lsngWgt
+                aCon.KGcalc
+                lsngWgt = aCon.KG
+            End If
+            
+            Dim tempvar As Single
+            
+            Grid1.TextMatrix(cnt, 6) = Format(lsngWgt, "Fixed")
+            Grid1.TextMatrix(cnt, 7) = Format(Winds, "Fixed")
+            Grid1.TextMatrix(cnt, 8) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).IPPT, "Fixed")
+            Grid1.TextMatrix(cnt, 9) = varDoorData.arrSpringSolution(i).arrSpring(0).AC
+            Grid1.TextMatrix(cnt, 10) = varDoorData.arrSpringSolution(i).DC
+            tempvar = varDoorData.arrSpringSolution(i).arrSpring(0).IPPT * varDoorData.arrSpringSolution(i).arrSpring(0).Turns
+            'Grid1.TextMatrix(cnt, 11) = Format(varDoorData.arrSpringSolution(i).Torten, "Fixed")
+            Grid1.TextMatrix(cnt, 11) = Format(tempvar, "Fixed")
+            
+            If MeasU = 1 Then
+                Grid1.TextMatrix(cnt, 12) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).WoundSpringLength, "Fixed") & Chr(34)
+            Else
+                Call ClearConObj
+                aCon.Inch = varDoorData.arrSpringSolution(i).arrSpring(0).WoundSpringLength
+                aCon.mmcalc
+                Grid1.TextMatrix(cnt, 12) = Round(aCon.mm, 0) & " mm"
+            End If
+            
+            Grid1.TextMatrix(cnt, 13) = varDoorData.arrSpringSolution(i).WireType
+            Grid1.TextMatrix(cnt, 14) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).Price * (DBLValue(UBound(varDoorData.arrSpringSolution(i).arrSpring())) + 1), "Fixed")
+            Grid1.TextMatrix(cnt, 15) = i
+''''''''''END Change in .NET
+        End If
+    Next
+    
+    If lintSel > 0 Then
+        Grid1.Row = (lintSel)
+    Else
+        Grid1.Row = 1
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub Fill_MM_Grid()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Fill_MM_Grid()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim i As Integer
+    Dim cnt As Integer
+    Dim T As Single
+    Dim lsngWgt1 As Single
+    Dim lsngWgt2 As Single
+    Dim lsngWL1 As Single
+    Dim lsngWL2 As Single
+    
+    Grid2.Rows = 1
+    For i = 0 To UBound(varDoorData.arrSpringSolution())
+        If varDoorData.arrSpringSolution(i).Mismatched = True Then
+            Grid2.Rows = cnt + 2
+            cnt = cnt + 1
+            Grid2.TextMatrix(cnt, 0) = varDoorData.arrSpringSolution(i).arrSpring(0).strPN & Chr(13) & varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).strPN
+            Grid2.TextMatrix(cnt, 1) = Round(varDoorData.arrSpringSolution(i).arrSpring(0).WireSize, 5) & Chr(13) & Round(varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).WireSize, 5)
+            Grid2.TextMatrix(cnt, 2) = GetSprQtyPerGauge(i, varDoorData.arrSpringSolution(i).arrSpring(0).WireSize) & Chr(13) & GetSprQtyPerGauge(i, varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).WireSize)
+            Grid2.TextMatrix(cnt, 3) = Format(varDoorData.arrSpringSolution(i).CL, "Fixed")
+            Grid2.TextMatrix(cnt, 4) = Format(varDoorData.arrSpringSolution(i).CoilID, "Fixed") & Chr(34)
+            If MeasU = 1 Then
+                Grid2.TextMatrix(cnt, 5) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).Length, "Fixed") & IIf(varDoorData.arrSpringSolution(i).WireType = "Round", Chr(34), " c") & Chr(13) & Format(varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).Length, "Fixed") & IIf(varDoorData.arrSpringSolution(i).WireType = "Round", Chr(34), " c")
+            Else
+                If varDoorData.arrSpringSolution(i).WireType = "Round" Then
+                    aCon.Inch = varDoorData.arrSpringSolution(i).arrSpring(0).Length
+                    aCon.mmcalc
+                    T = aCon.mm
+                    aCon.Inch = varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).Length
+                    aCon.mmcalc
+                    Grid2.TextMatrix(cnt, 5) = Round(T, 0) & " mm" & Chr(13) & Round(aCon.mm, 0) & " mm"
+                Else
+                    Grid2.TextMatrix(cnt, 5) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).Length, "Fixed") & " c"
+                End If
+            End If
+''''''''''Change in .NET''''''''''''''''
+'            Grid2.TextMatrix(cnt, 9) = varDoorData.arrSpringSolution(i).DC
+'            Grid2.TextMatrix(cnt, 10) = Format(varDoorData.arrSpringSolution(i).Torten, "Fixed")
+'            Grid2.TextMatrix(cnt, 6) = Format(Winds, "Fixed")
+'            Grid2.TextMatrix(cnt, 11) = varDoorData.arrSpringSolution(i).WireType
+'            Grid2.TextMatrix(cnt, 7) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).IPPT, "Fixed") & Chr(13) & Format(varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).IPPT, "Fixed")
+'            Grid2.TextMatrix(cnt, 8) = varDoorData.arrSpringSolution(i).arrSpring(0).AC & Chr(13) & varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).AC
+'            Grid2.TextMatrix(cnt, 12) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).Price, "Fixed") & Chr(13) & Format(varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).Price, "Fixed")
+'            Grid2.TextMatrix(cnt, 13) = i
+            lsngWgt1 = GetSpringWeight(varDoorData.arrSpringSolution(i).arrSpring(0).strPN, varDoorData.arrSpringSolution(i).arrSpring(0).Length)
+            lsngWgt2 = GetSpringWeight(varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring)).strPN, varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring)).Length)
+            
+            If MeasU = 0 Then
+                ClearConObj
+                aCon.LB = lsngWgt1
+                aCon.KGcalc
+                lsngWgt1 = aCon.KG
+                aCon.LB = lsngWgt2
+                aCon.KGcalc
+                lsngWgt2 = aCon.KG
+            End If
+            
+            Grid2.TextMatrix(cnt, 6) = Format(lsngWgt1, "Fixed") & Chr(13) & Format(lsngWgt2, "Fixed")
+            Grid2.TextMatrix(cnt, 7) = Format(Winds, "Fixed")
+            Grid2.TextMatrix(cnt, 8) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).IPPT, "Fixed") & Chr(13) & Format(varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).IPPT, "Fixed")
+            Grid2.TextMatrix(cnt, 9) = varDoorData.arrSpringSolution(i).arrSpring(0).AC & Chr(13) & varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).AC
+
+            Grid2.TextMatrix(cnt, 10) = varDoorData.arrSpringSolution(i).DC
+            
+            Dim tempvar_small As Single
+            Dim tempvar_Big As Single
+            
+'            Grid2.TextMatrix(cnt, 11) = Format(varDoorData.arrSpringSolution(i).Torten, "Fixed")
+            tempvar_small = varDoorData.arrSpringSolution(i).arrSpring(0).IPPT * varDoorData.arrSpringSolution(i).arrSpring(0).Turns
+            tempvar_Big = varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).IPPT * varDoorData.arrSpringSolution(i).arrSpring(0).Turns
+            
+            Grid2.TextMatrix(cnt, 11) = Format(tempvar_small, "Fixed") & Chr(13) & Format(tempvar_Big, "Fixed")
+            
+            If MeasU = 1 Then
+                Grid2.TextMatrix(cnt, 12) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).WoundSpringLength, "Fixed") & Chr(34) & Chr(13) & Format(varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).WoundSpringLength, "Fixed") & Chr(34)
+            Else
+                Call ClearConObj
+                aCon.Inch = varDoorData.arrSpringSolution(i).arrSpring(0).WoundSpringLength
+                aCon.mmcalc
+                lsngWL1 = aCon.mm
+                
+                Call ClearConObj
+                aCon.Inch = varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).WoundSpringLength
+                aCon.mmcalc
+                lsngWL2 = aCon.mm
+                
+                Grid2.TextMatrix(cnt, 12) = Round(lsngWL1, 0) & " mm" & Chr(13) & Round(lsngWL2, 0) & " mm"
+            End If
+            Grid2.TextMatrix(cnt, 13) = varDoorData.arrSpringSolution(i).WireType
+            Grid2.TextMatrix(cnt, 14) = Format(varDoorData.arrSpringSolution(i).arrSpring(0).Price, "Fixed") & Chr(13) & Format(varDoorData.arrSpringSolution(i).arrSpring(UBound(varDoorData.arrSpringSolution(i).arrSpring())).Price, "Fixed")
+            Grid2.TextMatrix(cnt, 15) = i
+
+''''''''''END Change in .NET
+            Grid2.RowHeight(cnt) = Grid1.RowHeight(1) * 2
+        End If
+    Next
+    
+    Grid2.Row = 1
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Function cableSafetyFactor_6_1() As Boolean
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cableSafetyFactor_6_1()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If varDoorData.aDrum.strStamping = "D400-144" Or _
+        varDoorData.aDrum.strStamping = "D400-54" Then
+        
+        If DrWgt <= 586.66 Then
+            cboCable.List(0) = IIf(MeasU = 1, "1/8" & Chr(34) & " Cable", "3.2mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 1
+        End If
+        
+    ElseIf varDoorData.aDrum.strStamping = "D525-216" Or _
+            varDoorData.aDrum.strStamping = "D525-54" Or _
+             varDoorData.aDrum.strStamping = "D575-120" Or _
+              varDoorData.aDrum.strStamping = "D850-132" Or _
+               varDoorData.aDrum.strStamping = "D1100-216" Then
+        
+        If DrWgt <= 586.66 Then
+            cboCable.List(0) = IIf(MeasU = 1, "1/8" & Chr(34) & " Cable", "3.2mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 1
+            cboCable.List(1) = IIf(MeasU = 1, "3/16" & Chr(34) & " Cable", "4.8mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 2
+        ElseIf DrWgt > 586.66 And DrWgt <= 1233.33 Then
+            cboCable.List(0) = IIf(MeasU = 1, "3/16" & Chr(34) & " Cable", "4.8mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 2
+        End If
+        
+    ElseIf varDoorData.aDrum.strStamping = "D800-384" Or _
+            varDoorData.aDrum.strStamping = "D800-120" Or _
+            varDoorData.aDrum.strStamping = "D1150-236" Or _
+            varDoorData.aDrum.strStamping = "D1350-336" Or _
+             varDoorData.aDrum.strStamping = "D6375-164" Then
+                
+        If DrWgt <= 1233.33 Then
+            cboCable.List(0) = IIf(MeasU = 1, "3/16" & Chr(34) & " Cable", "4.8mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 2
+            cboCable.List(1) = IIf(MeasU = 1, "1/4" & Chr(34) & " Cable", "6.4mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 3
+        ElseIf DrWgt > 1233.33 And DrWgt <= 2133.33 Then
+            cboCable.List(0) = IIf(MeasU = 1, "1/4" & Chr(34) & " Cable", "6.4mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 3
+        End If
+    End If
+    
+    
+    If cboCable.ListCount > 0 Then
+        cableSafetyFactor_6_1 = False
+        cboCable.ListIndex = 0
+    Else
+        cableSafetyFactor_6_1 = True
+    End If
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Public Function cableSafetyFactor_5_1() As Boolean
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cableSafetyFactor_6_1()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If varDoorData.aDrum.strStamping = "D400-144" Or _
+        varDoorData.aDrum.strStamping = "D400-54" Then
+        
+        If DrWgt <= 704 Then
+            cboCable.List(0) = IIf(MeasU = 1, "1/8" & Chr(34) & " Cable", "3.2mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 1
+        End If
+        
+    ElseIf varDoorData.aDrum.strStamping = "D525-216" Or _
+            varDoorData.aDrum.strStamping = "D525-54" Or _
+             varDoorData.aDrum.strStamping = "D575-120" Or _
+              varDoorData.aDrum.strStamping = "D850-132" Or _
+               varDoorData.aDrum.strStamping = "D1100-216" Then
+        
+        If DrWgt <= 704 Then
+            cboCable.List(0) = IIf(MeasU = 1, "1/8" & Chr(34) & " Cable", "3.2mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 1
+            cboCable.List(1) = IIf(MeasU = 1, "3/16" & Chr(34) & " Cable", "4.8mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 2
+        ElseIf DrWgt > 704 And DrWgt <= 1480 Then
+            cboCable.List(0) = IIf(MeasU = 1, "3/16" & Chr(34) & " Cable", "4.8mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 2
+        End If
+        
+    ElseIf varDoorData.aDrum.strStamping = "D800-384" Or _
+            varDoorData.aDrum.strStamping = "D800-120" Or _
+            varDoorData.aDrum.strStamping = "D1150-236" Or _
+            varDoorData.aDrum.strStamping = "D1350-336" Or _
+             varDoorData.aDrum.strStamping = "D6375-164" Then
+                
+        If DrWgt <= 1480 Then
+            cboCable.List(0) = IIf(MeasU = 1, "3/16" & Chr(34) & " Cable", "4.8mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 2
+            cboCable.List(1) = IIf(MeasU = 1, "1/4" & Chr(34) & " Cable", "6.4mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 3
+        ElseIf DrWgt > 1480 And DrWgt <= 2560 Then
+            cboCable.List(0) = IIf(MeasU = 1, "1/4" & Chr(34) & " Cable", "6.4mm Cable")
+            cboCable.ItemData(cboCable.NewIndex) = 3
+        End If
+    End If
+    
+    If cboCable.ListCount > 0 Then
+        cableSafetyFactor_5_1 = False
+        cboCable.ListIndex = 0
+    Else
+        cableSafetyFactor_5_1 = True
+    End If
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function

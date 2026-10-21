@@ -1,0 +1,2009 @@
+Option Explicit
+Const cstrModuleName As String = "frmBOMDetail"
+Const cstrTableName As String = "BOMdetails"
+
+Public mlngBOMID As Long
+Public mlngQuoteID As Long
+Public mlngPOID As Long
+Public mstrDocNum As String
+Public mstrPtNum As String
+Public mstrBOMUM As String
+Public mintMode As Integer
+Public mblnAlloc As Boolean
+Public mdblQty As Double
+Public mstrParms As String
+Public mblnSpecial As Boolean
+Public mdblSectionQTY As Double
+Private mblnInFocus As Boolean
+Private mdblCost As Double  'holds the unit cost (per SQ/Ft) use in cmdPN_Click
+
+Private mdblListPrice As Double 'holds the list price use (per SQ/Ft) use in cmdPN_Click
+Private mdblShipWeight As Double 'holds the ship wgt use in cmdPN_Click
+
+''''''''''Change in .NET''''''''''''''''
+Public RowIndex As Long
+Public mstrAddedPN As String
+''''''''''END Change in .NET
+
+Private Sub cmdLenDet_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdLenDet_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    mdblQty = 0
+    
+    Dim frmX As frmBOMLenDet
+    Set frmX = New frmBOMLenDet
+    Set frmX.objParent = Me
+    frmX.mlngDOCID = mlngBOMID
+    frmX.mintMode = mintMode
+    frmX.mstrDocName = mstrDocNum
+    frmX.mstrDOCPtNum = txtPartNum.Text
+    frmX.mstrDocType = "BoM"
+    frmX.mstrDocUM = mstrBOMUM
+    frmX.mlngPOID = mlngPOID
+    
+    Screen.MousePointer = vbDefault
+    mblnInFocus = False
+    frmX.Show vbModal
+    mblnInFocus = True
+    
+    If mintMode = MODE_EDIT Then
+        txtPtQty.Text = mdblQty
+        lblTotalCost.Caption = Format(DBLValue(txtPtQty.Text) * DBLValue(txtPtCost.Text), cstrDollarMask)
+        Me.mstrPtNum = txtPartNum.Text
+        mintMode = MODE_VIEW
+        Call LoadData
+    End If
+    
+    If mintMode = MODE_ADD Then
+        txtPtQty.Text = mdblQty
+        lblTotalCost.Caption = Format(DBLValue(txtPtQty.Text) * DBLValue(txtPtCost.Text), cstrDollarMask)
+    End If
+    
+    Me.Refresh
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdPN_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SubName()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim larrParms() As String
+    Dim lstrPart As String, lstrNewPart As String
+    
+    mdblSectionQTY = 0
+    
+    If chkPhantom.Value = 1 Then
+        If mintMode <> MODE_VIEW Then
+            Dim frmW As frmWidth
+            Set frmW = New frmWidth
+            If UCase(mstrBOMUM) = "METRIC" Then frmW.mblnMetric = True
+            frmW.mstrPart = mstrPtNum
+            Set frmW.frmParent = Me
+'            frmW.mstrDesc = Trim(txtPtDesc.Text)
+            mblnInFocus = False
+            frmW.Show vbModal
+            mblnInFocus = True
+            Set frmW = Nothing
+            If mstrParms <> "" Then
+                larrParms = Split(mstrParms, "~")
+
+                'Update the Part Number
+                lstrNewPart = larrParms(0)
+                txtPartNum.Text = (lstrNewPart)
+
+                'Update the description
+                If Left(lstrNewPart, 1) <> "9" Then
+                    txtPtDesc.Text = loadDefaultBasePNDescription(txtPartNum.Text) & larrParms(1)
+                Else
+                    txtPtDesc.Text = txtPtDesc.Text & larrParms(1)
+                End If
+                
+                lblBOMUM.Caption = "EACH"
+
+''''''''''Change in .NET''''''''''''''''
+'                lblBookCost.Caption = (DBLValue(lblBookCost.Caption)) * (DBLValue(larrParms(2)) / 12) * IIf(Left(lstrNewPart, 1) = "9", 1, (IIf(Mid(lstrNewPart, 5, 1) = "1", 1.75, 2)))
+                txtPtQty.Text = mdblSectionQTY
+                lblBookCost.Caption = Format((DBLValue(mdblCost)) * (DBLValue(larrParms(2)) / 12) * IIf(Left(lstrNewPart, 1) = "9", 1, (IIf(Mid(lstrNewPart, 6, 1) = "1", 1.75, 2))), cstrDollarMask)
+                lblListPrice.Caption = Format((DBLValue(mdblListPrice)) * (DBLValue(larrParms(2)) / 12) * IIf(Left(lstrNewPart, 1) = "9", 1, (IIf(Mid(lstrNewPart, 6, 1) = "1", 1.75, 2))), cstrDollarMask)
+''''''''''END Change in .NET
+                txtPtCost.Text = Format(DBLValue(lblBookCost.Caption), "Fixed")
+                'txtPtCost.Text = Format(DBLValue(mdblCost), "Fixed")
+                lblBkWeight.Caption = (DBLValue(mdblShipWeight)) * (DBLValue(larrParms(2)) / 12) * (IIf(Mid(lstrNewPart, 6, 1) = "1", 1.75, 2))
+                lblWeight.Caption = 0
+                lblTotalCost.Caption = DBLValue(txtPtCost.Text) * DBLValue(txtPtQty.Text)
+            Else
+                Call cmdBack_Click
+                Exit Sub
+            End If
+        End If
+    End If
+    
+    If txtPtQty.Enabled = True Then txtPtQty.SetFocus
+    txtPtQty.SelStart = 0
+    txtPtQty.SelLength = Len(txtPtQty.Text)
+    
+    Me.Refresh
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Activate()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Activate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+'    Dim larrParms() As String
+'    Dim lstrPart As String, lstrNewPart As String
+'
+'    If chkPhantom.Value = 1 Then
+'        If mintMode <> MODE_VIEW Then
+'            Dim frmW As frmWidth
+'            Set frmW = New frmWidth
+'
+'            If UCase(mstrBOMUM) = "METRIC" Then frmW.mblnMetric = True
+'            frmW.mstrPart = mstrPtNum
+'            Set frmW.frmParent = Me
+'            frmW.mstrDesc = Trim(txtPtDesc.Text)
+'            mblnInFocus = False
+'            frmW.Show vbModal
+'            mblnInFocus = True
+'            Set frmW = Nothing
+'            If mstrParms <> "" Then
+'                larrParms = Split(mstrParms, "~")
+'
+'                'Update the Part Number
+'                lstrNewPart = larrParms(0)
+'                txtPartNum.Text = (lstrNewPart)
+'
+'                'Update the description
+'                txtPtDesc.Text = txtPtDesc.Text & larrParms(1)
+'
+'                lblBOMUM.Caption = "EACH"
+'
+'''''''''''Change in .NET''''''''''''''''
+''                lblBookCost.Caption = (DBLValue(lblBookCost.Caption)) * (DBLValue(larrParms(2)) / 12) * IIf(Left(lstrNewPart, 1) = "9", 1, (IIf(Mid(lstrNewPart, 5, 1) = "1", 1.75, 2)))
+'                lblBookCost.Caption = Format((DBLValue(lblBookCost.Caption)) * (DBLValue(larrParms(2)) / 12) * IIf(Left(lstrNewPart, 1) = "9", 1, (IIf(Mid(lstrNewPart, 6, 1) = "1", 1.75, 2))), cstrDollarMask)
+'
+'''''''''''END Change in .NET
+'
+'                txtPtCost.Text = Format(DBLValue(lblBookCost.Caption), "Fixed")
+'                lblBkWeight.Caption = (DBLValue(lblBkWeight.Caption)) * (DBLValue(larrParms(2)) / 12) * (IIf(Mid(lstrNewPart, 5, 1) = "1", 1.75, 2))
+'                lblWeight.Caption = 0
+'                lblTotalCost.Caption = DBLValue(txtPtCost.Text) * DBLValue(txtPtQty.Text)
+'            Else
+'                Call cmdBack_Click
+'                Exit Sub
+'            End If
+'        End If
+'    End If
+'
+'    If txtPtQty.Enabled = True Then txtPtQty.SetFocus
+'    txtPtQty.SelStart = 0
+'    txtPtQty.SelLength = Len(txtPtQty.Text)
+'
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        If mintMode = MODE_VIEW Then ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub chkCall_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkCall_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If chkCall.Value = 0 Then
+        txtPtCost.Text = IIf(DBLValue(lblBookCost.Caption) < 1, Format(DBLValue(lblBookCost.Caption), "0.000000"), Format(DBLValue(lblBookCost.Caption), cstrDollarMask))
+        lbl30Days.Visible = False
+    Else
+        lbl30Days.Visible = True
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdEdit_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdEdit_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If mintMode = MODE_EDIT Then
+        mintMode = MODE_VIEW
+        Call LoadData
+        Exit Sub
+    End If
+    
+    If Left(txtPartNum.Text, 9) = "COMM-NSTK" Then
+        txtSpecialWeight.Visible = True
+        Label2.Visible = True
+    End If
+    
+    mintMode = MODE_EDIT
+    Call SetControls(mintMode)
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdBack_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdBack_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    Dim i As Integer
+    
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    If mintMode = MODE_ADD Then
+'        Dim objFrmB As frmBrowseMasterListing
+'        Set objFrmB = New frmBrowseMasterListing
+        objFrmB.mlngDOCID = mlngBOMID
+        objFrmB.mblnSpecial = False
+        objFrmB.mstrBackTag = "frmBOMDetail"
+        objFrmB.mstrDocNum = mstrDocNum
+        objFrmB.mstrUM = mstrBOMUM
+        ''''''''''Change in .NET''''''''''''''''
+        objFrmB.RowIndex = RowIndex
+        If mintMode = MODE_ADD Then objFrmB.mstrAddedPN = mstrAddedPN
+        mstrAddedPN = ""
+        ''''''''''END Change in .NET
+        Unload Me
+        objFrmB.Show
+'        Set objFrmB = Nothing
+    Else
+        Dim frmQ As frmBOMDetailList
+        Set frmQ = New frmBOMDetailList
+        frmQ.mlngBOMID = mlngBOMID
+        frmQ.mstrDocNum = mstrDocNum
+        frmQ.mstrBOMUM = mstrBOMUM
+        ''''''''''Change in .NET''''''''''''''''
+        frmQ.mlngRow = RowIndex
+
+        ''''''''''END Change in .NET
+        Unload Me
+        frmQ.Show
+        Set frmQ = Nothing
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdPrint_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdPrint_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+'    CommonDialog1.CancelError = True
+'    CommonDialog1.ShowPrinter
+    Call ShowTaskbar(False) 'will hide the widows taskbar for the time of printing
+    
+    Set Picture1.Picture = CaptureScreen()
+    PrintPictureToFitPage Printer, Picture1.Picture
+    
+    Printer.EndDoc
+    
+    Call ShowTaskbar(True)
+    Exit Sub
+
+Error_Handler:
+    If Err.Number = 32755 Then 'click cancel on the common dialog box
+        Call ShowTaskbar(True)
+        Exit Sub
+    End If
+    
+     If Err.Number = 482 Or Err.Number = 484 Then 'Make sure all connections between computer and printer are solid. Most printers provide a display for error information such as "Out of paper," "Offline," and so on.
+        MsgBox Err.Number & ":" & " Printer error!", vbCritical + vbApplicationModal, "Printer Error."
+        Exit Sub
+    End If
+    
+    If Err.Number = 9 Then  'no printer installed
+        MsgBox Err.Number & ":" & " Printer error!", vbCritical + vbApplicationModal, "Printer Error."
+        Exit Sub
+    End If
+    
+    Call ShowTaskbar(True)
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdSave_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSave_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    txtPtQty.Text = IIf(DBLValue(txtPtQty.Text) < 1, Format(DBLValue(txtPtQty.Text), "0.000000"), Format(DBLValue(txtPtQty.Text), cstrQtyMask))
+    lblTotalCost.Caption = Format(DBLValue(txtPtQty.Text) * DBLValue(txtPtCost.Text), cstrDollarMask)
+    lblWeight.Caption = Format(DBLValue(lblBkWeight.Caption) * DBLValue(txtPtQty.Text), "Fixed")
+    
+    If MsgBox("Save Data?", vbApplicationModal + vbYesNo + vbQuestion, "Save Data.") = vbYes Then
+        Screen.MousePointer = vbHourglass
+        Call SaveData
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdSpell_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSpell_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Call SpellCheck(txtPtNotes)
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+End Sub
+
+Private Sub Form_Initialize()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Initialize()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    mintMode = MODE_VIEW
+    mblnAlloc = True
+    mlngPOID = 0
+    mlngQuoteID = 0
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim currBPP As Long
+    
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    
+    Call LoadPartInfo(Me.mstrPtNum)
+    If mintMode = MODE_ADD Then
+        If mblnSpecial = False Then
+            mintMode = MODE_VIEW
+            Call AddPart
+        Else
+            Call ClearScreen(True)
+            Call SetControls(mintMode)
+            
+            txtPartNum.Text = GetSpecialPart("NSTK")
+            chkCall.Value = 1
+            chkCall.Enabled = False
+            txtPtDesc.Enabled = True
+            txtPtDesc.BackColor = vbWhite
+            txtSpecialWeight.Visible = True
+            txtSpecialWeight.Text = Format(0, "Fixed")
+            lblBOMUM.Caption = "EACH"
+            Label2.Visible = True
+            lblBOMCat.Caption = ""
+            lblBOMNum.Caption = Trim(mstrDocNum)
+        End If
+    Else
+        mintMode = MODE_VIEW
+        Call LoadData
+    End If
+    LoadHelpText Me
+    MousePos1.Init Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub LoadData()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim lobjBOMDetailRS As ADODB.Recordset
+    Dim lblnChange As Boolean
+    Dim lstrFieldName As String
+    Dim lstrPtNum As String
+    
+'    Call ClearScreen
+  
+    lstrSQLQuery = " select Top 1 * from " & cstrTableName
+    lstrSQLQuery = lstrSQLQuery & " where BOMID=" & mlngBOMID
+    If Not Trim(mstrPtNum) = "" Then lstrSQLQuery = lstrSQLQuery & " and BOMptnum=" & SQLString(Trim(mstrPtNum))
+    lstrSQLQuery = lstrSQLQuery & " Order By BOMPtNum"
+    Set lobjBOMDetailRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjBOMDetailRS Is Nothing Then
+        lobjBOMDetailRS.ActiveConnection = Nothing
+        If Not (lobjBOMDetailRS.BOF And lobjBOMDetailRS.EOF) Then
+            lobjBOMDetailRS.MoveFirst
+            
+            lstrPtNum = Trim(lobjBOMDetailRS.Fields("BOMPtNum").Value)
+            'Call SetPartNum(lstrPtNum)
+            
+            txtPartNum.Text = (lstrPtNum)
+'                cmbPartNum.ListIndex = cmbPartNum.NewIndex
+'            End If
+
+            lblBOMNum.Caption = mstrDocNum
+            lstrFieldName = "BOMPtDesc"
+            txtPtDesc = IIf(IsNull(lobjBOMDetailRS.Fields(lstrFieldName).Value), "", Trim(lobjBOMDetailRS.Fields(lstrFieldName).Value))
+            lstrFieldName = "BOMPtOtherDesc"
+            lblOtherDesc.Caption = IIf(IsNull(lobjBOMDetailRS.Fields(lstrFieldName).Value), "", Trim(lobjBOMDetailRS.Fields(lstrFieldName).Value))
+            lstrFieldName = "BOMPtQtyReq"
+            'txtPtQty.Text = Format(IIf(IsNull(lobjBOMDetailRS.Fields(lstrFieldName).Value), "", Trim(lobjBOMDetailRS.Fields(lstrFieldName).Value)), cstrQtyMask)
+            txtPtQty.Text = IIf(IsNull(lobjBOMDetailRS.Fields(lstrFieldName).Value), "", Trim(lobjBOMDetailRS.Fields(lstrFieldName).Value))
+            
+            If Left(txtPartNum.Text, 9) = "COMM-NSTK" Then
+                If mstrBOMUM = "Metric" Then
+                    Call ClearConObj
+                    aCon.LB = DBLValue(lobjBOMDetailRS.Fields("BOMPtShipWgt").Value)
+                    aCon.KGcalc
+                    txtSpecialWeight.Text = Format(aCon.KG, "Fixed")
+                Else
+                    txtSpecialWeight.Text = lobjBOMDetailRS.Fields("BOMPtShipWgt").Value
+                End If
+                lblWeight.Caption = Format(DBLValue(txtSpecialWeight.Text) * DBLValue(txtPtQty.Text), "Fixed")
+
+''''''''''Change in .NET''''''''''''''''
+                optMaterial.Visible = True
+                optSections.Visible = True
+                
+                lstrFieldName = "BOMPriceGroup"
+                If lobjBOMDetailRS.Fields(lstrFieldName).Value = "M" Then
+                    'chkMatSec.Value = 1
+                    optMaterial.Value = True
+                    
+                ElseIf lobjBOMDetailRS.Fields(lstrFieldName).Value = "S" Then
+                    'chkMatSec.Value = 0
+                    optSections.Value = True
+                End If
+                
+                'chkMatSec.Visible = True
+                
+''''''''''END Change in .NET
+                
+            Else
+
+''''''''''Change in .NET''''''''''''''''
+                'chkMatSec.Visible = False
+                optMaterial.Visible = False
+                optSections.Visible = False
+''''''''''END Change in .NET
+                
+                If DBLValue(lblBkWeight.Caption) = 0 Then lblBkWeight.Caption = lobjBOMDetailRS.Fields("BOMPtShipWgt").Value
+                lblWeight.Caption = Format(DBLValue(lblBkWeight.Caption) * DBLValue(txtPtQty.Text), "Fixed")
+                If mstrBOMUM = "Metric" Then
+                    Call ClearConObj
+                    aCon.LB = DBLValue(lblWeight.Caption)
+                    aCon.KGcalc
+                    lblWeight.Caption = Format(aCon.KG, "Fixed")
+                End If
+           End If
+            
+            lstrFieldName = "BOMPtUM"
+            lblBOMUM.Caption = IIf(IsNull(lobjBOMDetailRS.Fields(lstrFieldName).Value), "", Trim(lobjBOMDetailRS.Fields(lstrFieldName).Value))
+            If lblBOMUM.Caption = "INCHES" And UCase(mstrBOMUM) = "METRIC" Then
+                lblBOMUM.Caption = "MM"
+            End If
+            
+            lstrFieldName = "BOMCallPrice"
+            chkCall.Value = IIf(lobjBOMDetailRS.Fields(lstrFieldName).Value, 1, 0)
+            
+            If chkCall.Value = 0 And DBLValue(lblBookCost.Caption) > 0 Then
+                txtPtCost.Text = lblBookCost.Caption
+            Else
+                lstrFieldName = "BOMPtMtCost"
+                If Not IsNull(lobjBOMDetailRS.Fields(lstrFieldName).Value) Then
+                    If UCase(mstrBOMUM) = "METRIC" And lblBOMUM.Caption = "MM" Then
+                        
+                        txtPtCost.Text = DBLValue(lobjBOMDetailRS.Fields(lstrFieldName).Value) * 0.03937008 'price has to per mm not per inch as per database.
+                        If DBLValue(txtPtCost.Text) < 0.01 Then
+                            txtPtCost.Text = Format(txtPtCost.Text, "0.000000") 'price per mm will be so low, formatting to fixed will show "0.00"
+                        Else
+                            txtPtCost.Text = Format(txtPtCost.Text, cstrDollarMask)
+                        End If
+                    Else
+                        txtPtCost.Text = IIf(DBLValue(lobjBOMDetailRS.Fields(lstrFieldName).Value) < 1, Format(lobjBOMDetailRS.Fields(lstrFieldName).Value, "0.000000"), Format(lobjBOMDetailRS.Fields(lstrFieldName).Value, cstrDollarMask))
+                    End If
+                End If
+                
+'---------------------------------------
+                'For Jakub use only(Unrestricted) - For customers, please comment below lines
+                If DBLValue(lblBookCost.Caption) = 0 Then lblBookCost.Caption = txtPtCost.Text
+'-----------------------------------------
+                'program does not show list price - its actually the disc. price
+'                lstrFieldName = "BOMPtListCost"
+'                If Not IsNull(lobjBOMDetailRS.Fields(lstrFieldName).Value) Then
+'                    If UCase(mstrBOMUM) = "METRIC" And lblBOMUM.Caption = "MM" Then
+'
+'                        lblBookCost.Caption = DBLValue(lobjBOMDetailRS.Fields(lstrFieldName).Value) * 0.03937008  'price has to per mm not per inch as per database.
+'                        If DBLValue(lblBookCost.Caption) < 0.01 Then
+'                            lblBookCost.Caption = Format(lblBookCost.Caption, "0.000000") 'price per mm will be so low, formatting to fixed will show "0.00"
+'                        Else
+'                            lblBookCost.Caption = Format(lblBookCost.Caption, cstrDollarMask)
+'                        End If
+'                    Else
+'                        lblBookCost.Caption = IIf(DBLValue(lobjBOMDetailRS.Fields(lstrFieldName).Value) < 1, Format(lobjBOMDetailRS.Fields(lstrFieldName).Value, "0.000000"), Format(lobjBOMDetailRS.Fields(lstrFieldName).Value, cstrDollarMask))
+'                    End If
+'                End If
+'                End If
+
+
+            End If
+            
+            lstrFieldName = "BOMPtMultID"
+            lblMultID.Caption = IIf(IsNull(lobjBOMDetailRS.Fields(lstrFieldName).Value), "", Trim(lobjBOMDetailRS.Fields(lstrFieldName).Value))
+            
+            lstrFieldName = "BOMDiscount"
+            lblSpMult.Caption = Format(IIf(IsNull(lobjBOMDetailRS.Fields(lstrFieldName).Value), "", Trim(lobjBOMDetailRS.Fields(lstrFieldName).Value)), cstrQtyMask)
+            
+            lstrFieldName = "BOMPtShipWgt"
+            If UCase(mstrBOMUM) = "METRIC" Then
+                Label13.Caption = "Total Shipping Weight in kg"
+            Else
+                Label13.Caption = "Total Shipping Weight in lb"
+            End If
+            
+            lblTotalCost.Caption = Format(DBLValue(txtPtQty.Text) * DBLValue(txtPtCost.Text), cstrDollarMask)
+            If (Not DBLValue(txtPtCost.Text) = DBLValue(lblBookCost.Caption)) And _
+                    DBLValue(lblBookCost.Caption) > 0# Then chkCall.Value = 1
+            
+            lstrFieldName = "BOMPtNotes"
+            txtPtNotes.Text = IIf(IsNull(lobjBOMDetailRS.Fields(lstrFieldName).Value), "", Trim(lobjBOMDetailRS.Fields(lstrFieldName).Value))
+            
+            lobjBOMDetailRS.Close
+        End If
+    End If
+    Set lobjBOMDetailRS = Nothing
+    
+    Dim lobjINVRS As ADODB.Recordset
+    lstrSQLQuery = " select Top 1 * from Inventory"
+    lstrSQLQuery = lstrSQLQuery & " where PartNum=" & SQLString(lstrPtNum)
+    Set lobjINVRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjINVRS Is Nothing Then
+        lobjINVRS.ActiveConnection = Nothing
+        If Not (lobjINVRS.BOF And lobjINVRS.EOF) Then
+            lobjINVRS.MoveFirst
+            
+            If lblBOMUM.Caption = "MM" And Not (IsNull(lobjINVRS.Fields("QtyInStock").Value) And IsNull(lobjINVRS.Fields("QtyReserved").Value) And IsNull(lobjINVRS.Fields("QtyOnOrder").Value)) Then
+                ClearConObj
+                If lobjINVRS.Fields("QtyInStock").Value > 0 Then
+                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+                    aCon.mmcalc
+                    lblStockQty.Caption = Round(aCon.mm, 0)
+                End If
+                If lobjINVRS.Fields("QtyReserved").Value > 0 Then
+                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyReserved").Value)
+                    aCon.mmcalc
+                    lblReserved.Caption = Round(aCon.mm, 0)
+                End If
+                If lobjINVRS.Fields("QtyOnOrder").Value > 0 Then
+                    aCon.Inch = DBLValue(lobjINVRS.Fields("QtyOnOrder").Value)
+                    aCon.mmcalc
+                    lblOrderQty.Caption = Round(aCon.mm, 0)
+                End If
+            Else
+                lstrFieldName = "QtyInStock"
+                lblStockQty.Caption = Format(IIf(IsNull(lobjINVRS.Fields(lstrFieldName).Value), "", Trim(lobjINVRS.Fields(lstrFieldName).Value)), cstrQtyMask)
+                lstrFieldName = "QtyOnOrder"
+                lblOrderQty.Caption = Format(IIf(IsNull(lobjINVRS.Fields(lstrFieldName).Value), "", Trim(lobjINVRS.Fields(lstrFieldName).Value)), cstrQtyMask)
+                lstrFieldName = "QtyReserved"
+                lblReserved.Caption = Format(IIf(IsNull(lobjINVRS.Fields(lstrFieldName).Value), "", Trim(lobjINVRS.Fields(lstrFieldName).Value)), cstrQtyMask)
+            End If
+            lobjINVRS.Close
+        End If
+    End If
+    
+    Set lobjINVRS = Nothing
+    
+    Call SetControls(mintMode)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub SetControls(ByVal intMode)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetControls()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Select Case intMode
+        Case MODE_ADD
+                        cmdEdit.Enabled = False
+                        cmdSave.Enabled = True
+                        cmdBack.Enabled = True
+
+                        ''''''''''Change in .NET''''''''''''''''
+                        'chkMatSec.Enabled = True
+                        If mblnSpecial = True Then
+                            
+                            optMaterial.Enabled = True
+                            optSections.Enabled = True
+                            
+                            optMaterial.Value = True
+                        Else
+                            optMaterial.Visible = False
+                            optSections.Visible = False
+                        End If
+                        
+                        ''''''''''END Change in .NET
+                    
+                        If gblnWordFlag = True Then cmdSpell.Enabled = True
+                        
+                        txtPartNum.Enabled = False
+                        txtPtDesc.Enabled = False
+                        txtPtQty.Enabled = True
+                        If Me.txtSpecialWeight.Visible = True Then
+                            txtSpecialWeight.Enabled = True
+                            txtSpecialWeight.BackColor = &HFFFFFF
+                        End If
+                        txtPtCost.Enabled = True
+                        txtPtNotes.Enabled = True
+                        chkCall.Enabled = True
+                        txtPartNum.BackColor = &HE0E0E0
+                        txtPtDesc.BackColor = &HE0E0E0
+                        txtPtQty.BackColor = &HFFFFFF
+                        txtPtCost.BackColor = &HFFFFFF
+                        txtPtNotes.BackColor = &HFFFFFF
+        Case MODE_EDIT
+                        cmdEdit.Caption = "Cancel &Edit"
+                        cmdEdit.Enabled = True
+                        cmdSave.Enabled = True
+                        cmdBack.Enabled = False
+
+                        ''''''''''Change in .NET''''''''''''''''
+                        'chkMatSec.Enabled = True
+                        optMaterial.Enabled = True
+                        optSections.Enabled = True
+                        ''''''''''END Change in .NET
+                        
+                        If gblnWordFlag = True Then cmdSpell.Enabled = True
+                        
+                        txtPartNum.Enabled = False
+                        txtPtQty.Enabled = True
+                        txtPtCost.Enabled = True
+                        txtPtNotes.Enabled = True
+                        
+                        If Left(txtPartNum.Text, 9) = "COMM-NSTK" Then
+                            txtPtDesc.Enabled = True
+                            txtPtDesc.BackColor = &HFFFFFF '&HE0E0E0
+                        Else
+                            chkCall.Enabled = True
+                            txtPtDesc.Enabled = False
+                            txtPtDesc.BackColor = &HE0E0E0 '&HFFFFFF
+                        End If
+                        If Me.txtSpecialWeight.Visible = True Then
+                            txtSpecialWeight.Enabled = True
+                            txtSpecialWeight.BackColor = &HFFFFFF
+                        End If
+                        txtPartNum.BackColor = &HE0E0E0
+                        'txtPtDesc.BackColor = &HE0E0E0
+                        txtPartNum.Enabled = False
+                        txtPtQty.BackColor = &HFFFFFF
+                        txtPtCost.BackColor = &HFFFFFF
+                        txtPtNotes.BackColor = &HFFFFFF
+        Case Else
+                        cmdEdit.Caption = "&Edit Detail"
+                        cmdEdit.Enabled = True
+                        cmdSave.Enabled = False
+                        cmdBack.Enabled = True
+                        cmdSpell.Enabled = False
+
+                        ''''''''''Change in .NET''''''''''''''''
+                        'chkMatSec.Enabled = False
+                        optMaterial.Enabled = False
+                        optSections.Enabled = False
+                        ''''''''''END Change in .NET
+                        
+                        txtPartNum.Enabled = False
+                        txtPtDesc.Enabled = False
+                        txtPtQty.Enabled = False
+                        txtPtCost.Enabled = False
+                        txtPtNotes.Enabled = False
+                        chkCall.Enabled = False
+                        If Me.txtSpecialWeight.Visible = True Then
+                            txtSpecialWeight.Enabled = False
+                            txtSpecialWeight.BackColor = &HE0E0E0
+                        End If
+                        txtPartNum.BackColor = &HE0E0E0
+                        txtPtDesc.BackColor = &HE0E0E0
+                        txtPtQty.BackColor = &HE0E0E0
+                        txtPtCost.BackColor = &HE0E0E0
+                        txtPtNotes.BackColor = &HE0E0E0
+    End Select
+    
+    If mlngQuoteID > 0 Or mlngPOID > 0 Or mblnAlloc = True Then
+        cmdEdit.Enabled = False     'once BoM added to a Quote; ca not edit partno. only view
+    End If
+    If GetUMfromMain(txtPartNum.Text) = "EACH" And (Me.lblBOMUM = "INCHES" Or Me.lblBOMUM = "MM") Or _
+            Left(txtPartNum.Text, 4) = "433-" Then
+'    If txtPartNum.Text = "328-227" Or _
+            txtPartNum.Text = "426-0271" Or _
+            Left(txtPartNum.Text, 4) = "433-" Then
+'            txtPartNum.Text = "114-702" Or _
+'            txtPartNum.Text = "114-703" Or _
+'            txtPartNum.Text = "114-704" Or _
+'            txtPartNum.Text = "114-706" Or _
+'            txtPartNum.Text = "950-009" Or _
+'            txtPartNum.Text = "950-010" Or _
+'            txtPartNum.Text = "950-011" Or _
+'            txtPartNum.Text = "950-012" Or _
+'            txtPartNum.Text = "950-013" Or _
+'            txtPartNum.Text = "950-014" Or _
+'            txtPartNum.Text = "950-015" Or _
+'            txtPartNum.Text = "114-701" Or _
+'            txtPartNum.Text = "426-0272" Or _
+'            txtPartNum.Text = "114-700" Or _
+'            txtPartNum.Text = "950-016" Or _
+
+        cmdLenDet.Visible = True
+        txtPtQty.Enabled = False
+    Else
+        cmdLenDet.Visible = False
+    End If
+    
+    If chkPhantom.Value = 1 And (intMode = 0) Then
+        cmdPN.Visible = True    'add mode
+        cmdPN.Left = cmdLenDet.Left
+        txtPtQty.Enabled = False
+    Else
+        cmdPN.Visible = False   'view and edit mode
+    End If
+    
+    If UCase(mstrBOMUM) = "METRIC" Then
+        Label13.Caption = "Total Shipping Weight in kg"
+    Else
+        Label13.Caption = "Total Shipping Weight in lb"
+    End If
+       
+    If chkPhantom.Value = 1 And (intMode = 0) Then
+        lblnote.Visible = True
+        lblnote.Caption = "Note: You need to Click PN Details button to enter Part number width and quantity."
+    ElseIf GetUMfromMain(txtPartNum.Text) = "EACH" And (Me.lblBOMUM = "INCHES" Or Me.lblBOMUM = "MM") Or _
+            Left(txtPartNum.Text, 4) = "433-" Then
+        lblnote.Visible = True
+        lblnote.Caption = "Note: You need to Click Length Details button to enter Part number length and quantity."
+    Else
+        lblnote.Visible = False
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub SaveData()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SaveData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lstrWhereClause As String
+    Dim llngAffected As Long
+    Dim lobjADORS As ADODB.Recordset
+    Dim lobjParentRS As ADODB.Recordset
+    Dim lblnPartExist As Boolean
+    
+    If txtSpecialWeight.Visible = True Then Me.lblBkWeight.Caption = DBLValue(txtSpecialWeight.Text)
+
+    ' Copy the fields from the screen to an ADO Recordset
+    Set lobjADORS = BuildRS()
+    If Not ValidateData(lobjADORS) Then Exit Sub
+    ' Process through the recordset and insert or update rows
+    If Not lobjADORS Is Nothing Then
+        If Not (lobjADORS.BOF And lobjADORS.EOF) Then
+            lobjADORS.MoveFirst
+            
+            Do While lobjADORS.EOF = False
+                ' Check to see if the record exists in the
+                ' BOMDetails table already
+                If mintMode = MODE_ADD Then
+                    lstrSQL = "select BOMPtNum, BOMPtQtyReq, BOMPtTotAmountReq, BOMptMtCost,BOMCallPrice from BOMdetails "
+                    lstrSQL = lstrSQL & "where BOMID=" & mlngBOMID
+                    lstrSQL = lstrSQL & "and BOMptnum=" & SQLString(lobjADORS.Fields("BOMPtNum").Value)
+                    Set lobjParentRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+                    If Not lobjParentRS Is Nothing Then
+                        If Not (lobjParentRS.BOF And lobjParentRS.EOF) Then
+                            lobjParentRS.MoveFirst
+                            ' Reset the Mode so that we do an update of the existing part
+                            lblnPartExist = True
+                            
+                            ' Average the cost and sum the qty's
+                            If DBLValue(lobjADORS.Fields("BOMPtMtCost").Value) <> DBLValue(lobjParentRS.Fields("BOMPtMtCost").Value) Then lobjADORS.Fields("BOMCallPrice").Value = True
+
+                            ''''''''''Change in .NET''''''''''''''''
+                            'No need to Average the cost, once user modified the price, and decided to add the QTY, it will convert back to List price
+'                            lobjADORS.Fields("BOMPtMtCost").Value = (DBLValue(lobjADORS.Fields("BOMPtQtyReq").Value) * DBLValue(lobjADORS.Fields("BOMPtMtCost").Value) + DBLValue(lobjParentRS.Fields("BOMPtQtyReq").Value) * DBLValue(lobjParentRS.Fields("BOMPtMtCost").Value)) / DBLValue((lobjParentRS.Fields("BOMPtQtyReq").Value) + DBLValue(lobjADORS.Fields("BOMPtQtyReq").Value))
+
+                            If lobjADORS.Fields("BOMCallPrice").Value = True Then
+                                If lobjADORS.Fields("BOMPtMtCost").Value <> lobjParentRS.Fields("BOMPtMtCost").Value Then
+                                    MsgBox "Part number " & lobjParentRS.Fields("BOMPtNum").Value & " has been converted back to List Pricing on the Bills-Of-Material. ", vbApplicationModal + vbInformation, "Price Changed"
+                                    lobjADORS.Fields("BOMPtMtCost").Value = DBLValue(ConvertToListPrice(lobjADORS))
+                                    lobjADORS.Fields("BOMCallPrice").Value = 0
+                                    lobjADORS.Fields("BOMCallPriceExpDate").Value = Null
+                                End If
+                            End If
+                            ''''''''''END Change in .NET
+                            
+                            lobjADORS.Fields("BOMPtQtyReq").Value = DBLValue(lobjADORS.Fields("BOMPtQtyReq").Value) + DBLValue(lobjParentRS.Fields("BOMPtQtyReq").Value)
+                            lobjADORS.Fields("BOMPtTotAmountReq").Value = DBLValue(lobjADORS.Fields("BOMPtTotAmountReq").Value) + DBLValue(lobjParentRS.Fields("BOMPtTotAmountReq").Value)
+                        End If
+                        lobjParentRS.Close
+                    End If
+                    Set lobjParentRS = Nothing
+                End If
+
+                'Build the SQL Insert or Update statement
+                If mintMode = MODE_ADD And lblnPartExist = False Then
+                    lstrErrDescr = "Error building insert statement for " & cstrTableName
+                    lstrSQL = Build_Insert(lobjADORS, cstrTableName, "")
+                    lstrErrDescr = "Error inserting data into " & cstrTableName
+                Else
+                    lstrErrDescr = "Error building update statement for " & cstrTableName
+                    lstrWhereClause = "BOMID=" & mlngBOMID
+                    lstrWhereClause = lstrWhereClause & " and BOMPtNum=" & SQLString(lobjADORS.Fields("BOMPtNum").Value)
+                    lstrSQL = Build_Update(lobjADORS, cstrTableName, lstrWhereClause, "BOMID,BOMNum")
+                    lstrErrDescr = "Error updating " & cstrTableName
+                End If
+                Call CnnBTMS.Execute(lstrSQL, 0, adCmdText And adExecuteNoRecords)
+                lstrErrDescr = ""
+                
+                mstrPtNum = Trim(lobjADORS.Fields("BOMPtNum").Value)
+''''''''''Change in .NET''''''''''''''''
+                mstrAddedPN = mstrPtNum
+''''''''''END Change in .NET
+                lobjADORS.MoveNext
+            Loop
+            
+            lobjADORS.Close
+        End If
+    End If
+    
+    Set lobjADORS = Nothing
+    
+    
+    Call UpdateBOMTotal(mlngBOMID)
+    
+    If mintMode = MODE_ADD Then
+        If mblnSpecial = True Then
+            aReg.OpenKey LocalMachine, "\Software\Richards-Wilcox Canada\BTMS", True 'opens or creates key
+            aReg.WriteValue "LastNumber", CStr(DBLValue(Mid(Me.txtPartNum.Text, 11)))
+            aReg.CloseKey
+        End If
+        Call cmdBack_Click
+        Exit Sub
+    End If
+    
+    MsgBox "Please note that any change done to the Bill of Materials will not affect the total springing weight previously calculated.", vbInformation, "Springing Weight"
+    mintMode = MODE_VIEW
+
+    Call LoadData
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub ClearScreen(Optional ByVal blnForm As Boolean = False)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ClearScreen()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If blnForm = False Then
+        lblBOMNum.Caption = ""
+        lblBOMUM.Caption = ""
+    End If
+    
+    lblMultID.Caption = ""
+    txtPartNum.Text = ""
+    txtPtDesc.Text = ""
+    Me.lblOtherDesc.Caption = ""
+    lblStockQty.Caption = Format(0, cstrQtyMask)
+    lblBOMUM.Caption = ""
+    lblTotalCost.Caption = Format(0, cstrDollarMask)
+    lblWeight.Caption = Format(0, cstrQtyMask)
+    lblBkWeight.Caption = Format(0, cstrQtyMask)
+    lblReserved.Caption = Format(0, cstrQtyMask)
+    lblBookCost.Caption = Format(0, cstrDollarMask)
+    txtSpecialWeight.Visible = False
+    Label2.Visible = False
+    txtPtQty.Text = Format(0, cstrQtyMask)
+    lblOrderQty.Caption = Format(0, cstrQtyMask)
+    txtPtCost.Text = Format(0, cstrDollarMask)
+    lblSpMult.Caption = Format(0, cstrQtyMask)
+    
+    chkPhantom.Value = 0
+    chkCall.Value = 0
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Function BuildRS() As ADODB.Recordset
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".BuildRS()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lstrSQL As String
+    Dim lstrSchema As String
+    Dim llngAffected As Long
+    Dim lobjADORS As ADODB.Recordset
+    
+    ' Get empty recordset
+    lstrErrDescr = "Error getting empty ADO recordset."
+    lstrSQL = "Select * from " & cstrTableName & " where 1=0"
+    Set lobjADORS = New ADODB.Recordset
+    lobjADORS.CursorType = adOpenForwardOnly
+    lobjADORS.CursorLocation = adUseClient
+    lobjADORS.Open lstrSQL, CnnBTMS, adOpenForwardOnly, adLockOptimistic
+    lobjADORS.AddNew
+    Set lobjADORS.ActiveConnection = Nothing
+    lstrErrDescr = ""
+    
+    lobjADORS.Fields("BOMID").Value = mlngBOMID
+    lobjADORS.Fields("BOMNum").Value = Trim(mstrDocNum)
+    lobjADORS.Fields("BOMPtNum").Value = Trim(txtPartNum.Text)
+    lobjADORS.Fields("BOMPtDesc").Value = Trim(txtPtDesc.Text)
+    If Trim(lblOtherDesc.Caption) = "" Then
+        lobjADORS.Fields("BOMPtOtherDesc").Value = Trim(txtPtDesc.Text)
+    Else
+        lobjADORS.Fields("BOMPtOtherDesc").Value = Trim(lblOtherDesc.Caption)
+    End If
+    lobjADORS.Fields("BOMPtUM").Value = IIf(Trim(lblBOMUM.Caption) = "MM", "INCHES", Trim(lblBOMUM.Caption))
+
+''''''''''Change in .NET''''''''''''''''
+      'statement lacks the save shipweight condition when its metric + a non-stock item
+      'statement originally commented because of having inch value converted again into inch in loadData routine
+      'Need to save the value in inch so that when loading data we should convert the value into metric
+      
+''    If UCase(mstrBOMUM) = "METRIC" Then
+''        Call ClearConObj
+''        aCon.KG = DBLValue(lblBkWeight.Caption)
+''        aCon.LBcalc
+''        lobjADORS.Fields("BOMPtShipWgt").Value = aCon.LB
+''    Else
+'        lobjADORS.Fields("BOMPtShipWgt").Value = DBLValue(lblBkWeight.Caption)
+''    End If
+
+    If UCase(mstrBOMUM) = "METRIC" And Left(txtPartNum.Text, 9) = "COMM-NSTK" Then
+        Call ClearConObj
+        aCon.KG = DBLValue(lblBkWeight.Caption)
+        aCon.LBcalc
+        lobjADORS.Fields("BOMPtShipWgt").Value = aCon.LB
+    Else
+        lobjADORS.Fields("BOMPtShipWgt").Value = DBLValue(lblBkWeight.Caption)
+    End If
+
+''''''''''END Change in .NET
+    
+    lobjADORS.Fields("BOMPtQtyReq").Value = DBLValue(txtPtQty.Text)
+    If UCase(lblBOMUM.Caption) = "MM" And UCase(mstrBOMUM) = "METRIC" Then
+        ClearConObj
+        aCon.mm = DBLValue(txtPtQty.Text)
+        aCon.Inchcalc
+        lobjADORS.Fields("BOMPtTotAmountReq").Value = aCon.Inch
+        lobjADORS.Fields("BOMPtMtCost").Value = DBLValue(txtPtCost.Text) / 0.03937008 'convert from displayed price per mm to price per inch.
+    Else
+        lobjADORS.Fields("BOMPtTotAmountReq").Value = DBLValue(txtPtQty.Text)
+        lobjADORS.Fields("BOMPtMtCost").Value = DBLValue(txtPtCost.Text)
+    End If
+
+''''''''''Change in .NET''''''''''''''''
+    'lobjADORS.Fields("BOMPtlistCost").Value = Round(GetListPrice(Trim(txtPartNum.Text), intCheck), 2)
+    lobjADORS.Fields("BOMPtlistCost").Value = Round(GetListPrice(Trim(txtPartNum.Text), intCheck), 2)
+''''''''''END Change in .NET
+    
+    'lobjADORS.Fields("BOMPtShipWgt").Value = DBLValue(lblWeight.Caption)
+    lobjADORS.Fields("BOMPtMultID").Value = DBLValue(lblMultID.Caption)
+    lobjADORS.Fields("BOMDiscount").Value = DBLValue(lblSpMult.Caption)
+    lobjADORS.Fields("BOMCallPrice").Value = IIf(chkCall.Value = 1, True, False)
+    If IsNull(lobjADORS.Fields("BOMCallPriceExpDate").Value) And lobjADORS.Fields("BOMCallPrice").Value = True Then
+        lobjADORS.Fields("BOMCallPriceExpDate").Value = Now() + 30
+    End If
+    lobjADORS.Fields("BOMGroupCategory").Value = IIf(lblBOMCat.Caption = "", 999, DBLValue(lblBOMCat.Caption))
+    lobjADORS.Fields("BOMPtPhantomPN").Value = IIf(chkPhantom.Value = 1, True, False)
+    lobjADORS.Fields("BOMPtNotes").Value = Trim(txtPtNotes.Text)
+
+''''''''''Change in .NET''''''''''''''''
+ 
+    If Mid(Trim(txtPartNum.Text), 1, 9) <> "COMM-NSTK" Then lobjADORS.Fields("BOMPriceGroup").Value = GetPriceGroup(lobjADORS.Fields("BOMPtNum").Value)
+    If Mid(Trim(txtPartNum.Text), 1, 9) = "COMM-NSTK" Then lobjADORS.Fields("BOMPriceGroup").Value = IIf(optMaterial.Value = True, "M", "S")
+    If Mid(Trim(txtPartNum.Text), 1, 10) = "COMM-ASECT" Or Mid(Trim(txtPartNum.Text), 1, 10) = "COMM-RSECT" Then lobjADORS.Fields("BOMPriceGroup").Value = "S"
+    
+''''''''''END Change in .NET
+    
+    Set BuildRS = lobjADORS
+    Set lobjADORS = Nothing
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Private Sub LoadPartInfo(ByVal strPartNum As String)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LoadPartInfo()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim llngAffected As Long
+    Dim lstrSQLQuery As String
+    Dim lobjMainRS As ADODB.Recordset
+    Dim lobjINVRS As ADODB.Recordset
+    
+    If Trim(strPartNum) = "" Then Exit Sub
+    cmdLenDet.Visible = False
+    cmdPN.Visible = False
+     '-- Mod Hanobver  MultId changed to strMultId
+'    lstrSQLQuery = "select DescImp, DescMet, DescOther, MultID, SpecialMult, UM,BOMGroupCategory,"
+    lstrSQLQuery = "select DescImp, DescMet, DescOther," & strMultId & ", SpecialMult, UM,BOMGroupCategory,"
+
+    
+    lstrSQLQuery = lstrSQLQuery & " PkgQty, CallPrice, PhantomPN, G, I, N, T, J,M,S,V, ShipWeight"
+    lstrSQLQuery = lstrSQLQuery & " from main where partnum=" & SQLString(Trim(strPartNum))
+    Set lobjMainRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+    If Not lobjMainRS Is Nothing Then
+        lobjMainRS.ActiveConnection = Nothing
+        If Not (lobjMainRS.BOF And lobjMainRS.EOF) Then
+            lobjMainRS.MoveFirst
+            Dim lstrFieldName As String
+            
+            lstrFieldName = "DescImp"
+            If UCase(Trim(mstrBOMUM)) = "METRIC" Then lstrFieldName = "DescMet"
+            txtPtDesc.Text = IIf(IsNull(lobjMainRS.Fields(lstrFieldName).Value), "", Trim(lobjMainRS.Fields(lstrFieldName).Value))
+            
+            lstrFieldName = "DescOther"
+            lblOtherDesc.Caption = IIf(IsNull(lobjMainRS.Fields(lstrFieldName).Value), "", Trim(lobjMainRS.Fields(lstrFieldName).Value))
+             '-- Mod Hanobver  MultId changed to strMultId
+'            lstrFieldName = "MultID"
+           lstrFieldName = strMultId
+
+            lblMultID.Caption = IIf(IsNull(lobjMainRS.Fields(lstrFieldName).Value), "", Trim(lobjMainRS.Fields(lstrFieldName).Value))
+            
+            lstrFieldName = "SpecialMult"
+            lblSpMult.Caption = Format(IIf(IsNull(lobjMainRS.Fields(lstrFieldName).Value), "", Trim(lobjMainRS.Fields(lstrFieldName).Value)), cstrQtyMask)
+            
+            'this label will hold a value of the total discount.
+'            If DBLValue(lblSpMult.Caption) = 0 Then
+'                lblSpMult.Caption = MultipliersCase(DBLValue(Trim(lblMultID.Caption)))
+'            End If
+            
+            lstrFieldName = "PhantomPN"
+            chkPhantom.Value = IIf(lobjMainRS.Fields(lstrFieldName).Value = True, 1, 0)
+            
+            lstrFieldName = "UM"
+            lblBOMUM.Caption = IIf(IsNull(lobjMainRS.Fields(lstrFieldName).Value), "", Trim(lobjMainRS.Fields(lstrFieldName).Value))
+            ' Calculate Cost of part
+            Dim ldblCost As Double
+            Dim dblListPrice As Double
+            Select Case intCheck
+                Case 1: ldblCost = DBLValue(lobjMainRS.Fields("G").Value)
+                Case 2: ldblCost = DBLValue(lobjMainRS.Fields("I").Value)
+                Case 3: ldblCost = DBLValue(lobjMainRS.Fields("N").Value)
+                Case 4: ldblCost = DBLValue(lobjMainRS.Fields("T").Value)
+                Case 5: ldblCost = DBLValue(lobjMainRS.Fields("J").Value)
+                Case 6: ldblCost = DBLValue(lobjMainRS.Fields("M").Value)
+                Case 7: ldblCost = DBLValue(lobjMainRS.Fields("S").Value)
+                Case 8: ldblCost = DBLValue(lobjMainRS.Fields("V").Value)
+                
+
+                
+                
+            End Select
+            ldblCost = Decrypt(GetSym(strPartNum), ldblCost)
+            dblListPrice = ldblCost
+            
+            Dim ldblSpMult As Double
+            ldblSpMult = GetSpMultFromDetails(strPartNum)
+            If ldblSpMult > 0 Then 'there is Sp Mult for that PN on the BoM.
+                ldblCost = ldblCost * ldblSpMult
+            ElseIf ldblSpMult = -1 Then 'the PN does not exist on the BoM, in this case will take the Sp Mult from Main and Mult from Registry
+                If DBLValue(lobjMainRS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(lobjMainRS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(Trim(lblMultID.Caption)))
+                End If
+            Else 'PN is on the BoM, but has no Sp. Mult. in this case take the Mult values from BoM table.
+                ldblCost = ldblCost * (GetMultiplierFromSavedDocument(DBLValue(Trim(lblMultID.Caption)), mlngBOMID, "BoM"))
+            End If
+            
+            mdblCost = ldblCost 'use only for section's cost
+            mdblListPrice = dblListPrice 'use only for section's cost
+            
+            If GetUMfromMain(strPartNum) = "EACH" And GetUMfromInventory(strPartNum) = "INCHES" Or _
+                (Left(strPartNum, 4) = "433-" And IsSquare(strPartNum) = False) Or _
+                            (lobjMainRS.Fields(lstrFieldName).Value = "LFT" And lobjMainRS.Fields("PhantomPN").Value = False) Then
+'            If strPartNum = "426-0271" Or strPartNum = "328-227" Or _
+                            (Left(strPartNum, 4) = "433-" And IsSquare(strPartNum) = False) Or _
+                            (lobjMainRS.Fields(lstrFieldName).Value = "LFT" And lobjMainRS.Fields("PhantomPN").Value = False) Then
+'                            strPartNum = "114-702" Or strPartNum = "114-703" Or _
+'                            strPartNum = "114-704" Or strPartNum = "114-706" Or _
+'                            strPartNum = "950-009" Or strPartNum = "950-010" Or _
+'                            strPartNum = "950-011" Or strPartNum = "950-012" Or _
+'                            strPartNum = "950-013" Or strPartNum = "950-014" Or _
+'                            strPartNum = "950-015" Or strPartNum = "114-700" Or _
+'                            strPartNum = "426-0272" Or strPartNum = "114-701" Or _
+'                            strPartNum = "950-016" Then
+
+                
+                lblBOMUM.Caption = "INCHES"
+                cmdLenDet.Visible = True
+                If GetUMfromInventory(strPartNum) = "INCHES" And GetUMfromMain(strPartNum) = "EACH" Then
+                    ldblCost = ldblCost / GetLengthFromMain(strPartNum)
+                    dblListPrice = dblListPrice / GetLengthFromMain(strPartNum)
+                ElseIf GetUMfromMain(strPartNum) = "LFT" Then
+                    ldblCost = ldblCost / 12
+                    dblListPrice = dblListPrice / 12
+                End If
+            End If
+            
+            If (Left(strPartNum, 4) = "433-" And IsSquare(strPartNum) = True) Then
+                lblBOMUM.Caption = "COILS"
+            End If
+            
+            If lblBOMUM.Caption = "INCHES" And UCase(mstrBOMUM) = "METRIC" Then
+                lblBOMUM.Caption = "MM"
+            End If
+            
+            lstrFieldName = "CallPrice"
+            chkCall.Value = IIf(lobjMainRS.Fields(lstrFieldName).Value = True, 1, 0)
+            
+            If chkCall.Value = 0 Then
+                lstrFieldName = "CallPrice"
+                chkCall.Value = IIf(lobjMainRS.Fields(lstrFieldName).Value = True, 1, 0)
+            End If
+            
+            lstrFieldName = "ShipWeight"
+            If Not IsNull(lobjMainRS.Fields("ShipWeight").Value) Then
+                If lblBOMUM.Caption = "INCHES" Then
+                    If lobjMainRS.Fields("UM").Value = "LFT" Then
+                        lblBkWeight.Caption = DBLValue(lobjMainRS.Fields("ShipWeight").Value) / 12
+                    ElseIf lobjMainRS.Fields("UM").Value = "EACH" Then
+                        If Left(strPartNum, 4) = "433-" Then
+                            lblBkWeight.Caption = lobjMainRS.Fields("ShipWeight").Value
+                        Else
+                            lblBkWeight.Caption = DBLValue(lobjMainRS.Fields("ShipWeight").Value) / GetLengthFromMain(strPartNum)
+                        End If
+                    End If
+                ElseIf lblBOMUM.Caption = "MM" Then
+                    If lobjMainRS.Fields("UM").Value = "LFT" Then
+                        lblBkWeight.Caption = DBLValue((lobjMainRS.Fields("ShipWeight").Value) / 12) * 0.03937008
+                    ElseIf lobjMainRS.Fields("UM").Value = "EACH" Then
+                        If Left(strPartNum, 4) = "433-" Then
+                            lblBkWeight.Caption = DBLValue(lobjMainRS.Fields("ShipWeight").Value) * 0.03937008
+                        Else
+                            lblBkWeight.Caption = DBLValue((lobjMainRS.Fields("ShipWeight").Value) / GetLengthFromMain(strPartNum)) * 0.03937008
+                        End If
+                    End If
+                Else
+                    lblBkWeight.Caption = lobjMainRS.Fields("ShipWeight").Value
+                    mdblShipWeight = lblBkWeight.Caption 'use only for section's ship weight
+                End If
+            Else
+                lblBkWeight.Caption = 0
+            End If
+            
+'            If UCase(mstrBOMUM) = "METRIC" Then
+'                ClearConObj
+'                aCon.LB = DBLValue(lblBkWeight.Caption)
+'                aCon.KGcalc
+'                lblBkWeight.Caption = aCon.KG
+'            End If
+            lblWeight.Caption = Format(DBLValue(lblBkWeight.Caption) * DBLValue(txtPtQty.Text), "Fixed")
+            
+            lblListPrice.Caption = dblListPrice
+            lblBookCost.Caption = ldblCost
+            
+            If UCase(mstrBOMUM) = "METRIC" And lblBOMUM.Caption = "MM" Then
+                lblBookCost.Caption = DBLValue(lblBookCost.Caption) * 0.03937008 'price has to per mm not per inch as in database.
+                If DBLValue(lblBookCost.Caption) < 1 Then
+                    lblBookCost.Caption = Format(lblBookCost.Caption, "0.000000") 'price per mm will be so low, formatting to fixed will show "0.00"
+                Else
+                    lblBookCost.Caption = Format(lblBookCost.Caption, cstrDollarMask)
+                End If
+            Else
+                lblBookCost.Caption = Format(lblBookCost.Caption, cstrDollarMask) 'IIf(DBLValue(lblBookCost.Caption) < 1, Format(lblBookCost.Caption, "0.000000"), Format(lblBookCost.Caption, cstrDollarMask))
+            End If
+            
+            'list price
+            If UCase(mstrBOMUM) = "METRIC" And lblBOMUM.Caption = "MM" Then
+                lblListPrice.Caption = DBLValue(lblListPrice.Caption) * 0.03937008 'price has to per mm not per inch as in database.
+                If DBLValue(lblListPrice.Caption) < 1 Then
+                    lblListPrice.Caption = Format(lblListPrice.Caption, "0.000000") 'price per mm will be so low, formatting to fixed will show "0.00"
+                Else
+                    lblListPrice.Caption = Format(lblListPrice.Caption, cstrDollarMask)
+                End If
+            Else
+                lblListPrice.Caption = IIf(DBLValue(lblListPrice.Caption) < 1, Format(lblListPrice.Caption, "0.000000"), Format(lblListPrice.Caption, cstrDollarMask))
+            End If
+            
+            If chkCall.Value = 0 Then
+                txtPtCost.Text = lblBookCost.Caption
+            Else
+                If ldblCost < 1 Then
+                    txtPtCost.Text = Format(ldblCost, "0.000000")
+                Else
+                    txtPtCost.Text = Format(ldblCost, cstrDollarMask)
+                End If
+            End If
+            
+            lblTotalCost.Caption = Format(DBLValue(txtPtQty.Text) * DBLValue(txtPtCost.Text), cstrDollarMask)
+            lblBOMCat.Caption = lobjMainRS.Fields("BOMGroupCategory").Value
+            
+            Me.txtPtNotes.Text = ""
+            
+            lstrSQLQuery = "Select PartNum, QtyInStock,QtyReserved,QtyOnOrder From Inventory"
+            lstrSQLQuery = lstrSQLQuery & " where PartNum=" & SQLString(Trim(strPartNum))
+            Set lobjINVRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+            If Not lobjINVRS Is Nothing Then
+                If Not (lobjINVRS.BOF And lobjINVRS.EOF) Then
+                    lobjINVRS.MoveFirst
+                    If lblBOMUM.Caption = "MM" And Not (IsNull(lobjINVRS.Fields("QtyInStock").Value)) Then
+                        ClearConObj
+                        aCon.Inch = DBLValue(lobjINVRS.Fields("QtyInStock").Value)
+                        aCon.mmcalc
+                        lblStockQty.Caption = Round(aCon.mm, 0)
+                        aCon.Inch = DBLValue(lobjINVRS.Fields("QtyReserved").Value)
+                        aCon.mmcalc
+                        lblReserved.Caption = Round(aCon.mm, 0)
+                        aCon.Inch = DBLValue(lobjINVRS.Fields("QtyOnOrder").Value)
+                        aCon.mmcalc
+                        lblOrderQty.Caption = Round(aCon.mm, 0)
+                    Else
+                        lblStockQty.Caption = Format(IIf(IsNull(lobjINVRS.Fields("QtyInStock").Value), 0, lobjINVRS.Fields("QtyInStock").Value), cstrQtyMask)
+                        lblReserved.Caption = Format(IIf(IsNull(lobjINVRS.Fields("QtyInStock").Value), 0, lobjINVRS.Fields("QtyReserved").Value), cstrQtyMask)
+                        lblOrderQty.Caption = Format(IIf(IsNull(lobjINVRS.Fields("QtyOnOrder").Value), 0, lobjINVRS.Fields("QtyOnOrder").Value), cstrQtyMask)
+                    End If
+                    lobjINVRS.Close
+                End If
+            End If
+        Else
+        
+         '-- Mod Hanobver  MultId changed to strMultId
+'            lstrSQLQuery = "select PartNum, DescImp, DescMet, DescOther, MultID, SpecialMult, UM,BOMGroupCategory,"
+            lstrSQLQuery = "select PartNum, DescImp, DescMet, DescOther," & strMultId & ", SpecialMult, UM,BOMGroupCategory,"
+
+            lstrSQLQuery = lstrSQLQuery & " PkgQty, CallPrice, PhantomPN, G, I, N, T,J,M,S,V, ShipWeight"
+            lstrSQLQuery = lstrSQLQuery & " from main "
+            Set lobjMainRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+            If Not lobjMainRS Is Nothing Then
+                lobjMainRS.ActiveConnection = Nothing
+                If Not (lobjMainRS.BOF And lobjMainRS.EOF) Then
+                    lblMultID.Caption = 11
+                    lobjMainRS.MoveFirst 'sections
+                    lobjMainRS.Find "PartNum like " & SQLString(Left(strPartNum, 6) & "000")
+                    If lobjMainRS.EOF = False And lobjMainRS.BOF = False Then
+                        chkPhantom.Value = 1
+
+                        lstrFieldName = "DescImp"
+                        If UCase(Trim(mstrBOMUM)) = "METRIC" Then lstrFieldName = "DescMet"
+                        txtPtDesc.Text = lobjMainRS.Fields(lstrFieldName).Value
+                        
+                        lblBookCost.Caption = 0
+                        lblListPrice.Caption = 0
+                        txtPtCost.Text = lblBookCost.Caption
+                        
+                        lblBkWeight.Caption = 0 'IIf(Right(lobjMainRS.Fields("PartNum").Value, 4) = "1000", GetSectionWeightPerHeight(21), GetSectionWeightPerHeight(24))
+                        
+                        lblBOMUM.Caption = "EACH"
+                        lblBOMCat.Caption = IIf(Not IsNull(lobjMainRS.Fields("BOMGroupCategory").Value), lobjMainRS.Fields("BOMGroupCategory").Value, 190)
+                        
+                    Else
+                     '-- Mod Hanobver  MultId changed to strMultId
+'                        lstrSQLQuery = "select Partnum, DescImp, DescMet, DescOther, MultID, SpecialMult, UM,BOMGroupCategory,"
+                        lstrSQLQuery = "select Partnum, DescImp, DescMet, DescOther," & strMultId & ", SpecialMult, UM,BOMGroupCategory,"
+  
+                        
+                        lstrSQLQuery = lstrSQLQuery & " PkgQty, CallPrice, PhantomPN, G, I, N, T,J,M,S,V, ShipWeight"
+                        lstrSQLQuery = lstrSQLQuery & " from main "
+                        Set lobjMainRS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+                        If Not lobjMainRS Is Nothing Then
+                            lobjMainRS.ActiveConnection = Nothing
+                            If Not (lobjMainRS.BOF And lobjMainRS.EOF) Then
+                                lobjMainRS.MoveFirst 'full view
+                                lobjMainRS.Find "PartNum like " & SQLString(Left(strPartNum, 6))
+                                If lobjMainRS.EOF = False And lobjMainRS.BOF = False Then
+                                    lstrFieldName = "DescImp"
+                                    If UCase(Trim(mstrBOMUM)) = "METRIC" Then lstrFieldName = "DescMet"
+                                    
+                                    txtPtDesc.Text = lobjMainRS.Fields(lstrFieldName).Value
+                                    lblBookCost.Caption = 0 'ldblCost * (DrWidth / 12)
+                                    lblListPrice.Caption = 0
+                                    lblBkWeight.Caption = 0
+                                    chkPhantom.Value = 1
+
+                                    lblBOMUM.Caption = "EACH"
+                                    lblBOMCat.Caption = IIf(Not IsNull(lobjMainRS.Fields("BOMGroupCategory").Value), lobjMainRS.Fields("BOMGroupCategory").Value, 190)
+                                End If
+                            End If
+                        End If
+                    End If
+                End If
+            End If
+        End If
+    End If
+    Set lobjMainRS = Nothing
+    Set lobjINVRS = Nothing
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub txtPtCost_GotFocus()
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtPtCost_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    txtPtCost.SelStart = 0
+    txtPtCost.SelLength = (Len(txtPtCost.Text))
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+'Private Sub UpdateBOMTotal()
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".UpdateBOMTotal()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    Dim llngRow As Long
+'    Dim llngAffected As Long
+'    Dim lstrSQLQuery As String
+'    Dim ldblCost As Double
+'    Dim lobjADORS As ADODB.Recordset
+'
+'    lstrSQLQuery = "select sum(BOMPtMtCost * BOMPtQtyReq) from BOMdetails"
+'    lstrSQLQuery = lstrSQLQuery & " where BOMnum=" & SQLString(mstrDocNum)
+'    Set lobjADORS = CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText)
+'    If Not lobjADORS Is Nothing Then
+'        If Not (lobjADORS.BOF And lobjADORS.EOF) Then
+'            If IsNull(lobjADORS.Fields(0).Value) Then
+'                ldblCost = 0
+'            Else
+'                ldblCost = DBLValue(lobjADORS.Fields(0).Value)
+'            End If
+'        End If
+'        lobjADORS.Close
+'    End If
+'    Set lobjADORS = Nothing
+'
+'    lstrSQLQuery = "Update BoM"
+'    lstrSQLQuery = lstrSQLQuery & " Set BOMPrice=" & Replace(ldblCost, ",", ".")
+'    lstrSQLQuery = lstrSQLQuery & " where BOMnum=" & SQLString(mstrDocNum)
+'    Call CnnBTMS.Execute(lstrSQLQuery, llngAffected, adCmdText And adExecuteNoRecords)
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'End Sub
+
+Private Sub txtPtCost_KeyPress(KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtPtCost_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtPtCost, KeyAscii, Len(txtPtCost.Text)) = False Then
+        Beep
+        KeyAscii = 0
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtPtCost_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtPtCost_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    txtPtCost.Text = IIf(DBLValue(txtPtCost.Text) < 1, Format(DBLValue(txtPtCost.Text), "0.000000"), Format(DBLValue(txtPtCost.Text), cstrDollarMask))
+    lblTotalCost.Caption = Format(DBLValue(txtPtQty.Text) * DBLValue(txtPtCost.Text), cstrDollarMask)
+    If Not DBLValue(txtPtCost.Text) = DBLValue(lblBookCost.Caption) And _
+            DBLValue(lblBookCost.Caption) > 0# And DBLValue(txtPtCost.Text) > 0# Then chkCall.Value = 1
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub txtPtQty_GotFocus()
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtPtQty_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    txtPtQty.SelStart = 0
+    txtPtQty.SelLength = (Len(txtPtQty.Text))
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub txtPtQty_KeyPress(KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtPtQty_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If Me.lblBOMUM.Caption = "EACH" Then
+        If Not IsNumeric(Chr(KeyAscii)) Xor KeyAscii = 8 Then
+            Beep
+            KeyAscii = 0
+        End If
+    Else
+        If ValNumericText(txtPtQty, KeyAscii, Len(txtPtQty.Text)) = False Then
+            Beep
+            KeyAscii = 0
+        End If
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtPtQty_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtPtQty_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim lobjRS As ADODB.Recordset
+    Dim lstrSQLQuery As String
+    Dim llngAffected As Long
+    
+    txtPtQty.Text = IIf(DBLValue(txtPtQty.Text) < 1, Format(DBLValue(txtPtQty.Text), "0.000000"), Format(DBLValue(txtPtQty.Text), cstrQtyMask))
+    lblTotalCost.Caption = Format(DBLValue(txtPtQty.Text) * DBLValue(txtPtCost.Text), cstrDollarMask)
+    lblWeight.Caption = DBLValue(lblBkWeight.Caption) * DBLValue(txtPtQty.Text)
+    If mstrBOMUM = "Metric" Then
+        ClearConObj
+        aCon.LB = DBLValue(lblWeight.Caption)
+        aCon.KGcalc
+        lblWeight.Caption = aCon.KG
+    End If
+    lblWeight.Caption = Format(lblWeight.Caption, "Fixed")
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Function ValidateData(ByRef objADORS As ADODB.Recordset) As Boolean
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ValidateData()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    ValidateData = True
+    
+    ' ADD Mode only Validations
+    If mintMode = MODE_ADD Then
+    End If
+    
+    ' EDIT Mode only Validations
+    If mintMode = MODE_EDIT Then
+    
+    End If
+    
+    ' Validation for ALL modes
+    If objADORS.Fields("BOMPtQtyReq").Value <= 0 Then
+        If Me.cmdLenDet.Visible = True Then
+            MsgBox "Required quantity must be greater than 0." & vbCrLf & _
+                "Please enter length and quantity on the Length Details screen.", vbApplicationModal + vbCritical + vbOKOnly, "Validation Failure"
+            cmdLenDet.SetFocus
+        ElseIf Me.cmdPN.Visible = True Then
+            MsgBox "Required quantity must be greater than 0." & vbCrLf & _
+                "You need to click PN Detail button to enter part width and quantity.", vbApplicationModal + vbCritical + vbOKOnly, "Validation Failure"
+            cmdPN.SetFocus
+        Else
+            MsgBox "Required quantity must be greater than 0.", vbApplicationModal + vbCritical + vbOKOnly, "Validation Failure"
+            txtPtQty.SetFocus
+        End If
+        
+        ValidateData = False
+        Exit Function
+    End If
+    
+    If txtSpecialWeight.Visible = True Then
+        If DBLValue(txtSpecialWeight.Text) = 0 Then
+            MsgBox "Please enter weight for the added item.", vbExclamation + vbApplicationModal, "Validation Failure"
+            If txtSpecialWeight.Enabled = True Then txtSpecialWeight.SetFocus
+            ValidateData = False
+            Exit Function
+        End If
+    End If
+    
+    If txtPtDesc.Enabled And Trim(objADORS.Fields("BOMPtDesc").Value) = "" Then
+        MsgBox "Description must be entered.", vbApplicationModal + vbCritical + vbOKOnly, "Validation Failure"
+        txtPtDesc.SetFocus
+        ValidateData = False
+        Exit Function
+    End If
+    
+    If txtPtCost.Enabled And DBLValue(objADORS.Fields("BOMPtMtCost").Value) = 0 Then
+        MsgBox "Material cost must be entered.", vbApplicationModal + vbCritical + vbOKOnly, "Validation Failure"
+        txtPtCost.SetFocus
+        ValidateData = False
+        Exit Function
+    End If
+
+''''''''''Change in .NET''''''''''''''''
+'    If txtPtCost.Enabled And _
+'        Left(txtPartNum.Text, 4) <> "COMM" And _
+'        (DBLValue(txtPtCost.Text) > DBLValue(lblBookCost.Caption)) Then
+'
+'        MsgBox "Unit cost must not be higher than the list price.", vbApplicationModal + vbInformation, "Validation Failure"
+'        txtPtCost.SetFocus
+'        ValidateData = False
+'        Exit Function
+'    End If
+''''''''''END Change in .NET
+    
+    
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Private Sub txtSpecialWeight_GotFocus()
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtSpecialWeight_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    txtSpecialWeight.SelStart = 0
+    txtSpecialWeight.SelLength = (Len(txtSpecialWeight.Text))
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+
+End Sub
+
+Private Sub txtSpecialWeight_Validate(Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtSpecialWeight_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    txtSpecialWeight.Text = Format(DBLValue(txtSpecialWeight.Text), "Fixed")
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Function GetSpMultFromDetails(ByVal lstrPN As String) As Single
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".GetSpMultFromDetails()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    'the function will return -1 if the PN is not found on the BoM, or Special Multiplier value from the BOMDetails table that was saved
+    'at the time of creating the BoM. In all other cases, the function will return 0.
+    
+    GetSpMultFromDetails = 0
+    
+    Dim lstrSQL As String
+    Dim lobjRS As ADODB.Recordset
+    Dim llngAffected As Long
+    lstrSQL = "select BOMDiscount from BOMDetails where BOMID=" & mlngBOMID & " and BOMPtNum=" & SQLString(lstrPN)
+    Set lobjRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjRS Is Nothing Then
+        If lobjRS.EOF = False And lobjRS.BOF = False Then
+            GetSpMultFromDetails = IIf(IsNull(lobjRS.Fields("BOMDiscount").Value), 0, lobjRS.Fields("BOMDiscount").Value)
+        Else
+            GetSpMultFromDetails = -1
+        End If
+    End If
+    Set lobjRS = Nothing
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Function
+
+Private Sub AddPart()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".AddPart()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    Dim lstrSQL As String
+    Call ClearScreen
+    
+    txtPartNum.Text = mstrPtNum
+    Call LoadPartInfo(mstrPtNum)
+    
+    mintMode = MODE_ADD
+    Call SetControls(mintMode)
+    txtPtQty.Text = Format(0, "Fixed")
+    lblBOMNum.Caption = Trim(mstrDocNum)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+Private Function ConvertToListPrice(ByRef lobjADORS As ADODB.Recordset) As Double
+                                
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ConvertToListPrice()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lobjMainRS As ADODB.Recordset
+    Dim ldblCost As Double
+    Dim lstrPriceField As String
+    Dim lstrSQL As String
+    Dim llngAffected As Long
+    Dim ldblSpMult As Double
+    
+    Select Case intCheck
+        Case 1:  lstrPriceField = "G"
+        Case 2:  lstrPriceField = "I"
+        Case 3:  lstrPriceField = "N"
+        Case 4:  lstrPriceField = "T"
+        Case 5: lstrPriceField = "J"
+        Case 6: lstrPriceField = "M"
+        Case 7: lstrPriceField = "S"
+        Case 8: lstrPriceField = "V"
+
+        
+    End Select
+     '-- Mod Hanobver  MultId changed to strMultId
+'    lstrSQL = "Select PartNum, descimp, Length, shipweight, UM, SpecialMult, MultID, " & lstrPriceField & " from Main where PartNum=" & SQLString(lobjADORS.Fields("BOMPtNum").Value)
+    lstrSQL = "Select PartNum, descimp, Length, shipweight, UM, SpecialMult," & strMultId & " ," & lstrPriceField & " from Main where PartNum=" & SQLString(lobjADORS.Fields("BOMPtNum").Value)
+
+    Set lobjMainRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjMainRS Is Nothing Then
+        lobjMainRS.ActiveConnection = Nothing
+        If Not (lobjMainRS.BOF And lobjMainRS.EOF) Then
+        
+            ldblCost = Decrypt(GetSym(lobjADORS.Fields("BOMPtNum").Value), lobjMainRS.Fields(lstrPriceField).Value)
+            
+            ldblSpMult = GetSpMultFromDetails(lobjADORS.Fields("BOMPtNum").Value)
+            If ldblSpMult > 0 Then 'there is Sp Mult for that PN on the BoM.
+                ldblCost = ldblCost * ldblSpMult
+            ElseIf ldblSpMult = -1 Then 'the PN does not exist on the BoM, in this case will take the Sp Mult from Main and Mult from Registry
+                If DBLValue(lobjMainRS.Fields("SpecialMult").Value) > 0 Then
+                    ldblCost = ldblCost * DBLValue(lobjMainRS.Fields("SpecialMult").Value)
+                Else
+                    ldblCost = ldblCost * MultipliersCase(DBLValue(lobjADORS.Fields("BOMPtMultID").Value))
+                End If
+            Else 'PN is on the BoM, but has no Sp. Mult. in this case take the Mult values from BoM table.
+                ldblCost = ldblCost * (GetMultiplierFromSavedDocument(DBLValue(lobjADORS.Fields("BOMPtMultID").Value), mlngBOMID, "BoM"))
+            End If
+        End If
+    End If
+        
+    If GetUMfromInventory(lobjADORS.Fields("BOMPtNum").Value) = "INCHES" And GetUMfromMain(lobjADORS.Fields("BOMPtNum").Value) = "EACH" Then
+        ldblCost = ldblCost / GetLengthFromMain(lobjADORS.Fields("BOMPtNum"))
+    ElseIf GetUMfromMain(lobjADORS.Fields("BOMPtNum")) = "LFT" Then
+        ldblCost = ldblCost / 12
+    End If
+    
+    If UCase(mstrBOMUM) = "METRIC" And lblBOMUM.Caption = "MM" Then
+        ldblCost = DBLValue(ldblCost) * 0.03937008 'price has to per mm not per inch as in database.
+        If DBLValue(ldblCost) < 1 Then
+            ldblCost = Format(ldblCost, "0.000000") 'price per mm will be so low, formatting to fixed will show "0.00"
+        Else
+            ldblCost = Format(ldblCost, cstrDollarMask)
+        End If
+    Else
+        ldblCost = IIf(DBLValue(ldblCost) < 1, Format(ldblCost, "0.000000"), Format(ldblCost, cstrDollarMask))
+    End If
+    
+    ConvertToListPrice = ldblCost
+    Set lobjMainRS = Nothing
+    
+    Exit Function
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Function
+

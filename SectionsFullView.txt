@@ -1,0 +1,911 @@
+Option Explicit
+'AW, KN
+Const cstrModuleName As String = "frmSectionsFullView"
+Private mbytRun As Byte
+
+Private Sub cboMaterial_Click(Index As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SubName()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    mbytRun = 0 'only with T45. Assign 1 if 'glass' selected. Populates finish combo with 'Tampered' and 'other'
+    
+    cboFinish(0).Enabled = True
+    cboFinish(1).Enabled = True
+    
+    If cboMaterial(0).ListIndex = 1 Or cboMaterial(0).ListIndex = 2 Or cboMaterial(0).ListIndex = 3 Or cboMaterial(0).ListIndex = 4 Then
+        
+        cboFinish(0).Clear
+        cboFinish(0).AddItem "Clear"
+        cboFinish(0).ItemData(cboFinish(0).NewIndex) = 1
+        cboFinish(0).ListIndex = 0
+        cboFinish(0).Enabled = False
+        
+        cboFinish(1).Clear
+        cboFinish(1).AddItem "Clear"
+        cboFinish(1).ItemData(cboFinish(0).NewIndex) = 1
+        cboFinish(1).ListIndex = 0
+        cboFinish(1).Enabled = False
+        
+        Exit Sub
+    Else
+        
+        cboFinish(0).Clear
+'        cboFinish(0).AddItem ""
+'        cboFinish(0).ItemData(cboFinish(0).NewIndex) = 0
+        cboFinish(0).AddItem "Clear"
+        cboFinish(0).ItemData(cboFinish(0).NewIndex) = 1
+        cboFinish(0).AddItem "Tinted"
+        cboFinish(0).ItemData(cboFinish(0).NewIndex) = 2
+        cboFinish(0).AddItem "Tempered"
+        cboFinish(0).ItemData(cboFinish(0).NewIndex) = 3
+        cboFinish(0).AddItem "Other"
+        cboFinish(0).ItemData(cboFinish(0).NewIndex) = 4
+
+        cboFinish(0).ListIndex = 0
+        
+        
+        If chkSealedUnit.Value = 1 Then
+            cboFinish(1).Clear
+            cboFinish(1).AddItem "Clear"
+            cboFinish(1).ItemData(cboFinish(1).NewIndex) = 1
+            cboFinish(1).AddItem "Tinted"
+            cboFinish(1).ItemData(cboFinish(1).NewIndex) = 2
+            cboFinish(1).AddItem "Tempered"
+            cboFinish(1).ItemData(cboFinish(1).NewIndex) = 3
+            cboFinish(1).AddItem "Other"
+            cboFinish(1).ItemData(cboFinish(1).NewIndex) = 4
+            cboFinish(1).ListIndex = cboFinish(0).ListIndex
+        
+        End If
+        
+        
+    End If
+    
+    
+    If cboMaterial(0).ListIndex < 0 Then Exit Sub
+    If CECompliant = 1 Then
+        If DrType = "T45" Then
+            
+            'On single glazed, interior 'cbofinish(0)' should be tempered.
+            If cboMaterial(0).ItemData(cboMaterial(0).ListIndex) = 1 Then
+                cboFinish(0).Clear
+'                cboFinish(0).AddItem ""
+'                cboFinish(0).ItemData(cboFinish(0).NewIndex) = 0
+                cboFinish(0).AddItem "Tempered"
+                cboFinish(0).ItemData(cboFinish(0).NewIndex) = 3
+                cboFinish(0).AddItem "Other"
+                cboFinish(0).ItemData(cboFinish(0).NewIndex) = 4
+'                cboFinish(0).ListIndex = 1
+                cboFinish(0).ListIndex = 0
+                
+                'On double glazed, both interior and exterior 'cbofinish(1)' should be tempered.
+                If chkSealedUnit.Value = 1 Then
+'                     cboMaterial(1).Clear
+''                    cboMaterial(1).AddItem ""
+''                    cboMaterial(1).ItemData(cboMaterial(1).NewIndex) = 0
+'                    cboMaterial(1).AddItem "Glass"
+'                    cboMaterial(1).ItemData(cboMaterial(1).NewIndex) = 1
+'                    cboMaterial(1).AddItem "Acrylic"
+'                    cboMaterial(1).ItemData(cboMaterial(1).NewIndex) = 2
+'                    cboMaterial(1).AddItem "Lexan"
+'                    cboMaterial(1).ItemData(cboMaterial(1).NewIndex) = 3
+'                    cboMaterial(1).AddItem "Other"
+'                    cboMaterial(1).ItemData(cboMaterial(1).NewIndex) = 4
+''                    cboMaterial(1).ListIndex = 0
+'
+''                    cboMaterial(1).ListIndex = cboMaterial(0).ListIndex
+                    
+                    cboFinish(1).Clear
+'                    cboFinish(1).AddItem ""
+'                    cboFinish(1).ItemData(cboFinish(1).NewIndex) = 0
+                    cboFinish(1).AddItem "Tempered"
+                    cboFinish(1).ItemData(cboFinish(1).NewIndex) = 3
+                    cboFinish(1).AddItem "Other"
+                    cboFinish(1).ItemData(cboFinish(1).NewIndex) = 4
+'                    cboFinish(1).ListIndex = 1
+                    cboFinish(1).ListIndex = 0
+                End If
+                mbytRun = 1
+            Else
+                mbytRun = 0
+                
+                If chkSealedUnit.Value = 1 Then cboMaterial(1).ListIndex = cboMaterial(0).ListIndex
+                cboFinish(0).Clear
+                cboFinish(0).AddItem "Clear"
+                cboFinish(0).ItemData(cboFinish(0).NewIndex) = 1
+                cboFinish(0).AddItem "Tinted"
+                cboFinish(0).ItemData(cboFinish(0).NewIndex) = 2
+                
+                'Glazing CE Compliant full-view
+                'In cases where acrylic or Lexan are selected,
+                'the available "finishes" should be clear, tinted or other.
+                'Tempered is not an option with Lexan and acrylic.
+                
+                If cboMaterial(0).ListIndex = 3 Then
+                    cboFinish(0).AddItem "Tempered"
+                    cboFinish(0).ItemData(cboFinish(0).NewIndex) = 3
+                End If
+                cboFinish(0).AddItem "Other"
+                cboFinish(0).ItemData(cboFinish(0).NewIndex) = 4
+                cboFinish(0).ListIndex = 0      'single galzed - int got enabled only
+
+                If chkSealedUnit.Value = 1 Then
+                    cboFinish(1).Enabled = True
+                    cboFinish(1).Clear
+                    cboFinish(1).AddItem "Clear"
+                    cboFinish(1).ItemData(cboFinish(1).NewIndex) = 1
+                    cboFinish(1).AddItem "Tinted"
+                    cboFinish(1).ItemData(cboFinish(1).NewIndex) = 2
+                    
+                    'Glazing CE Compliant full-view
+                    'In cases where acrylic or Lexan are selected,
+                    'the available "finishes" should be clear, tinted or other.
+                    'Tempered is not an option with Lexan and acrylic.
+    
+                    If cboMaterial(0).ListIndex = 3 Then
+                        cboFinish(1).AddItem "Tempered"
+                        cboFinish(1).ItemData(cboFinish(1).NewIndex) = 3
+                    End If
+                    cboFinish(1).AddItem "Other"
+                    cboFinish(1).ItemData(cboFinish(1).NewIndex) = 4
+                    cboFinish(1).ListIndex = cboFinish(0).ListIndex     'double glazed - both int/ext got enabled
+                End If
+                
+            End If
+        End If
+    
+    
+    
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkByOthers_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkByOthers_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    'same functionality as for in Alumatite
+'    If chkByOthers.Value = 1 Then
+'        cboFinish(0).ListIndex = 0
+'        cboFinish(1).ListIndex = 0
+'        cboFinish(0).Enabled = False
+'        cboFinish(1).Enabled = False
+'    Else
+'        cboFinish(0).ListIndex = 1
+'        cboFinish(0).Enabled = True
+'        If Me.chkSealedUnit.Value = 1 Then
+'            cboFinish(1).ListIndex = 1
+'            cboFinish(1).Enabled = True
+'        End If
+'    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Initialize()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Initialize()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    mbytRun = 0
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+
+End Sub
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub Form_Activate()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Activate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Me.chkSealedUnit.Value = 0
+
+    cboThickness.Clear
+'    cboThickness.AddItem ""
+'    cboThickness.ItemData(cboThickness.NewIndex) = 0
+    cboThickness.AddItem "1/8" & Chr(34) & " (3mm)"
+    cboThickness.ItemData(cboThickness.NewIndex) = 1
+    cboThickness.AddItem "1/4" & Chr(34) & " (6mm)"
+    cboThickness.ItemData(cboThickness.NewIndex) = 2
+'    cboThickness.ListIndex = 1
+    cboThickness.ListIndex = 0
+    
+    cboMaterial(0).Clear
+'    cboMaterial(0).AddItem ""
+'    cboMaterial(0).ItemData(cboMaterial(0).NewIndex) = 0
+    cboMaterial(0).AddItem "Glass"
+    cboMaterial(0).ItemData(cboMaterial(0).NewIndex) = 1
+    cboMaterial(0).AddItem "Acrylic"
+    cboMaterial(0).ItemData(cboMaterial(0).NewIndex) = 2
+    cboMaterial(0).AddItem "Lexan"
+    cboMaterial(0).ItemData(cboMaterial(0).NewIndex) = 3
+    cboMaterial(0).AddItem "Other: Glass"
+    cboMaterial(0).ItemData(cboMaterial(0).NewIndex) = 4
+    cboMaterial(0).AddItem "Other: Plastic"
+    cboMaterial(0).ItemData(cboMaterial(0).NewIndex) = 5
+    
+'    cboMaterial(0).ListIndex = 1
+    cboMaterial(0).ListIndex = 0                'this click event executes. And sets the mbytRun var
+
+    cboMaterial(1).Clear
+    cboMaterial(1).Enabled = False
+    
+    If mbytRun = 0 Then 'entries get populated when click on 'glass' in the list. No need to override
+        cboFinish(0).Clear
+'        cboFinish(0).AddItem ""
+'        cboFinish(0).ItemData(cboFinish(0).NewIndex) = 0
+        cboFinish(0).AddItem "Clear"
+        cboFinish(0).ItemData(cboFinish(0).NewIndex) = 1
+        cboFinish(0).AddItem "Tinted"
+        cboFinish(0).ItemData(cboFinish(0).NewIndex) = 2
+        cboFinish(0).AddItem "Tempered"
+        cboFinish(0).ItemData(cboFinish(0).NewIndex) = 3
+        cboFinish(0).AddItem "Other"
+        cboFinish(0).ItemData(cboFinish(0).NewIndex) = 4
+'        cboFinish(0).ListIndex = 1
+        cboFinish(0).ListIndex = 0
+    End If
+    
+    cboFinish(1).Clear
+    cboFinish(1).Enabled = False
+    
+    optAnodized.Value = False
+    optAnodized.Enabled = True
+    optWhite.Value = True
+    optWhite.Enabled = True
+    chkSealedUnit.Enabled = True
+    
+'    If DrType = "T150" Or DrType = "T150 Multi-Rib" Then
+'        optAnodized.Value = False
+'        optAnodized.Enabled = False
+'        optWhite.Value = True
+'        optWhite.Enabled = False
+''        chkSealedUnit.Enabled = False
+'    End If
+    
+    If DrType = "T150" Or DrType = "T150 Multi-Rib" Then
+        optWhite.Enabled = True
+        optWhite.Value = True
+        
+         optAnodized.Value = False
+        optAnodized.Enabled = False
+    Else
+        If frmSectionsEntry.CboDrColour.Text = "White" Then
+            optWhite.Value = True
+        ElseIf frmSectionsEntry.CboDrColour.Text = "Brown" Or frmSectionsEntry.CboDrColour.Text = "Silver" Then
+            optAnodized.Value = True
+            optAnodized.Enabled = True
+            
+        End If
+    End If
+    
+    
+    LoadHelpText Me
+    MousePos1.Init Me
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkSealedUnit_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkSealedUnit_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    cboThickness.Clear
+    If chkSealedUnit.Value = 1 Then
+        
+'        cboMaterial(1).Enabled = False
+'        cboMaterial(0).Enabled = False
+'        cboMaterial(0).ListIndex = 1
+'        cboMaterial(1).ListIndex = 1
+'        cboThickness.AddItem ""
+'        cboThickness.ItemData(cboThickness.NewIndex) = 0
+
+        'no blank entries - same functionality as for in Alumatite
+        cboThickness.AddItem "1/2" & Chr(34) & " (12mm)"
+        cboThickness.ItemData(cboThickness.NewIndex) = 3
+        cboThickness.ListIndex = 0
+        
+        cboMaterial(0).Enabled = True
+        cboMaterial(0).ListIndex = 0
+        cboMaterial(1).Enabled = True
+        
+        cboMaterial(1).Clear
+        cboMaterial(1).AddItem "Glass"
+        cboMaterial(1).ItemData(cboMaterial(1).NewIndex) = 1
+        cboMaterial(1).AddItem "Acrylic"
+        cboMaterial(1).ItemData(cboMaterial(1).NewIndex) = 2
+        cboMaterial(1).AddItem "Lexan"
+        cboMaterial(1).ItemData(cboMaterial(1).NewIndex) = 3
+        cboMaterial(1).AddItem "Other"
+        cboMaterial(1).ItemData(cboMaterial(1).NewIndex) = 4
+        
+        cboMaterial(1).ListIndex = cboMaterial(0).ListIndex
+        
+        'If Me.chkByOthers.Value = 0 Then
+        cboFinish(0).Enabled = True
+'        cboFinish(0).ListIndex = 1
+        cboFinish(0).ListIndex = 0
+        
+        cboFinish(1).Enabled = True
+'        cboFinish(1).ListIndex = 1
+        
+        If Not DrType = "T45" Then
+            cboFinish(1).Clear
+            cboFinish(1).AddItem "Clear"
+            cboFinish(1).ItemData(cboFinish(1).NewIndex) = 1
+            cboFinish(1).AddItem "Tinted"
+            cboFinish(1).ItemData(cboFinish(1).NewIndex) = 2
+            cboFinish(1).AddItem "Tempered"
+            cboFinish(1).ItemData(cboFinish(1).NewIndex) = 3
+            cboFinish(1).AddItem "Other"
+            cboFinish(1).ItemData(cboFinish(1).NewIndex) = 4
+            cboFinish(1).ListIndex = cboFinish(0).ListIndex
+        End If
+        
+        cboMaterial(1).Visible = False
+        Label22.Visible = False
+        Label28.Visible = False
+        
+    Else
+'        cboThickness.AddItem ""
+'        cboThickness.ItemData(cboThickness.NewIndex) = 0
+
+        cboThickness.AddItem "1/8" & Chr(34) & " (3mm)"
+        cboThickness.ItemData(cboThickness.NewIndex) = 1
+        cboThickness.AddItem "1/4" & Chr(34) & " (6mm)"
+        cboThickness.ItemData(cboThickness.NewIndex) = 2
+        
+'       cboThickness.ListIndex = 1
+        cboThickness.ListIndex = 0
+
+        cboMaterial(0).Enabled = True
+'        cboMaterial(0).ListIndex = 1
+        cboMaterial(0).ListIndex = 0
+       
+        cboMaterial(1).Clear
+        cboMaterial(1).Enabled = False
+'        cboMaterial(1).ListIndex = 0
+       
+        cboFinish(0).Enabled = True
+        cboFinish(0).ListIndex = 0
+        
+        cboFinish(1).Clear
+        cboFinish(1).Enabled = False
+'        cboFinish(1).ListIndex = 0
+        
+        
+        cboMaterial(1).Visible = True
+        Label22.Visible = True
+        Label28.Visible = True
+    End If
+    
+    
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdAccept_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAccept_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim Wdt As String
+    
+
+    If MeasU = 1 Then
+        Wdt = GetImpString(216) '18feet
+    Else
+        aCon.Inch = 216
+        aCon.mmcalc
+        Wdt = CStr(Round(aCon.mm, 0)) & " mm"
+    End If
+
+    If DrWidth > 216 Then
+        If cboMaterial(0).ItemData(cboMaterial(0).ListIndex) = 1 Or (cboMaterial(1).Text = "Glass" And Me.chkSealedUnit.Value = 1) Then 'glass - for single and double glazed units
+            If MsgBox("Due to deflection, with doors over " & Wdt & " , Richards Wilcox does not recommend using of glass for glazing." & vbCrLf & _
+                "Would you like to reselect material?", vbYesNo + vbApplicationModal, "Full View") = vbYes Then
+                If cboMaterial(0).Enabled = True Then cboMaterial(0).SetFocus
+                Exit Sub
+            End If
+        End If
+    End If
+                
+    If Me.chkSealedUnit.Value = 1 Or cboThickness.ItemData(cboThickness.ListIndex) = 3 Then
+        If MsgBox(" WARNING! " & vbCrLf & _
+            "Because of the thickness of the glass chosen, the difference in weight between the thermal sections and the aluminum sections is enough to seriously affect the balance and operation of the door." & vbCrLf & _
+            "Press No if you wish to contact Richards-Wilcox for a solution or to reselect material. " & vbCrLf & _
+            "Press Yes to continue.", vbYesNo + vbApplicationModal, "Full View") = vbNo Then
+                chkSealedUnit.Value = 0
+                If cboMaterial(0).Enabled = True Then cboMaterial(0).SetFocus
+                Exit Sub
+        End If
+    End If
+    
+    Call SaveFullView
+    If chkECapsOnFullView.Value = 1 Then
+        varDoorData.EndCapsOnFullView = True
+    Else
+        varDoorData.EndCapsOnFullView = False
+    End If
+    
+    Dim L21 As Integer
+    Dim L24 As Integer
+    Dim lstrPN As String
+    Dim lblnCP As Boolean
+    L21 = ModSections.GetNumberOfLiteSectionsPerHeight(21)
+    L24 = ModSections.GetNumberOfLiteSectionsPerHeight(24)
+    
+    If L21 > 0 Then
+        lstrPN = GetFullViewPN(True)
+        
+        If lstrPN = "" Then
+            MsgBox "Glazing option not found. Select Other: Glass or Other: Plastic option in the Material list."
+            Exit Sub
+            
+        End If
+        
+        If isCallPrice(lstrPN) = True Then
+'            MsgBox "The chosen Full View section is a " & Chr(34) & "Call Price" & Chr(34) & " item." & _
+'                vbCrLf & "It will be highlighted on the BoM Details screen." & vbCrLf & _
+'                    "Please call for pricing and enter the cost manually." & vbCrLf & vbCrLf & _
+'                        "The section and glazing weights have been applied for springing.", vbApplicationModal + vbInformation, "Call Price Item"
+            
+           MsgBox "The chosen Full View section is a " & Chr(34) & "Call Price" & Chr(34) & " item and will be highlighted on the BoM Details screen" & vbCrLf & _
+                    "Please call for pricing and enter the cost manually." & vbCrLf & _
+                        "The Full View section weights have been applied for springing." & vbCrLf & _
+                            "You may need to manually adjust the glazing weight.", vbApplicationModal + vbInformation, "Call Price Item"
+                    
+            lblnCP = True
+        End If
+    End If
+    
+    If lblnCP = False And L24 > 0 Then
+        lstrPN = GetFullViewPN(False)
+        If lstrPN = "" Then
+            MsgBox "Glazing option not found. Select Other: Glass or Other: Plastic option in the Material list."
+            Exit Sub
+            
+        End If
+        
+        If isCallPrice(lstrPN) = True Then
+'            MsgBox "The chosen Full View section is a " & Chr(34) & "Call Price" & Chr(34) & " item." & _
+'                vbCrLf & "It will be highlighted on the BoM Details screen." & vbCrLf & _
+'                    "Please call for pricing and enter the cost manually." & vbCrLf & vbCrLf & _
+'                        "The section and glazing weights have been applied for springing.", vbApplicationModal + vbInformation, "Call Price Item"
+
+            MsgBox "The chosen Full View section is a " & Chr(34) & "Call Price" & Chr(34) & " item and will be highlighted on the BoM Details screen" & vbCrLf & _
+                    "Please call for pricing and enter the cost manually." & vbCrLf & _
+                        "The Full View section weights have been applied for springing." & vbCrLf & _
+                            "You may need to manually adjust the glazing weight.", vbApplicationModal + vbInformation, "Call Price Item"
+                    
+        End If
+    End If
+    
+    frmSectionsEntry.mblnCancel = False
+    
+    If chkSealedUnit.Value = 0 Then
+        
+        'other:Glass + other:Plastic
+        If cboMaterial(0).ItemData(cboMaterial(0).ListIndex) = 4 Or _
+            cboMaterial(0).ItemData(cboMaterial(0).ListIndex) = 5 Or _
+           cboFinish(0).ItemData(cboFinish(0).ListIndex) = 4 Then
+           
+'            MsgBox "You have chosen special glazing. Please enter the item as a non stock part.", vbInformation + vbApplicationModal, "Special Glazing"
+            If chkByOthers.Value = 1 Then
+                MsgBox "The cost of the open Full View sections has been applied. You may need to confirm the glazing weights.", vbInformation + vbApplicationModal, "Special Glazing"
+            End If
+            
+            Unload Me
+'
+            
+            
+''''''            Dim i As Integer
+''''''            For i = 0 To frmSectionsEntry.cboLiteType.ListCount - 1
+''''''                If frmSectionsEntry.cboLiteType.ItemData(i) = 8 Then frmSectionsEntry.cboLiteType.ListIndex = i
+''''''            Next
+                    
+            frmSectionsEntry.txtLitesPerSection.Enabled = True
+            frmSectionsEntry.txtLitesPerSection.Text = 1
+            frmSectionsSpecialLites.Show vbModal
+            varDoorData.LiteType = 8
+            
+        Else
+            If chkByOthers.Value = 1 Then
+'''''''                MsgBox "The costs for the open Full View sections have been applied, but NOT for the special glazing." & _
+'''''''                " Please enter the special glass as a non-stock item and add pricing manually." & vbCrLf & vbCrLf & _
+'''''''                    "The section and glazing weights have been applied for springing.", vbApplicationModal + vbInformation, "Special Galzing"
+''''''
+'''''''                MsgBox "The costs for the open Full View sections has been applied, but NOT for the special glazing." & _
+'''''''                " Please add pricing manually." & vbCrLf & vbCrLf & _
+'''''''                "The section and glazing weights have been applied for springing.", vbApplicationModal + vbInformation, "Special Galzing"
+
+                
+                MsgBox "The costs for the open Full View sections has been applied." & _
+                " You will need to manually adjust the cost of the glazing." & vbCrLf & vbCrLf & _
+                "The Springing weights have been applied.", vbApplicationModal + vbInformation, "Special Galzing"
+                    
+            End If
+            
+            Unload Me
+            frmSectionsEntry.Show
+        End If
+        
+'        Unload Me
+'        frmSectionsEntry.Show
+        
+        Screen.MousePointer = vbDefault
+    Else
+        If cboMaterial(1).ItemData(cboMaterial(1).ListIndex) = 4 Or _
+            cboMaterial(0).ItemData(cboMaterial(0).ListIndex) = 5 Or _
+                cboFinish(1).ItemData(cboFinish(1).ListIndex) = 4 Then
+            
+'            MsgBox "You have chosen special glazing. Please enter the item as a non stock part.", vbInformation + vbApplicationModal, "Special Glazing"
+
+            If chkByOthers.Value = 1 Then
+                MsgBox "The cost of the open Full View sections has been applied. You may need to confirm the glazing weights.", vbInformation + vbApplicationModal, "Special Glazing"
+            End If
+
+            Unload Me
+
+
+'''''''            Dim i As Integer
+'''''''            For i = 0 To frmSectionsEntry.cboLiteType.ListCount - 1
+'''''''                If frmSectionsEntry.cboLiteType.ItemData(i) = 8 Then frmSectionsEntry.cboLiteType.ListIndex = i
+'''''''            Next
+                    
+            frmSectionsEntry.txtLitesPerSection.Enabled = True
+            frmSectionsEntry.txtLitesPerSection.Text = 1
+            frmSectionsSpecialLites.Show vbModal
+            varDoorData.LiteType = 8
+            
+        Else
+            If chkByOthers.Value = 1 Then
+'                MsgBox "The costs for the open Full View sections have been applied, but NOT for the special glazing." & _
+'                " Please enter the special glass as a non-stock item and add pricing manually." & vbCrLf & vbCrLf & _
+'                    "The section and glazing weights have been applied for springing.", vbApplicationModal + vbInformation, "Special Galzing"
+                
+'                MsgBox "The costs for the open Full View sections have been applied, but NOT for the special glazing." & _
+'                " Please add pricing manually." & vbCrLf & vbCrLf & _
+'                    "The section and glazing weights have been applied for springing.", vbApplicationModal + vbInformation, "Special Galzing"
+
+                MsgBox "The costs for the open Full View sections has been applied." & _
+                " You will need to manually adjust the cost of the glazing." & vbCrLf & vbCrLf & _
+                "The Springing weights have been applied.", vbApplicationModal + vbInformation, "Special Galzing"
+                
+            End If
+            
+            Unload Me
+            frmSectionsEntry.Show
+        End If
+        
+'        Unload Me
+'        frmSectionsEntry.Show
+            
+        Screen.MousePointer = vbDefault
+    End If
+
+       
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdCacelFV_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCacelFV_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+'    cboThickness.Clear
+'    chkSealedUnit.Value = 0
+'    chkECapsOnFullView.Value = 0
+'    chkByOthers.Value = 0
+'    'fraFullView.Visible = False
+    Unload Me
+    frmSectionsEntry.mblnCancel = True
+    frmSectionsEntry.Show
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Public Sub SaveFullView()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SaveFullView()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lstrLiteType As String
+    Dim i As Integer
+    i = 0
+    For i = 0 To IIf(frmSectionsFullView.chkSealedUnit.Value = 1, 1, 0)
+        
+        If i = 1 Then cboMaterial(1).ItemData(cboMaterial(1).ListIndex) = cboMaterial(0).ItemData(cboMaterial(0).ListIndex) ' 'single or 1/2"  - Acrylic + lexan "Finish" option not available - put through other plastic if wish to get tinted
+        
+        '1st digit - colour
+        '7-anodized
+        '8-white
+        '9-by others
+        If chkByOthers.Value = 1 Then
+            lstrLiteType = lstrLiteType & "9"
+        Else
+            If optWhite.Value = True Then
+                lstrLiteType = lstrLiteType & "8"
+            ElseIf optAnodized.Value = True Then
+                lstrLiteType = lstrLiteType & "7"
+            End If
+        End If
+        
+        '2nd digit - size
+        '0-1/8
+        '1-1/4
+        If cboThickness.ItemData(cboThickness.ListIndex) = 1 Or cboThickness.ItemData(cboThickness.ListIndex) = 3 Then
+            lstrLiteType = lstrLiteType & "0"
+        ElseIf cboThickness.ItemData(cboThickness.ListIndex) = 2 Then
+            lstrLiteType = lstrLiteType & "1"
+        End If
+        
+        '3rd digit - material
+        '0-glass
+        '1-acrylic
+        '2-lexan
+        '3-other
+        If chkByOthers.Value = 1 Then   'If they check the box to signify that they are supplying their own glass
+            If cboMaterial(i).ItemData(cboMaterial(i).ListIndex) - 1 = 1 Or _
+                cboMaterial(i).ItemData(cboMaterial(i).ListIndex) - 1 = 2 Or _
+                    cboMaterial(i).ItemData(cboMaterial(i).ListIndex) - 1 = 4 Then 'acrylic = lexan = other:Plastic
+                    lstrLiteType = lstrLiteType & "1"
+            Else
+                lstrLiteType = lstrLiteType & "0"   'glass, other
+            End If
+        Else
+            If cboMaterial(i).ItemData(cboMaterial(i).ListIndex) - 1 = 3 Then 'other: Glass
+                
+                lstrLiteType = lstrLiteType & "0"
+            
+            ElseIf cboMaterial(i).ItemData(cboMaterial(i).ListIndex) - 1 = 4 Then 'other: Plastic
+                
+                lstrLiteType = lstrLiteType & "3"
+            
+            Else
+            
+                lstrLiteType = lstrLiteType & CStr(cboMaterial(i).ItemData(cboMaterial(i).ListIndex) - 1)
+
+            End If
+            
+        End If
+        
+        '4th digit - finish
+        '1-clear
+        '2-tinted
+        '3-tempered
+        '4-other
+        '0-n/a (for other than glass)
+        
+        'fixed in 2.0.18 - before 90019001 should be 90009000
+'        If chkByOthers.Value = 1 Then   'If they check the box to signify that they are supplying their own glass, for springing purposes, we don't care what finish they used (clear, tempered, tinted or other).
+'            lstrLiteType = lstrLiteType & "1"
+'        Else
+'            If cboMaterial(i).ItemData(cboMaterial(i).ListIndex) = 1 Then
+'                lstrLiteType = lstrLiteType & CStr(cboFinish(i).ItemData(cboFinish(i).ListIndex))
+'            Else
+'                lstrLiteType = lstrLiteType & "0"
+'            End If
+'        End If
+
+
+
+
+        
+        
+        'If cboMaterial(0).ItemData(cboMaterial(0).ListIndex) = 1 Or cboMaterial(0).ItemData(cboMaterial(0).ListIndex) = 4 Or cboMaterial(0).ItemData(cboMaterial(0).ListIndex) = 5 Then
+        
+            If chkByOthers.Value = 1 Then   'If they check the box to signify that they are supplying their own glass, for springing purposes, we don't care what finish they used (clear, tempered, tinted or other).
+                lstrLiteType = lstrLiteType & "1"   '90019001
+            Else
+                If cboMaterial(i).ItemData(cboMaterial(i).ListIndex) = 1 Then
+                    lstrLiteType = lstrLiteType & CStr(cboFinish(i).ItemData(cboFinish(i).ListIndex))
+                Else
+                    
+                    If cboMaterial(i).ItemData(cboMaterial(i).ListIndex) = 4 Then
+                        lstrLiteType = lstrLiteType & "4"
+                    Else
+                        lstrLiteType = lstrLiteType & "0"
+                    End If
+                    
+                    
+                End If
+            End If
+        'End If
+        
+        
+        
+    Next
+    
+    '1/2" acrylic + Lexan + Other: Plastic - repeat the base code
+    
+'    If cboMaterial(0).ItemData(cboMaterial(0).ListIndex) <> 2 Or cboMaterial(0).ItemData(cboMaterial(0).ListIndex) <> 3 Then
+'        If frmSectionsFullView.chkSealedUnit.Value = 1 Then
+'            lstrLiteType = lstrLiteType & lstrLiteType
+'        End If
+'    End If
+    
+    varDoorData.LiteType = CLng(lstrLiteType)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+

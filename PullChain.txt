@@ -1,0 +1,182 @@
+Option Explicit
+Const cstrModuleName As String = "frmPullChainPackage"
+Private mstrChainPkgPN As String
+
+Private Sub cmdNo_Click()
+
+On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdNo_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    frmTrackEntry.chkChainPkg.Value = 0
+    frmTrackEntry.chkChainPkg.Caption = "Pull Chain Package"
+    Unload Me
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdYes_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdYes_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    'frmTrackEntry.chkChainPkg.Caption = cboChainPkg.Text
+    addItems_ChainPkg
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+Private Sub addItems_ChainPkg()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".addItems_ChainPkg()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim lintChainPkgQTY As Integer
+    Dim i As Integer
+    Dim ReturnIndexPchainPkg As Integer
+    
+    mstrChainPkgPN = ""
+    
+    Select Case frmTrackEntry.cboMount.ItemData(frmTrackEntry.cboMount.ListIndex)
+        Case 1, 3
+            Select Case cboChainPkg.ItemData(cboChainPkg.ListIndex)
+                Case 1
+                    mstrChainPkgPN = "7-2312"
+                    lintChainPkgQTY = 1
+                Case 2
+                    mstrChainPkgPN = "7-2313"
+                    lintChainPkgQTY = 1
+                End Select
+        Case 2
+            Select Case cboChainPkg.ItemData(cboChainPkg.ListIndex)
+                Case 1
+                    mstrChainPkgPN = "7-2311"
+                    lintChainPkgQTY = 1
+                Case 2
+                    mstrChainPkgPN = "7-2341"
+                    lintChainPkgQTY = 1
+                End Select
+               
+        End Select
+              
+     'populates golobal var to display in summary form
+    frmTrackEntry.ReturnIndexPchainPkg = cboChainPkg.ItemData(cboChainPkg.ListIndex)
+    For i = frmTrackEntry.Grid2.Row To frmTrackEntry.Grid2.Rows - 1
+        If frmTrackEntry.Grid2.Text = mstrChainPkgPN Then
+            Exit Sub
+        Else
+            Call SetTrackOptionsGrid(mstrChainPkgPN, lintChainPkgQTY, "Track", GetSubCategory(mstrChainPkgPN), 0)
+            Exit Sub
+        End If
+    Next
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+
+End Sub
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+
+    cboChainPkg.Clear
+    cboChainPkg.AddItem "Pull Chain Package c/w Spring"
+    cboChainPkg.ItemData(cboChainPkg.NewIndex) = 1
+    cboChainPkg.AddItem "Pull Chain Pakage w/o Spring"
+    cboChainPkg.ItemData(cboChainPkg.NewIndex) = 2
+    cboChainPkg.ListIndex = 0
+    
+     Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+'Private Sub TrackGrid(PN As String, QTY As Integer, Group As String, SubGroup As String, Optional Var)
+'
+'    On Error GoTo Error_Handler
+'    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".TrackGrid()"
+'    Dim llngErrNo As Long
+'    Dim lstrErrDescr As String
+'    Dim lstrErrSource As String
+'    llngErrNo = 0
+'    lstrErrDescr = ""
+'    lstrErrSource = ""
+'
+'    If frmTrackEntry.Grid2.Text = "" And frmTrackEntry.Grid2.Row < 2 Then
+'        gintRow = 1
+'    End If
+'
+'    frmTrackEntry.Grid2.Row = gintRow
+'    frmTrackEntry.Grid2.Col = 0
+'    frmTrackEntry.Grid2.Text = PN
+'    frmTrackEntry.Grid2.Col = 1
+'    frmTrackEntry.Grid2.Text = QTY
+'    frmTrackEntry.Grid2.Col = 2
+'    frmTrackEntry.Grid2.Text = Group
+'    frmTrackEntry.Grid2.Col = 3
+'    frmTrackEntry.Grid2.Text = SubGroup
+'
+'    frmTrackEntry.Grid2.Col = 4
+'
+'    frmTrackEntry.Grid2.Rows = frmTrackEntry.Grid2.Rows + 1
+'    frmTrackEntry.Grid2.Row = frmTrackEntry.Grid2.Row + 1
+'    gintRow = frmTrackEntry.Grid2.Row
+'
+'    Exit Sub
+'
+'Error_Handler:
+'    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+'    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+'    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+'    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+'
+'  End Sub
+

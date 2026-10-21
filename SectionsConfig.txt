@@ -1,0 +1,1663 @@
+Option Explicit
+'AW, KN
+Private Cut As Single        'the difference between the dr height and sections height in inches , negative if secH < drHgt (hole not filled)
+Private Ind As Integer       'replaces index in frame array
+Private SecH As Integer      'combined height of all sections in inches
+Private SecNum As Integer    'number of sections
+Private cutB As Single, cutT As Single 'value for cut bottom and top
+Const cstrModuleName As String = "frmSectionsConfig"
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_KeyDown()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If KeyCode = 112 Then
+        ShowHideAgent Me, "Hello!"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+Private Sub Form_Unload(Cancel As Integer)
+
+    If Not gobjAgent Is Nothing Then
+        If gobjAgent.ActorIsVisible = True Then
+            gobjAgent.ActorStopAll
+            gobjAgent.HideAgent
+        End If
+    End If
+
+End Sub
+
+Private Sub ImgTrash_DblClick()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ImgTrash_DblClick()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Integer
+    
+    For i = 0 To fraSection.Count - 1
+        If fraSection(i).BackColor = &HFFFFFF Then    'white
+            fraSection(i).BackColor = &H959595     'gray
+            Remove21Section
+        End If
+        If fraSection(i).BackColor = &H0& Then 'black
+            fraSection(i).BackColor = &H959595     'gray
+            Remove24Section
+        End If
+    Next
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub MousePos1_MouseOver(ControlName As String, Index As Long, CtrlData As String, PosX As Long, PosY As Long)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".MousePos1_MouseOver()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Me.Visible = False Then Exit Sub
+    If gobjAgent.ActorIsLoaded = False Then Exit Sub
+    
+    If gobjAgent.ActorIsVisible = True Then
+        If Not CtrlData = "" Then Call AgentFieldHelp(PosX, PosY, CtrlData)
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+End Sub
+
+Private Sub cmdReset_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdReset_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    Screen.MousePointer = vbHourglass
+    Dim i As Integer, Temp21 As Integer, Temp24 As Integer
+    
+    'clear the sections
+    '''''''''''''''''''''''''''''''''''''''''''''
+    For i = 1 To 4
+        lblInfo(i).Caption = ""
+    Next
+    fraSection(0).Visible = False
+    For i = 1 To SecNum - 1
+        Unload fraSection(i)
+        If i < SecNum - 1 Then Unload txtLite(i)
+    Next
+    chkCutTop.Value = 0
+    chkCutBtm.Value = 0
+    txtCutTop.Text = ""
+    txtCutBtm.Text = ""
+    cutT = 0
+    cutB = 0
+    varDoorData.CutBtm = 0
+    varDoorData.CutTop = 0
+    fraDoor.Enabled = True
+    Cut = 0
+    SecH = 0
+    Command5.Enabled = True
+    'reload sections
+    ''''''''''''''''''''''''''''''''''''''
+    If IsUnrestricted = True And DrHgt > 264 Then
+        Call SectionsNumCombinationOversized
+    Else
+        Call SectionsNumCombination   'get the # of 24 and 21 inch sections
+    End If
+    SecH = N21 * 21 + N24 * 24
+    SecNum = N21 + N24
+    Temp21 = N21
+    Temp24 = N24
+    
+    txtLite(0).Move fraSection(0).Left + fraSection(0).Width + 20, fraSection(0).Top
+    txtLite(0).Text = IIf(varDoorData.arrSections(0).intNLites > 0, varDoorData.arrSections(0).intNLites, "")
+    fraSection(0).Visible = True
+    For i = 1 To SecNum - 1 'load section frames
+        Load fraSection(i)
+        Load txtLite(i)
+        fraSection(i).Height = fraSection(0).Height
+        txtLite(i).Height = fraSection(i).Height
+        fraSection(i).Width = fraSection(0).Width
+        fraSection(i).Move fraSection(0).Left, fraSection(i - 1).Top + fraSection(i).Height * 1.1
+        txtLite(i).Move fraSection(i).Left + fraSection(i).Width + 20, fraSection(i).Top
+        fraSection(i).Visible = True
+        txtLite(i).Text = IIf(varDoorData.arrSections(i).intNLites > 0, varDoorData.arrSections(i).intNLites, "")
+        txtLite(i).Visible = True 'IIf(i = SecNum - 1, False, True)
+        If i = SecNum - 1 Then Unload txtLite(i)
+    Next
+    
+    For i = N21 + N24 - 1 To 0 Step -1 'colour sections
+        If Temp24 > 0 Then
+            fraSection(i).BackColor = &H0& 'black
+            Temp24 = Temp24 - 1
+        Else
+            fraSection(i).BackColor = &HFFFFFF    'white
+            Temp21 = Temp21 - 1
+        End If
+    Next
+    
+    fraDoor.Height = fraSection(0).Height * SecNum * 1.2
+    fraDoor.Enabled = True
+    
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = DrHgt
+        aCon.mmcalc
+        lblInfo(0).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(0).Caption = DrHgt
+    End If
+    
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = SecH
+        aCon.mmcalc
+        lblInfo(1).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(1).Caption = SecH
+    End If
+    
+    Cut = (DrHgt) - SecH
+    If Cut > 0 Then Cut = Round(Cut, 0) + RoundFraction(Cut - Int(Cut))
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = Abs(Cut)
+        aCon.mmcalc
+        lblInfo(2).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(2).Caption = Format(Abs(Cut), "Fixed")
+    End If
+    lblInfo(3).Caption = N21
+    lblInfo(4).Caption = N24
+    
+    cutT = GetCut(False)
+    cutB = GetCut(True)
+    
+    'there is a difference between the drhgt and hight in sections, have to add that difference to the cut.
+    'when calculating cut, only height in sections is taken into consideration.
+    If RoundUp(DrHgt) > DrHgt Then
+        If IIf(fraSection(0).BackColor = &HFFFFFF, 21, 24) - cutT + (RoundUp(DrHgt) - DrHgt) <= 15 Then
+            cutT = cutT + (RoundUp(DrHgt) - DrHgt)
+            If cutT < 1 Then
+                If cutB > 0 Then cutB = cutB + cutT
+            End If
+            cutT = 0 'ignore cuts smaller than an inch.
+        Else
+            cutB = cutB + (RoundUp(DrHgt) - DrHgt) 'if top is cut to maximum, bottom will have to be cut.
+            If cutB < 1 Then
+                If cutT > 0 Then cutT = cutB + cutT
+            End If
+            cutB = 0
+        End If
+    End If
+
+    If cutB > 0 Then
+        chkCutBtm.Value = 1
+        txtCutBtm.Enabled = True
+        If MeasU = 1 Then
+            txtCutBtm.Text = IIf(cutB > 0, Format(cutB, "Fixed"), "")
+        Else
+            aCon.Inch = cutB
+            aCon.mmcalc
+            txtCutBtm.Text = Round(aCon.mm, 0)
+        End If
+    Else
+        txtCutBtm.Enabled = False
+    End If
+    
+    If cutT > 0 Then
+        chkCutTop.Value = 1
+        txtCutTop.Enabled = True
+        If MeasU = 1 Then
+            txtCutTop.Text = IIf(cutT > 0, Format(cutT, "Fixed"), "")
+        Else
+            aCon.Inch = cutT
+            aCon.mmcalc
+            txtCutTop.Text = Round(aCon.mm, 0)
+        End If
+    Else
+        txtCutTop.Enabled = False
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdAccept_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAccept_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    'evaluate users input
+    Dim S As String
+    Dim Resp As String
+    Dim i As Integer
+    Dim EnteredTopCut As Single, EnteredBtmCut As Single, lstrC As String, strMsg As String, MetCut As Integer
+    EnteredBtmCut = 0
+    EnteredBtmCut = 0
+    For i = 0 To fraSection.Count - 1
+        If fraSection(i).BackColor = &H959595 Then
+            MsgBox "Please fill all empty placeholders.", vbApplicationModal + vbExclamation, "Invalid Configuration."
+            Exit Sub
+        End If
+    Next
+    
+    If (chkCutBtm.Value = 0 And chkCutTop.Value = 0) And Cut < -1 Then
+        MsgBox "This configuration is invalid without cutting sections. Please select cut routine or reconfigure.", vbApplicationModal + vbExclamation, "Invalid Configuration."
+        Exit Sub
+    End If
+    
+    If chkCutTop.Value = 1 And DBLValue(txtCutTop.Text) = 0 Then
+        MsgBox "Please enter a valid cut amount for the top section or uncheck this option.", vbApplicationModal + vbExclamation, "Invalid Configuration."
+        Exit Sub
+    End If
+    
+    If chkCutBtm.Value = 1 And DBLValue(txtCutBtm.Text) = 0 Then
+        MsgBox "Please enter a valid cut amount for the bottom section or uncheck this option.", vbApplicationModal + vbExclamation, "Invalid Configuration."
+        Exit Sub
+    End If
+    
+    fraDoor.Enabled = True
+    
+    If SecH < DrHgt Then 'not enough height Cut > 0
+        Resp = MsgBox("The hole has not been filled. Chose Yes if you wish to add a new section or No to rearange the existing configuration.", vbYesNo + vbApplicationModal + vbExclamation, "Invalid Configuration.")
+        If Resp = vbYes Then AddSection
+    
+    ElseIf Cut > -1 Then 'optimal solution, no need to cut. ( acceptable within 1 inch )
+        'MsgBox "This is the optimal solution."
+        Screen.MousePointer = vbHourglass
+        fraDoor.Enabled = False
+        cutT = 0
+        cutB = 0
+        varDoorData.CutBtm = 0
+        varDoorData.CutTop = 0
+        Call CheckForUnusedSections
+        Call PopulateSectionArray
+        Call FillGrd
+        Call SaveLites
+        Call SetLiteInfo
+        frmSectionsEntry.Show
+        Unload Me
+    
+    Else 'need to cut
+        
+        EnteredTopCut = cutT 'DBLValue(txtCutTop.Text) 'in inches
+        EnteredBtmCut = cutB 'DBLValue(txtCutBtm.Text) 'in inches
+        
+        If MeasU = 1 Then
+            lstrC = "inches"
+        Else
+'            If DBLValue(txtCutTop.Text) > 0 Then
+'                aCon.mm = DBLValue(txtCutTop.Text)
+'                aCon.Inchcalc
+'                EnteredTopCut = aCon.Inch
+'            End If
+'            If DBLValue(txtCutBtm.Text) > 0 Then
+'                aCon.mm = DBLValue(txtCutBtm.Text)
+'                aCon.Inchcalc
+'                EnteredBtmCut = aCon.Inch
+'            End If
+            lstrC = "mm"
+        End If
+        
+        Dim BH As Integer, TH As Integer 'black bottom
+        BH = IIf(fraSection(fraSection.Count - 1).BackColor = &H0&, 24, 21)
+        TH = IIf(fraSection(0).BackColor = &H0&, 24, 21)
+            
+        BH = BH - 13 '13 is min section height (bottom)
+        TH = TH - 15 '15 is min section height (top)
+        'first see if the difference (cut) is a valid cut amount
+        'and find if individual top and bottom cut amounts are legal
+               
+        If (Abs(Cut) > BH + TH) Or (EnteredTopCut > TH) Or (EnteredBtmCut > BH) Then
+            MsgBox "The cut amount is too great, please reconfigure sections.", vbApplicationModal + vbExclamation, "Invalid Configuration."
+            Exit Sub
+        End If
+           
+        Dim lblnCondition As Boolean
+        If MeasU = 0 Then
+            lblnCondition = RoundUp(EnteredTopCut + EnteredBtmCut) <> RoundUp(Abs(Cut))
+        Else
+            lblnCondition = Format(EnteredTopCut + EnteredBtmCut, "Fixed") <> Format(Abs(Cut), "Fixed")
+        End If
+        If lblnCondition Then 'if entered cut amounts are not equal to the difference.
+            MsgBox "Please configure the cut amount(s) to be equal to " & lblInfo(2).Caption & Chr(32) & lstrC, vbApplicationModal + vbExclamation, "Invalid Configuration."
+            Exit Sub
+'        Else
+'            strMsg = "Please cut "
+'            If chkCutTop.Value = 1 Then
+'                 strMsg = strMsg & txtCutTop.Text & Chr(32) & lstrC & " off the top section"
+'            End If
+'            If chkCutBtm.Value = 1 Then
+'                If chkCutTop.Value = 1 Then
+'                    strMsg = strMsg & " and "
+'                End If
+'                strMsg = strMsg & txtCutBtm.Text & Chr(32) & lstrC & " off the bottom section"
+'            End If
+            
+        End If
+        Screen.MousePointer = vbHourglass
+        varDoorData.CutBtm = EnteredBtmCut
+        varDoorData.CutTop = EnteredTopCut
+        fraDoor.Enabled = False
+        Call CheckForUnusedSections
+        Call PopulateSectionArray
+        Call FillGrd
+        Call SetLiteInfo
+        frmSectionsEntry.Show
+        Unload Me
+    End If
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdCancel_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    cmdReset_Click
+    Screen.MousePointer = vbHourglass
+
+    frmSectionsEntry.Show
+    Unload Me
+    Screen.MousePointer = vbDefault
+
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdAddSec_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAddSec_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim lintMaxDrH As Integer
+    Dim i As Integer
+    Dim AddedSection As Integer
+    
+    For i = 0 To fraSection.Count - 1
+        If fraSection(i).BackColor = &H959595 Then
+            MsgBox "Please fill all empty placeholders.", vbApplicationModal + vbExclamation, "Invalid Configuration."
+            Exit Sub
+        End If
+    Next
+
+    If Cut > 21 Then
+        AddedSection = 24  'added section is 24"
+    Else
+        AddedSection = 21  'added section is 21"
+    End If
+    
+    lintMaxDrH = DrHgt + AddedSection
+    If Fix(lintMaxDrH / 21) > (fraSection.Count) Then AddSection
+    Me.chkCutBtm.Value = 0
+    Me.chkCutTop.Value = 0
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdRemoveSec_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdRemoveSec_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim i As Integer
+    Dim lintMinDrH As Integer
+    Dim AddedSection As Integer
+    
+    For i = 0 To fraSection.Count - 1
+        If fraSection(i).BackColor = &H959595 Then
+            MsgBox "Please fill all empty placeholders.", vbApplicationModal + vbExclamation, "Invalid Configuration."
+            Exit Sub
+        End If
+    Next
+    
+    If fraSection(fraSection.Count - 1).BackColor = &H0& Then 'black
+        AddedSection = 24  'bottom section is 24"
+    Else
+        AddedSection = 21  'bottom section is 21"
+    End If
+    
+    lintMinDrH = DrHgt - AddedSection  'what the height would be after the removal of bottom section.
+    If RoundUp(lintMinDrH / 24) < (fraSection.Count) Then RemoveSection
+    'if min number of sections is less than what we have then we can remove.
+    Me.chkCutBtm.Value = 0
+    Me.chkCutTop.Value = 0
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Command5_Click() 'show lites (invisible)
+
+'    Frame4.Visible = True
+'    If NLitesPerSec = 0 Then
+'        Dim MaxL As Integer
+'        MaxL = GetMaxLitesPerSect
+'        Text1(1).Text = "Maximum of " & MaxL
+'    Else
+'        Text1(1).Text = NLitesPerSec
+'    End If
+'    Text1(0).Text = varDoorData.NLiteSec
+'    Text1(0).SetFocus
+    
+End Sub
+
+
+Private Sub Form_Load()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    Me.BackColor = &H95D9DB
+    fraCut.BackColor = Me.BackColor
+    fraDoor.BackColor = Me.BackColor
+    fraHeight.BackColor = Me.BackColor
+    fraButtons.BackColor = Me.BackColor
+    fraDragDrop.BackColor = Me.BackColor
+    fraDiff.BackColor = Me.BackColor
+    
+    chkCutTop.BackColor = Me.BackColor
+    chkCutBtm.BackColor = Me.BackColor
+    lblDoorHeight.BackColor = Me.BackColor
+    lblHeightInSections.BackColor = Me.BackColor
+    lblDifference.BackColor = Me.BackColor
+    lbl21Sections.BackColor = Me.BackColor
+    lbl24Sections.BackColor = Me.BackColor
+    
+    lblInfo(0).BackColor = Me.BackColor
+    lblInfo(1).BackColor = Me.BackColor
+    lblInfo(2).BackColor = Me.BackColor
+    lblInfo(3).BackColor = Me.BackColor
+    lblInfo(4).BackColor = Me.BackColor
+    LblSec21.BackColor = Me.BackColor
+    LblSec24.BackColor = Me.BackColor
+
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+    Dim i As Integer
+    Dim a As String, lstrI As String
+    Dim Temp21 As Integer, Temp24 As Integer
+    Dim lsngMetCut As Single
+
+    fraDoor.Height = fraSection(0).Height * 1.15
+    fraSection(0).Height = Me.Height * 0.05
+    fraSection(0).Move (fraDoor.Width - fraSection(0).Width - txtLite(0).Width) / 2, fraDoor.Height * 0.25
+    
+'    If (DrHgt / 21) = (DrHgt \ 21) Then
+'        SecMax = DrHgt \ 21
+'    Else
+'        SecMax = (DrHgt \ 21) + 1
+'    End If
+    SecH = N21 * 21 + N24 * 24
+    SecNum = N21 + N24
+    Temp21 = N21
+    Temp24 = N24
+    
+    txtLite(0).Move fraSection(0).Left + fraSection(0).Width + 20, fraSection(0).Top
+    txtLite(0).Text = IIf(varDoorData.arrSections(0).intNLites > 0, varDoorData.arrSections(0).intNLites, "")
+    For i = 1 To SecNum - 1 'load section frames
+        Load fraSection(i)
+        Load txtLite(i)
+        fraSection(i).Height = fraSection(0).Height
+        txtLite(i).Height = fraSection(i).Height
+        fraSection(i).Width = fraSection(0).Width
+        fraSection(i).Move fraSection(0).Left, fraSection(i - 1).Top + fraSection(i).Height * 1.1
+        txtLite(i).Move fraSection(i).Left + fraSection(i).Width + 20, fraSection(i).Top
+        fraSection(i).Visible = True
+        txtLite(i).Visible = True 'IIf(i = SecNum - 1, False, True)
+        txtLite(i).Text = IIf(varDoorData.arrSections(i).intNLites > 0, varDoorData.arrSections(i).intNLites, "")
+        If i = SecNum - 1 Then Unload txtLite(i)
+    Next
+    
+''''''''''Change in .NET''''''''''''''''
+'    For i = N21 + N24 - 1 To 0 Step -1 'colour sections
+'        If Temp24 > 0 Then
+'            fraSection(i).BackColor = &H0& 'black
+'            Temp24 = Temp24 - 1
+'        Else
+'            fraSection(i).BackColor = &HFFFFFF    'white
+'            Temp21 = Temp21 - 1
+'        End If
+'    Next
+    For i = 0 To N21 + N24 - 1 'colour sections
+        If varDoorData.arrSections(i).intHeight = 24 Then
+            fraSection(i).BackColor = &H0& 'black
+        Else
+            fraSection(i).BackColor = &HFFFFFF    'white
+        End If
+    Next
+
+''''''''''END Change in .NET
+    
+    fraDoor.Height = fraSection(0).Height * SecNum * 1.2
+    fraDoor.Enabled = True
+    
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = DrHgt
+        aCon.mmcalc
+        lblInfo(0).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(0).Caption = DrHgt
+    End If
+    
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = SecH
+        aCon.mmcalc
+        lblInfo(1).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(1).Caption = SecH
+    End If
+    
+    Cut = (DrHgt) - SecH
+    If Cut > 0 Then Cut = Round(Cut, 0) + RoundFraction(Cut - Int(Cut))
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = Abs(Cut)
+        aCon.mmcalc
+        lblInfo(2).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(2).Caption = Abs(Format(Cut, "FIxed"))
+    End If
+    
+    lblInfo(3).Caption = N21
+    lblInfo(4).Caption = N24
+    
+    cutB = varDoorData.CutBtm
+    cutT = varDoorData.CutTop
+    
+    If cutB > 0 Then
+        chkCutBtm.Value = 1
+        txtCutBtm.Enabled = True
+        If MeasU = 1 Then
+            txtCutBtm.Text = Format(cutB, "Fixed")
+        Else
+            aCon.Inch = cutB
+            aCon.mmcalc
+            txtCutBtm.Text = Round(aCon.mm, 0)
+        End If
+    Else
+        txtCutBtm.Enabled = False
+    End If
+    
+    If cutT > 0 Then
+        chkCutTop.Value = 1
+        txtCutTop.Enabled = True
+        If MeasU = 1 Then
+            txtCutTop.Text = Format(cutT, "Fixed")
+        Else
+            aCon.Inch = cutT
+            aCon.mmcalc
+            txtCutTop.Text = Round(aCon.mm, 0)
+        End If
+    Else
+        txtCutTop.Enabled = False
+    End If
+    
+    Me.Width = MDIForm1.Width * 0.95
+    Me.Height = MDIForm1.Height * 0.9
+    Me.Move Screen.Width / 2 - Me.Width / 2, 0
+    LoadHelpText Me
+    MousePos1.Init Me
+        
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub fraSection_DragDrop(Index As Integer, Source As Control, X As Single, Y As Single)
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".fraSection_DragDrop()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    If lblInfo(1).Caption = "" Then
+        SecH = 0
+    End If
+    If lblInfo(3).Caption = "" Then
+        N21 = 0
+    End If
+    If lblInfo(4).Caption = "" Then
+        N24 = 0
+    End If
+    If TypeOf Source Is Label Then
+        If fraSection(Index).BackColor <> &HFFFFFF And fraSection(Index).BackColor <> &H0& Then
+            If Source.Name = "LblSec21" Then
+                fraSection(Index).BackColor = &HFFFFFF 'white
+                Add21Section
+            ElseIf Source.Name = "LblSec24" Then
+                fraSection(Index).BackColor = &H0& 'black
+                Add24Section
+            End If
+        End If
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub fraSection_MouseMove(Index As Integer, Button As Integer, Shift As Integer, X As Single, Y As Single)
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".fraSection_MouseMove()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    Ind = Index
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub ImgTrash_DragDrop(Source As Control, X As Single, Y As Single)
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".ImgTrash_DragDrop()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    If Source.Name = "fraSection" Then
+        If fraSection(Ind).BackColor = &HFFFFFF Then    'white
+            fraSection(Ind).BackColor = &H959595     'gray
+            Remove21Section
+        End If
+        If fraSection(Ind).BackColor = &H0& Then 'black
+            fraSection(Ind).BackColor = &H959595     'gray
+            Remove24Section
+        End If
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Label10_DblClick() 'white, 21 section
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Label10_DblClick()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    Dim i As Integer
+    
+    For i = 0 To SecNum - 1 'Step -1
+        If fraSection(i).BackColor = &H959595 Then     'gray
+            fraSection(i).BackColor = &HFFFFFF    'white
+            Add21Section
+            Exit For
+        End If
+    Next
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+
+End Sub
+
+Private Sub LblInfo_Change(Index As Integer)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".LblInfo_Change()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    If Cut > 0 Then
+        lblInfo(2).ForeColor = vbRed
+    Else
+        lblInfo(2).ForeColor = vbDefault
+    End If
+    
+    If chkCutTop.Value = 1 Or chkCutBtm.Value = 1 Then
+        lblRemainder.Caption = Format(DBLValue(lblInfo(2)) - (DBLValue(txtCutTop.Text) + DBLValue(txtCutBtm.Text)), "Fixed")
+    Else
+        lblRemainder.Caption = Format("0", "Fixed")
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Label9_DblClick() 'black, 24 section
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Label9_DblClick()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    Dim i As Integer
+    
+    For i = 0 To SecNum - 1 ' Step -1
+        If fraSection(i).BackColor = &H959595 Then     'gray
+            fraSection(i).BackColor = &H0& 'black
+            Add24Section
+            Exit For
+        End If
+    Next
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkcuttop_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkcuttop_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    If chkCutTop.Value = 0 Then
+        txtCutTop.Text = ""
+        lblRemainder.Caption = Format(DBLValue(lblInfo(2)) - (DBLValue(txtCutTop.Text) + DBLValue(txtCutBtm.Text)), "Fixed")
+        txtCutTop.Enabled = False
+    Else
+        txtCutTop.Enabled = True
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub chkcutbtm_Click()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".chkcutbtm_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+
+    If chkCutBtm.Value = 0 Then
+        txtCutBtm.Text = ""
+        lblRemainder.Caption = Format(DBLValue(lblInfo(2)) - (DBLValue(txtCutTop.Text) + DBLValue(txtCutBtm.Text)), "Fixed")
+        txtCutBtm.Enabled = False
+    Else
+        txtCutBtm.Enabled = True
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Public Sub Add21Section()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Add21Section()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    SecH = SecH + 21
+    N21 = N21 + 1
+    Cut = (DrHgt) - SecH
+    If Cut > 0 Then Cut = Round(Cut, 0) + RoundFraction(Cut - Int(Cut))
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = DrHgt
+        aCon.mmcalc
+        lblInfo(0).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(0).Caption = DrHgt
+    End If
+    
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = SecH
+        aCon.mmcalc
+        lblInfo(1).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(1).Caption = SecH
+    End If
+    
+'    Cut = RoundUp(DrHgt) - SecH
+'    Cut = Round(Cut, 0) + RoundFraction(Cut - Int(Cut))
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = Abs(Cut)
+        aCon.mmcalc
+        lblInfo(2).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(2).Caption = Abs(Format(Cut, "Fixed"))
+    End If
+
+    lblInfo(3).Caption = N21
+    cmdAccept.Enabled = True
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub Add24Section()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Add24Section()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    SecH = SecH + 24
+    N24 = N24 + 1
+    Cut = (DrHgt) - SecH
+    If Cut > 0 Then Cut = Round(Cut, 0) + RoundFraction(Cut - Int(Cut))
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = DrHgt
+        aCon.mmcalc
+        lblInfo(0).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(0).Caption = DrHgt
+    End If
+    
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = SecH
+        aCon.mmcalc
+        lblInfo(1).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(1).Caption = SecH
+    End If
+    
+'    Cut = RoundUp(DrHgt) - SecH
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = Abs(Cut)
+        aCon.mmcalc
+        lblInfo(2).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(2).Caption = Abs(Format(Cut, "Fixed"))
+    End If
+    lblInfo(4).Caption = N24
+    cmdAccept.Enabled = True
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+
+End Sub
+
+Public Sub Remove24Section()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Remove24Section()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    N24 = N24 - 1
+    lblInfo(4).Caption = N24
+    SecH = SecH - 24
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = SecH
+        aCon.mmcalc
+        lblInfo(1).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(1).Caption = SecH
+    End If
+    Cut = (DrHgt) - SecH
+    If Cut > 0 Then Cut = Round(Cut, 0) + RoundFraction(Cut - Int(Cut))
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = Abs(Cut)
+        aCon.mmcalc
+        lblInfo(2).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(2).Caption = Abs(Format(Cut, "Fixed"))
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub Remove21Section()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Remove21Section()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    N21 = N21 - 1
+    lblInfo(3).Caption = N21
+    SecH = SecH - 21
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = SecH
+        aCon.mmcalc
+        lblInfo(1).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(1).Caption = SecH
+    End If
+    Cut = (DrHgt) - SecH
+    If Cut > 0 Then Cut = Round(Cut, 0) + RoundFraction(Cut - Int(Cut))
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = Abs(Cut)
+        aCon.mmcalc
+        lblInfo(2).Caption = Round(aCon.mm, 0)
+    Else
+        lblInfo(2).Caption = Abs(Format(Cut, "Fixed"))
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub CheckForUnusedSections()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".CheckForUnusedSections()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim i As Integer
+    For i = 0 To SecNum - 1
+        If fraSection(i).BackColor = &H959595 Then
+            fraSection(i).Visible = False
+        End If
+    Next
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub AddSection()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".AddSection()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim Scount As Integer
+    Scount = fraSection.Count
+    Load fraSection(Scount) 'add one section
+    Load txtLite(Scount - 1)
+    If Cut > 21 Then
+        fraSection(Scount).BackColor = &H0&
+        Add24Section
+    Else
+        fraSection(Scount).BackColor = &HFFFFFF
+        Add21Section
+    End If
+    
+    fraSection(Scount).Height = fraSection(0).Height
+    fraSection(Scount).Width = fraSection(0).Width
+    fraSection(Scount).Move fraSection(0).Left, fraSection(Scount - 1).Top + fraSection(Scount).Height * 1.1
+    fraSection(Scount).Visible = True
+    txtLite(Scount - 1).Height = txtLite(0).Height
+    txtLite(Scount - 1).Width = txtLite(0).Width
+    txtLite(Scount - 1).Move fraSection(Scount).Left + fraSection(Scount).Width + 20, fraSection(Scount - 1).Top
+    txtLite(Scount - 1).Visible = True
+    SecNum = SecNum + 1
+    fraDoor.Height = fraSection(0).Height * SecNum * 1.2
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub RemoveSection()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".RemoveSection()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim Scount As Integer
+    Scount = fraSection.Count
+    If Scount <= 2 Then Exit Sub
+    
+    If fraSection(Scount - 1).BackColor = &HFFFFFF Then 'white
+        Remove21Section
+    ElseIf fraSection(Scount - 1).BackColor = &H0& Then 'black
+        Remove24Section
+    End If
+    Unload fraSection(Scount - 1) 'remove one section
+    
+    Unload txtLite(Scount - 2)
+    SecNum = SecNum - 1
+    fraDoor.Height = fraSection(0).Height * SecNum * 1.2
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtCutBtm_Change()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtCutBtm_Change()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    lblRemainder.Caption = Format(DBLValue(lblInfo(2)) - (DBLValue(txtCutTop.Text) + DBLValue(txtCutBtm.Text)), "Fixed")
+    cutB = DBLValue(txtCutBtm.Text)
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.mm = cutB
+        aCon.Inchcalc
+        cutB = aCon.Inch
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtCutBtm_KeyPress(KeyAscii As Integer)
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtCutBtm_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtCutBtm, KeyAscii, Len(txtCutBtm.Text)) = False Then
+        Beep
+        KeyAscii = 0
+        Exit Sub
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub txtCutBtm_Validate(Cancel As Boolean)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtCutBtm_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    txtCutBtm.Text = Format(DBLValue(txtCutBtm.Text), "Fixed")
+    
+    If MeasU = 1 Then
+        If DBLValue(txtCutBtm.Text) > 14 Then
+            MsgBox "The maximum cut for any section is 14 inches", vbApplicationModal + vbExclamation, "Invalid Configuration."
+            txtCutBtm.SelStart = 0
+            txtCutBtm.SelLength = Len(txtCutBtm.Text)
+            Cancel = True
+        End If
+    Else
+        aCon.mm = DBLValue(txtCutBtm.Text)
+        aCon.Inchcalc
+        If aCon.Inch > 14 Then
+            MsgBox "The maximum cut for any section is 279 mm", vbApplicationModal + vbExclamation, "Invalid Configuration."
+            txtCutBtm.SelStart = 0
+            txtCutBtm.SelLength = Len(txtCutBtm.Text)
+            Cancel = True
+        End If
+    End If
+    
+    lblRemainder.Caption = Format(DBLValue(lblInfo(2)) - (DBLValue(txtCutTop.Text) + DBLValue(txtCutBtm.Text)), "Fixed")
+    
+    If DrType = "T45" Then
+        If chkCutBtm.Value = 1 And DBLValue(txtCutBtm.Text) <= 1 Then
+            If MeasU = 1 Then
+                MsgBox "Minimum cut amount from the bottom section must be higher than 1 inch.", vbApplicationModal + vbExclamation, "Invalid Configuration."
+                txtCutBtm.SelStart = 0
+                txtCutBtm.SelLength = Len(txtCutBtm.Text)
+                Cancel = True
+                Exit Sub
+            Else
+                MsgBox "Minimum cut amount from the bottom section must be higher than 25 mm. ", vbApplicationModal + vbExclamation, "Invalid Configuration."
+                txtCutBtm.SelStart = 0
+                txtCutBtm.SelLength = Len(txtCutBtm.Text)
+                Cancel = True
+                Exit Sub
+            End If
+        End If
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtCutTop_Change()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtCutTop_Change()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    lblRemainder.Caption = Format(DBLValue(lblInfo(2)) - (DBLValue(txtCutTop.Text) + DBLValue(txtCutBtm.Text)), "Fixed")
+    cutT = DBLValue(txtCutTop.Text)
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.mm = cutT
+        aCon.Inchcalc
+        cutT = aCon.Inch
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+    
+End Sub
+
+Private Sub txtCutTop_KeyPress(KeyAscii As Integer)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtCutTop_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    
+    If ValNumericText(txtCutTop, KeyAscii, Len(txtCutTop.Text)) = False Then
+        Beep
+        KeyAscii = 0
+        Exit Sub
+    End If
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
+
+Private Sub txtCutTop_Validate(Cancel As Boolean)
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtCutTop_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    txtCutTop.Text = Format(DBLValue(txtCutTop.Text), "Fixed")
+    
+    If MeasU = 1 Then
+        If DBLValue(txtCutTop.Text) > 14 Then
+            MsgBox "The maximum cut for any section is 14 inches", vbApplicationModal + vbExclamation, "Invalid Configuration."
+            txtCutTop.SelStart = 0
+            txtCutTop.SelLength = Len(txtCutTop.Text)
+            Cancel = True
+            Exit Sub
+        End If
+    Else
+        aCon.mm = DBLValue(txtCutTop.Text)
+        aCon.Inchcalc
+        If aCon.Inch > 14 Then
+            MsgBox "The maximum cut for any section is 279 mm", vbApplicationModal + vbExclamation, "Invalid Configuration."
+            txtCutTop.SelStart = 0
+            txtCutTop.SelLength = Len(txtCutTop.Text)
+            Cancel = True
+            Exit Sub
+        End If
+    End If
+    
+    lblRemainder.Caption = Format(DBLValue(lblInfo(2)) - (DBLValue(txtCutTop.Text) + DBLValue(txtCutBtm.Text)), "Fixed")
+    
+    If DrType = "T45" Then
+        If chkCutTop.Value = 1 And DBLValue(txtCutTop.Text) <= 3 Then
+            If MeasU = 1 Then
+                MsgBox "Minimum cut amount from the top section must be higher than 3 inches.", vbApplicationModal + vbExclamation, "Invalid Configuration."
+                txtCutTop.SelStart = 0
+                txtCutTop.SelLength = Len(txtCutTop.Text)
+                Cancel = True
+                Exit Sub
+            Else
+                MsgBox "Minimum cut amount from the top section must be higher than 76 mm. ", vbApplicationModal + vbExclamation, "Invalid Configuration."
+                txtCutTop.SelStart = 0
+                txtCutTop.SelLength = Len(txtCutTop.Text)
+                Cancel = True
+                Exit Sub
+            End If
+        End If
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+
+Private Sub txtLite_GotFocus(Index As Integer)
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtLite_GotFocus()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    txtLite(Index).SelStart = 0
+    txtLite(Index).SelLength = (Len(txtLite(Index).Text))
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtLite_KeyPress(Index As Integer, KeyAscii As Integer)
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtLite_KeyPress()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If Not IsNumeric(Chr(KeyAscii)) Xor KeyAscii = 8 Then
+        Beep
+        KeyAscii = 0
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub txtLite_Validate(Index As Integer, Cancel As Boolean)
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".txtLite_Validate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim MaxL As Integer
+    MaxL = GetMaxLitesPerSect
+    If Val(txtLite(Index).Text) > MaxL Then
+        MsgBox "Number of lites per section cannot exceed the maximum of " & MaxL, vbApplicationModal + vbExclamation, "Invalid Configuration."
+        Cancel = True
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+Private Sub PopulateSectionArray()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".PopulateSectionArray()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lintCount As Integer
+    Dim i As Integer
+    
+    lintCount = frmSectionsConfig.fraSection.Count
+    ReDim varDoorData.arrSections(lintCount - 1) As SectionData
+    For i = 0 To lintCount - 1
+        If frmSectionsConfig.fraSection(i).BackColor = &HFFFFFF Then
+            varDoorData.arrSections(i).intHeight = 21
+        Else
+            varDoorData.arrSections(i).intHeight = 24
+        End If
+        If i < lintCount - 1 Then varDoorData.arrSections(i).intNLites = DBLValue(frmSectionsConfig.txtLite(i).Text)
+    Next i
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Public Sub SetLiteInfo()
+
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SetLiteInfo()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim lint21LiteSections As Integer, lint24LiteSections As Integer
+    Dim lintLitesPerSection As Integer, i As Integer
+    If isEmptySectionsArray = False Then
+        If UBound(varDoorData.arrSections) > 0 Then
+            lint21LiteSections = GetNumberOfLiteSectionsPerHeight(21)
+            frmSectionsEntry.txt21LiteSections.Text = lint21LiteSections
+            lint24LiteSections = GetNumberOfLiteSectionsPerHeight(24)
+            frmSectionsEntry.txt24LiteSections.Text = lint24LiteSections
+            frmSectionsEntry.txtNofLiteSec.Text = lint24LiteSections + lint21LiteSections
+            For i = 0 To UBound(varDoorData.arrSections()) - 1
+                varDoorData.arrSections(i).intNLites = IIf(Me.txtLite(i).Text = "", 0, DBLValue(txtLite(i).Text))
+            Next
+            'If i < UBound(varDoorData.arrSections()) Then
+
+''''''''''Change in .NET''''''''''''''''
+'            frmSectionsEntry.txtLitesPerSection.Enabled = True
+''''''''''END Change in .NET
+            
+            frmSectionsEntry.cmdShowAllLites.Enabled = False
+            For i = 0 To UBound(varDoorData.arrSections) - 1
+            
+                lintLitesPerSection = IIf(varDoorData.arrSections(i).intNLites = 0, lintLitesPerSection, varDoorData.arrSections(i).intNLites)
+                If i > 0 Then
+                    If varDoorData.arrSections(i - 1).intNLites > 0 Then
+                        If lintLitesPerSection <> varDoorData.arrSections(i - 1).intNLites Then
+
+''''''''''Change in .NET''''''''''''''''
+                            frmSectionsEntry.txtLitesPerSection.Enabled = True
+''''''''''END Change in .NET
+                            
+                            frmSectionsEntry.txtLitesPerSection.MaxLength = 10
+                            frmSectionsEntry.txtLitesPerSection.Text = "see table"
+                            frmSectionsEntry.txtLitesPerSection.MaxLength = 3
+                            frmSectionsEntry.txtLitesPerSection.Enabled = False
+                            frmSectionsEntry.cmdShowAllLites.Enabled = True
+                            Exit For
+                        End If
+                    End If
+                End If
+                frmSectionsEntry.txtLitesPerSection.Text = lintLitesPerSection
+            Next i
+            'If lint21LiteSections = lint24LiteSections > 0 Then frmSectionsEntry.cboLiteType.ListIndex = 1
+            'If frmSectionsEntry.cboLiteType.ListIndex > 0 Then frmSectionsEntry.cboLiteCol.ListIndex = 1
+        End If
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub
+
+Private Sub SaveLites()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".SaveLites()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim i As Integer
+    
+    'clear array
+    For i = 0 To UBound(varDoorData.arrSections())
+        varDoorData.arrSections(i).intNLites = 0
+    Next
+
+    'populate from the screen input
+    For i = 0 To txtLite.Count - 1
+        varDoorData.arrSections(i).intNLites = DBLValue(txtLite(i).Text)
+    Next
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    lstrErrSource = IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource
+    Call Err.Raise(llngErrNo, lstrErrSource, lstrErrDescr)
+
+End Sub

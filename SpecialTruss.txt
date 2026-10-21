@@ -1,0 +1,176 @@
+Option Explicit
+Const cstrModuleName As String = "frmSecSpecialTruss"
+
+''''''''''Change in .NET''''''''''''''''
+'changed the Startup Position of this form to CenterScreen.
+''''''''''END Change in .NET
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Unload Me
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdSpTrussOK_Click()
+    
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSpTrussOK_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Dim i As Integer
+    For i = 1 To Grid1.Rows - 1
+        If DBLValue(Grid1.TextMatrix(i, 1)) > 0 Then
+            varDoorData.arrSections(i - 1).intNTruss = Grid1.TextMatrix(i, 1)
+            If fraTrussType.Visible = True Then
+
+''''''''''Change in .NET''''''''''''''''
+'                If Not Grid1.Cell(flexcpForeColor, i, 1) = vbRed Then
+                If Grid1.Cell(flexcpBackColor, i, 1) = &HE0E0E0 Then
+
+''''''''''END Change in .NET
+                    If opt1.Value = True Then
+                        varDoorData.arrSections(i - 1).intTrussStyle = 1
+                    ElseIf opt2.Value = True Then
+                        varDoorData.arrSections(i - 1).intTrussStyle = 2
+                    Else
+                        varDoorData.arrSections(i - 1).intTrussStyle = 3
+                    End If
+                End If
+            Else
+                varDoorData.arrSections(i - 1).intTrussStyle = 4
+            End If
+        Else
+            varDoorData.arrSections(i - 1).intNTruss = 0
+        End If
+    Next
+    
+    Unload Me
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    If NewLinearHW = False Then
+        fraTrussType.Visible = False
+        
+        Me.Frame1.Top = fraTrussType.Top
+        'cmdSpTrussOK.Top = fraTrussType.Top
+        'cmdCancel.Top = fraTrussType.Top
+        'fraSpecialTruss.Height = (Grid1.Height + cmdSpTrussOK.Height) * 1.2
+        Me.Height = Me.Height * 0.83
+    End If
+    
+    opt1.Value = True
+    
+    Grid1.ColWidth(1) = Grid1.Width * 0.3
+    Grid1.ColWidth(0) = Grid1.Width * 0.65
+    Grid1.TextMatrix(0, 0) = "Section"
+    Grid1.TextMatrix(0, 1) = "Truss Qty"
+    Grid1.Rows = N21 + N24 + 1
+    
+    Dim i As Integer
+    If varPassDoor.strPN <> "" Then
+        i = N21 + N24 - 3
+        Grid1.Cell(flexcpForeColor, Grid1.Rows - 4, 0, Grid1.Rows - 1, 1) = vbRed
+    Else
+        i = N21 + N24
+    End If
+    
+    If i > 0 Then Grid1.Cell(flexcpBackColor, 1, 1, i, 1) = &HE0E0E0
+    
+    i = 0
+    For i = 1 To Grid1.Rows - 1
+        Grid1.CellAlignment = flexAlignLeftCenter
+        Grid1.TextMatrix(i, 0) = varDoorData.arrSections(i - 1).intHeight & Chr(34)
+        If i = 1 Then Grid1.TextMatrix(i, 0) = "Top " & varDoorData.arrSections(i - 1).intHeight & Chr(34)
+        If i = Grid1.Rows - 1 Then Grid1.TextMatrix(i, 0) = "Bottom " & varDoorData.arrSections(i - 1).intHeight & Chr(34)
+    Next
+    
+    If varPassDoor.strPN <> "" Then
+        If varPassDoor.btBottom = 2 Or varPassDoor.btBottom = 3 Then
+            Grid1.TextMatrix(Grid1.Rows - 1, 1) = 1
+        End If
+        If varPassDoor.btTop = 3 Then
+            Grid1.TextMatrix(1, 1) = 1
+        End If
+    End If
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Grid1_BeforeEdit(ByVal Row As Long, ByVal Col As Long, Cancel As Boolean)
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Grid1_BeforeEdit()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    If Col < 1 Then Cancel = True
+    If varPassDoor.strPN <> "" Then
+
+''''''''''Change in .NET''''''''''''''''
+'        If Row > Grid1.Rows - 5 Then
+        If Row > Grid1.Rows - 4 Then
+
+''''''''''END Change in .NET
+            Cancel = True
+        End If
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+

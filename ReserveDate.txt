@@ -1,0 +1,129 @@
+Option Explicit
+Const cstrModuleName As String = "frmReserveDate"
+Public mlngDOCID As Long
+Public mintBackTag As Integer ' 1 for BoM, 2 for Quote
+Public mdblYTD As Double
+Public mstrDocUM As String
+
+Private Sub cmdAccept_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdAccept_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If Not IsDate(txtReserveDate.Text) Then
+        Beep
+        MsgBox "Please enter valid date.", vbApplicationModal + vbExclamation, "Invalid Date."
+        txtReserveDate.SelStart = 0
+        txtReserveDate.SelLength = Len(txtReserveDate.Text)
+        txtReserveDate.SetFocus
+        Exit Sub
+    End If
+    If DateValue(Now()) > DateValue(Me.txtReserveDate.Text) Then
+        Beep
+        MsgBox "Please enter valid date.", vbApplicationModal + vbExclamation, "Invalid Date."
+        txtReserveDate.SelStart = 0
+        txtReserveDate.SelLength = Len(txtReserveDate.Text)
+        txtReserveDate.SetFocus
+        Exit Sub
+    End If
+    Screen.MousePointer = vbHourglass
+    If mintBackTag = 1 Then
+        Call ReserveBOM(mlngDOCID, txtReserveDate.Text)
+        Screen.MousePointer = vbDefault
+        MsgBox "BoM has been reserved.", vbApplicationModal + vbOKOnly + vbInformation, "BoM Reserved."
+    Else
+        Call ReserveQuote(mlngDOCID, txtReserveDate.Text)
+        Screen.MousePointer = vbDefault
+        MsgBox "Quote has been reserved.", vbApplicationModal + vbOKOnly + vbInformation, "Quote Reserved."
+    End If
+    frmBOMAlloc.cmdReserve.Enabled = False
+
+    Unload Me
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdcancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    Screen.MousePointer = vbHourglass
+    Unload Me
+    Screen.MousePointer = vbDefault
+    Exit Sub
+
+Error_Handler:
+    Screen.MousePointer = vbDefault
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Activate()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Activate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim LCID As Long
+    
+    LCID = GetUserDefaultLCID()
+    Label22.Caption = GetUserLocaleInfo(LCID, LOCALE_SSHORTDATE)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Activate()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    Dim currBPP As Long
+    currBPP = GetDeviceCaps(hdc, BITSPIXEL)
+    If currBPP <= 8 Then Call GoGrey(Me)
+    
+    Me.Move Screen.Width / 2 - Me.Width / 2, Screen.Height / 2 - Me.Height / 2
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+
+End Sub
+

@@ -1,0 +1,271 @@
+Option Explicit
+
+''''''''''Change in .NET''''''''''''''''
+'new form
+''''''''''END Change in .NET
+Public mobjParent As Object
+Private mlngHgt As Long
+Const cstrModuleName As String = "frmSectionsCut"
+
+Private Sub cmdCancel_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCancel_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Unload Me
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdCurrent_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdCurrent_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    mobjParent.mdblHgt = -1
+    Unload Me
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub cmdSelected_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".cmdSelected_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    If LiftType = "High Lift" Then
+        If MsgBox("Would you like to adjust the High Lift value?", vbYesNo + vbQuestion + vbApplicationModal, "High Lift") = vbYes Then
+            mobjParent.mdblHgt = 0
+            mobjParent.mblnHLModify = True
+        End If
+    End If
+    
+    If opt1Under.Value = True Then
+        MsgBox "You selected to decrease door height." & _
+        vbCrLf & "Please make sure that the selected sections will fill the opening.", vbInformation + vbApplicationModal, "Decrease Height"
+    End If
+    
+    mobjParent.mdblHgt = mlngHgt
+    Unload Me
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub Form_Load()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".Form_Load()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    Dim ldblHgt As Double
+    Dim ldblMetHgt
+    Dim lstrSQL As String
+    Dim lobjSecConfRS As ADODB.Recordset
+    Dim llngAffected As Long
+    Dim TempHgt As Long
+    Dim llng21 As Long
+    Dim llng24 As Long
+    Dim varBkMark As Variant
+    
+    Label2.Visible = False
+    
+    If MeasU = 0 Then
+        ClearConObj
+        aCon.Inch = DrHgt
+        aCon.mmcalc
+        lblHgt.Caption = " " & Round(aCon.mm, 0)
+        Label2.Visible = True
+    Else
+        lblHgt.Caption = " " & GetImpString(DrHgt)
+    End If
+    
+    TempHgt = RoundUp(DrHgt)
+    lstrSQL = "SELECT * from SectionsConfig order by DrHt" ' where drht=
+    Set lobjSecConfRS = CnnBTMS.Execute(lstrSQL, llngAffected, adCmdText)
+    If Not lobjSecConfRS Is Nothing Then
+        lobjSecConfRS.ActiveConnection = Nothing
+        If Not (lobjSecConfRS.BOF And lobjSecConfRS.EOF) Then
+            lobjSecConfRS.MoveFirst
+            lobjSecConfRS.Find "DrHt=" & Replace(TempHgt, ",", ".")
+            If Not (lobjSecConfRS.BOF And lobjSecConfRS.EOF) Then
+                
+                varBkMark = lobjSecConfRS.Bookmark
+                'one down
+                lobjSecConfRS.MovePrevious
+                lobjSecConfRS.Find "Cutoff=0", , adSearchBackward
+                If Not (lobjSecConfRS.BOF And lobjSecConfRS.EOF) Then
+                    ldblHgt = lobjSecConfRS.Fields(0).Value
+                    If Not IsNull(lobjSecConfRS.Fields("21").Value) Then
+                        llng21 = lobjSecConfRS.Fields("21").Value
+                    End If
+                    If Not IsNull(lobjSecConfRS.Fields("24").Value) Then
+                        llng24 = lobjSecConfRS.Fields("24").Value
+                    End If
+                End If
+                If MeasU = 0 Then
+                    ClearConObj
+                    aCon.Inch = ldblHgt
+                    aCon.mmcalc
+                    ldblMetHgt = Round(aCon.mm, 0)
+                End If
+                lbl1Under.Caption = "Decrease height to " & IIf(MeasU = 1, GetImpString(ldblHgt), ldblMetHgt & " mm") & ".  " & llng21 & "-21 inch and " & llng24 & "-24 inch sections."
+                lbl1Under.Tag = ldblHgt
+                
+                If Not IsEmpty(varBkMark) Then lobjSecConfRS.Bookmark = varBkMark
+                
+                'one up
+                lobjSecConfRS.Find "Cutoff=0", , adSearchForward
+                If Not (lobjSecConfRS.BOF And lobjSecConfRS.EOF) Then
+                    ldblHgt = lobjSecConfRS.Fields(0).Value
+                    If Not IsNull(lobjSecConfRS.Fields("21").Value) Then
+                        llng21 = lobjSecConfRS.Fields("21").Value
+                    End If
+                    If Not IsNull(lobjSecConfRS.Fields("24").Value) Then
+                        llng24 = lobjSecConfRS.Fields("24").Value
+                    End If
+                End If
+                
+                If MeasU = 0 Then
+                    ClearConObj
+                    aCon.Inch = ldblHgt
+                    aCon.mmcalc
+                    ldblMetHgt = Round(aCon.mm, 0)
+                End If
+                lbl1UP.Caption = "Increase height to " & IIf(MeasU = 1, GetImpString(ldblHgt), ldblMetHgt & " mm") & ".  " & llng21 & "-21 inch and " & llng24 & "-24 inch sections."
+                lbl1UP.Tag = ldblHgt
+                
+                'two up
+                lobjSecConfRS.MoveNext
+                lobjSecConfRS.Find "Cutoff=0", , adSearchForward
+                If Not (lobjSecConfRS.BOF And lobjSecConfRS.EOF) Then
+                    ldblHgt = lobjSecConfRS.Fields(0).Value
+                    If Not IsNull(lobjSecConfRS.Fields("21").Value) Then
+                        llng21 = lobjSecConfRS.Fields("21").Value
+                    End If
+                    If Not IsNull(lobjSecConfRS.Fields("24").Value) Then
+                        llng24 = lobjSecConfRS.Fields("24").Value
+                    End If
+                End If
+                
+                If MeasU = 0 Then
+                    ClearConObj
+                    aCon.Inch = ldblHgt
+                    aCon.mmcalc
+                    ldblMetHgt = Round(aCon.mm, 0)
+                End If
+                lbl2UP.Caption = "Increase height to " & IIf(MeasU = 1, GetImpString(ldblHgt), ldblMetHgt & " mm") & ".  " & llng21 & "-21 inch and " & llng24 & "-24 inch sections."
+                lbl2UP.Tag = ldblHgt
+                
+            End If
+        End If
+        Set lobjSecConfRS = Nothing
+    End If
+    opt1UP.Value = True
+
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+
+Private Sub opt1Under_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".opt1Under_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+    
+    mlngHgt = DBLValue(lbl1Under.Tag)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub opt1UP_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".opt1UP_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    mlngHgt = DBLValue(lbl1UP.Tag)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+
+End Sub
+
+Private Sub opt2UP_Click()
+    On Error GoTo Error_Handler
+    Const cstrErrorSource As String = cstrApplicationName & "." & cstrModuleName & ".opt2UP_Click()"
+    Dim llngErrNo As Long
+    Dim lstrErrDescr As String
+    Dim lstrErrSource As String
+    llngErrNo = 0
+    lstrErrDescr = ""
+    lstrErrSource = ""
+
+    mlngHgt = DBLValue(lbl2UP.Tag)
+    
+    Exit Sub
+
+Error_Handler:
+    llngErrNo = IIf(llngErrNo = 0, Err.Number, llngErrNo)
+    lstrErrDescr = IIf(Len(lstrErrDescr) = 0, Err.Description, lstrErrDescr & vbCrLf & Err.Description)
+    Call DisplayError(llngErrNo, IIf(Len(Trim(Err.Source)) = 0, "", Err.Source & vbCrLf) & cstrErrorSource, lstrErrDescr)
+End Sub
